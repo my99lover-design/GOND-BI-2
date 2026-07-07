@@ -18,11 +18,14 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
         .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
         
-        /* 상단 헤더 및 네비게이션 */
-        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px; }
-        h1 { font-size: 1.5rem; margin: 0; }
-        .nav-buttons { display: flex; gap: 8px; }
-        .nav-btn { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 14px; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1rem; font-weight: bold; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* 윗줄 메뉴 제어 (홈, 뒤로가기 버튼 대폭 확대 및 타이틀 한 라인 배치) */
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 5px; gap: 10px; }
+        h1 { font-size: 1.4rem; margin: 0; white-space: nowrap; }
+        .nav-buttons { display: flex; gap: 10px; flex-grow: 1; justify-content: flex-end; }
+        
+        /* 버튼 크기 대폭 확대 */
+        .nav-btn { background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 6px rgba(0,0,0,0.08); }
+        .nav-btn:active { background: var(--step-bg); }
         
         /* GPS */
         .gps-section { margin-bottom: 20px; display: none; }
@@ -30,26 +33,29 @@
         .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
         .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
 
-        /* 단계별 카테고리 선택 영역 */
-        .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
-        .step-title { font-size: 1.1rem; font-weight: bold; color: var(--text-sub); margin-bottom: 15px; text-align: center; }
+        /* 단계별 카테고리 선택 영역 (안내문구 제거로 박스 여백만 유지) */
+        .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
         
         /* 버튼 그리드 */
         .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         
-        /* ✨ 최종 비밀번호 결과창: 3열 격자 배치로 축소 변경 */
+        /* 📊 최종 비밀번호 결과창: 요청하신 이미지 스타일로 레이아웃 완벽 변경 */
         .card-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; box-sizing: border-box; }
-        .card { background: var(--card-bg); padding: 10px; border-radius: 14px; border: 1px solid var(--border); position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; }
-        .card-header { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
-        .apt-name { font-weight: 800; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .line-info { font-size: 0.95rem; font-weight: bold; color: var(--primary); }
+        .card { background: var(--card-bg); padding: 12px 8px; border-radius: 16px; border: 1px solid var(--border); position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: space-between; min-height: 120px; }
         
-        .card-body { font-size: 0.85rem; border-top: 1px solid var(--border); padding-top: 6px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
-        .pwd-box { background: rgba(239, 68, 68, 0.05); border: 1px solid var(--accent); padding: 6px 4px; border-radius: 8px; margin-top: 4px; text-align: center; word-break: break-all; }
-        .pwd-highlight { font-size: 1.15rem; font-weight: 900; color: var(--accent); } /* 크기를 줄여 3개 한 줄 안착 */
-        .type-info { color: var(--text-sub); font-size: 0.75rem; line-height: 1.1; }
-        .edit-trigger-btn { background: none; border: 1px solid var(--border); color: var(--text-sub); padding: 4px 0; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-top: 6px; width: 100%; text-align: center; }
+        /* 상단: 동 정보 및 라인 정보 통합 출력 */
+        .card-info-area { margin-bottom: 8px; width: 100%; }
+        .apt-name { font-weight: 800; font-size: 1.1rem; color: var(--text-main); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .line-info { font-size: 1rem; font-weight: bold; color: var(--primary); }
+        
+        /* 하단: 테두리가 둘러진 깔끔한 비밀번호 영역 */
+        .card-body-area { width: 100%; }
+        .pwd-box { background: rgba(239, 68, 68, 0.04); border: 1.5px solid var(--accent); padding: 8px 4px; border-radius: 10px; width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: 42px; }
+        .pwd-highlight { font-size: 1.15rem; font-weight: 900; color: var(--accent); word-break: break-all; }
+        
+        /* 관리용 수정 버튼 */
+        .edit-trigger-btn { background: none; border: none; color: var(--text-sub); padding: 4px 0 0 0; font-size: 0.75rem; font-weight: bold; cursor: pointer; width: 100%; text-align: center; text-decoration: underline; opacity: 0.7; }
 
         /* 하단 고정 추가 버튼 */
         .add-floating-btn { position: fixed; bottom: 25px; right: 25px; background: var(--primary); color: white; border: none; width: 60px; height: 60px; border-radius: 30px; font-size: 2.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 200; }
@@ -66,7 +72,7 @@
         .btn-submit { background: var(--primary); color: white; }
         .btn-cancel { background: var(--border); color: var(--text-main); }
         .btn-delete { background: var(--accent); color: white; }
-        .status-msg { text-align: center; color: var(--text-sub); margin-top: 25px; font-size: 1.1rem; width: 100%; grid-column: span 3; }
+        .status-msg { text-align: center; color: var(--text-sub); font-size: 1.1rem; width: 100%; grid-column: span 3; padding: 20px 0; }
     </style>
 </head>
 <body>
@@ -87,8 +93,7 @@
     </div>
     
     <div id="stepContainer" class="step-container">
-        <div id="stepLabel" class="step-title">🗺️ 지역을 선택해 주세요</div>
-        <div id="buttonGrid" class="btn-grid"></div>
+        <div id="buttonGrid" class="btn-grid">데이터를 불러오는 중... ⏳</div>
     </div>
     
     <div id="cardList" class="card-list"></div>
@@ -122,14 +127,12 @@
     let data = [];
     let locations = {};
     
-    // 현재 단계 추적용 (1: 지역, 2: 아파트, 3: 동, 4: 결과)
     let currentStep = 1;
     let selectedRegion = "";
     let selectedApt = "";
     let selectedDong = "";
 
     const buttonGrid = document.getElementById('buttonGrid');
-    const stepLabel = document.getElementById('stepLabel');
     const cardList = document.getElementById('cardList');
     const themeToggle = document.getElementById('themeToggle');
     const backBtn = document.getElementById('backBtn');
@@ -189,7 +192,7 @@
     // 데이터 로드
     async function loadData() {
         try {
-            stepLabel.textContent = "데이터 동기화 중... ⏳";
+            buttonGrid.innerHTML = '<div class="status-msg">데이터 동기화 중... ⏳</div>';
             const sheetRes = await fetch(GAS_WEB_APP_URL);
             data = await sheetRes.json();
             
@@ -201,7 +204,7 @@
             resetSteps();
             initGPS();
         } catch (error) {
-            stepLabel.textContent = "통신 실패 ❌ 설정을 확인하세요.";
+            buttonGrid.innerHTML = '<div class="status-msg">통신 실패 ❌ 설정을 확인하세요.</div>';
         }
     }
 
@@ -225,8 +228,7 @@
         updateNav();
         
         stepContainer.style.display = 'block';
-        cardList.innerHTML = ''; // ⚠️ 하단 목록 가림
-        stepLabel.textContent = "🗺️ 지역을 선택해 주세요";
+        cardList.innerHTML = ''; 
         
         const regions = [...new Set(data.map(item => item.지역).filter(Boolean))];
         
@@ -248,8 +250,7 @@
         updateNav();
         
         stepContainer.style.display = 'block';
-        cardList.innerHTML = ''; // ⚠️ 하단 목록 가림
-        stepLabel.textContent = `🏢 아파트를 선택해 주세요 (${region})`;
+        cardList.innerHTML = ''; 
         
         const apts = [...new Set(data.filter(item => item.지역 === region).map(item => item.아파트).filter(Boolean))];
         
@@ -271,8 +272,7 @@
         updateNav();
         
         stepContainer.style.display = 'block';
-        cardList.innerHTML = ''; // ⚠️ 요구사항 반영: 동 선택 전까지 아래 목록 안 나오게 제거
-        stepLabel.textContent = `🔢 동을 선택해 주세요 (${apt})`;
+        cardList.innerHTML = ''; 
         
         const dongs = [...new Set(data.filter(item => item.아파트 === apt).map(item => item.동).filter(Boolean))];
         dongs.sort((a, b) => parseInt(a) - parseInt(b));
@@ -282,7 +282,6 @@
             const btn = document.createElement('button');
             btn.className = 'select-btn';
             
-            // ⚠️ 요구사항 반영: '101동' 대신 숫자만 깔끔하게 '101' 형식으로 노출
             const dongNumber = String(dong).replace(/동/g, '').trim();
             btn.textContent = dongNumber; 
             
@@ -297,37 +296,36 @@
         selectedDong = dong;
         updateNav();
         
-        // 상단 선택창 숨기고 결과만 넓게 출력
         stepContainer.style.display = 'none';
         renderFinalCards(selectedApt, dong);
     }
 
-    // 최종 화면 출력 (한 줄에 3개 들어가는 가로 바둑판 구조)
+    // 최종 화면 출력 (이미지와 완전히 동일한 위아래 구조 및 3열 카드 격자 배치)
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
         const filtered = data.filter(item => item.아파트 === apt && String(item.동) === String(dong));
 
         if (filtered.length === 0) {
-            cardList.innerHTML = '<p class="status-msg">등록된 정보가 없습니다. 🔍</p>';
+            cardList.innerHTML = '<div class="status-msg">등록된 정보가 없습니다. 🔍</div>';
             return;
         }
 
         filtered.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
+            
+            const cleanDong = String(item.동).replace(/동/g, '').trim();
+            
             card.innerHTML = `
-                <div class="card-header">
-                    <div class="apt-name">${item.아파트}</div>
-                    <div class="line-info">🚪 ${item.라인}호</div>
+                <div class="card-info-area">
+                    <div class="apt-name">${cleanDong}동</div>
+                    <div class="line-info">${item.라인}라인</div>
                 </div>
-                <div class="card-body">
-                    <div>
-                        <div class="type-info">${item.공동 || '기본'}</div>
-                        <div class="pwd-box">
-                            <span class="pwd-highlight">${item.비번 || '-'}</span>
-                        </div>
+                <div class="card-body-area">
+                    <div class="pwd-box">
+                        <span class="pwd-highlight">${item.비번 || '-'}</span>
                     </div>
-                    <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">⚙️ 수정</button>
+                    <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">수정</button>
                 </div>
             `;
             cardList.appendChild(card);
@@ -381,7 +379,7 @@
         };
 
         closeModal();
-        stepLabel.textContent = "구글 시트 동기화 중... ⏳";
+        buttonGrid.innerHTML = '<div class="status-msg">구글 시트 동기화 중... ⏳</div>';
         stepContainer.style.display = 'block';
         cardList.innerHTML = '';
         
@@ -396,7 +394,7 @@
         if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
         const rowId = document.getElementById('formRowId').value;
         closeModal();
-        stepLabel.textContent = "데이터 삭제 중... ⏳";
+        buttonGrid.innerHTML = '<div class="status-msg">데이터 삭제 중... ⏳</div>';
         stepContainer.style.display = 'block';
         cardList.innerHTML = '';
         
