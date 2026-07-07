@@ -18,13 +18,14 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
         .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
         
-        /* 윗줄 메뉴 제어 (홈, 뒤로가기 버튼 대폭 확대 및 타이틀 한 라인 배치) */
-        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 5px; gap: 10px; }
-        h1 { font-size: 1.4rem; margin: 0; white-space: nowrap; }
-        .nav-buttons { display: flex; gap: 10px; flex-grow: 1; justify-content: flex-end; }
-        
-        /* 버튼 크기 대폭 확대 */
-        .nav-btn { background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 6px rgba(0,0,0,0.08); }
+        /* 상단 타이틀 및 다크모드 라인 */
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 5px; }
+        h1 { font-size: 1.5rem; margin: 0; }
+        .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 1.1rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* 🧭 네비게이션 버튼: 목록 바로 위, 가로로 꽉 차게 2칸 배치 */
+        .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; width: 100%; }
+        .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.25rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
         .nav-btn:active { background: var(--step-bg); }
         
         /* GPS */
@@ -33,29 +34,33 @@
         .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
         .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
 
-        /* 단계별 카테고리 선택 영역 (안내문구 제거로 박스 여백만 유지) */
+        /* 단계별 카테고리 선택 영역 */
         .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
         
         /* 버튼 그리드 */
         .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         
-        /* 📊 최종 비밀번호 결과창: 요청하신 이미지 스타일로 레이아웃 완벽 변경 */
-        .card-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; box-sizing: border-box; }
-        .card { background: var(--card-bg); padding: 12px 8px; border-radius: 16px; border: 1px solid var(--border); position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: space-between; min-height: 120px; }
+        /* 📊 최종 비밀번호 결과창: 긴 비밀번호 나열도 한눈에 보이게 세로 누적 구조로 정리 */
+        .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
         
-        /* 상단: 동 정보 및 라인 정보 통합 출력 */
-        .card-info-area { margin-bottom: 8px; width: 100%; }
-        .apt-name { font-weight: 800; font-size: 1.1rem; color: var(--text-main); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .line-info { font-size: 1rem; font-weight: bold; color: var(--primary); }
+        /* 전체 대타이틀 (<공동비번>) */
+        .result-main-title { font-size: 1.4rem; font-weight: 900; color: var(--text-main); margin-bottom: 15px; margin-top: 5px; text-align: center; width: 100%; }
         
-        /* 하단: 테두리가 둘러진 깔끔한 비밀번호 영역 */
-        .card-body-area { width: 100%; }
-        .pwd-box { background: rgba(239, 68, 68, 0.04); border: 1.5px solid var(--accent); padding: 8px 4px; border-radius: 10px; width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: 42px; }
-        .pwd-highlight { font-size: 1.15rem; font-weight: 900; color: var(--accent); word-break: break-all; }
+        /* 라인별 카드 레코더 */
+        .card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; }
         
-        /* 관리용 수정 버튼 */
-        .edit-trigger-btn { background: none; border: none; color: var(--text-sub); padding: 4px 0 0 0; font-size: 0.75rem; font-weight: bold; cursor: pointer; width: 100%; text-align: center; text-decoration: underline; opacity: 0.7; }
+        /* 라인 타이틀 (<1,2라인>) */
+        .line-info { font-size: 1.2rem; font-weight: 800; color: var(--primary); text-align: left; }
+        
+        /* 비밀번호 박스 영역 */
+        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 14px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; }
+        .pwd-highlight { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: 0.5px; white-space: pre-wrap; word-break: break-all; }
+        
+        /* 하단 기기 및 관리 버튼 라인 */
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; border-top: 1px dashed var(--border); padding-top: 8px; }
+        .type-info { color: var(--text-sub); font-size: 0.85rem; font-weight: bold; }
+        .edit-trigger-btn { background: none; border: none; color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; text-decoration: underline; opacity: 0.7; }
 
         /* 하단 고정 추가 버튼 */
         .add-floating-btn { position: fixed; bottom: 25px; right: 25px; background: var(--primary); color: white; border: none; width: 60px; height: 60px; border-radius: 30px; font-size: 2.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 200; }
@@ -72,7 +77,7 @@
         .btn-submit { background: var(--primary); color: white; }
         .btn-cancel { background: var(--border); color: var(--text-main); }
         .btn-delete { background: var(--accent); color: white; }
-        .status-msg { text-align: center; color: var(--text-sub); font-size: 1.1rem; width: 100%; grid-column: span 3; padding: 20px 0; }
+        .status-msg { text-align: center; color: var(--text-sub); font-size: 1.1rem; width: 100%; padding: 20px 0; }
     </style>
 </head>
 <body>
@@ -80,11 +85,12 @@
 <div class="container">
     <div class="header-area">
         <h1>🔑 김포B 공비</h1>
-        <div class="nav-buttons">
-            <button id="backBtn" class="nav-btn" onclick="goBack()" style="display:none;">⬅️ 뒤로</button>
-            <button id="homeBtn" class="nav-btn" onclick="resetSteps()" style="display:none;">🏠 홈</button>
-            <button id="themeToggle" class="nav-btn">🌙</button>
-        </div>
+        <button id="themeToggle" class="theme-toggle">🌙</button>
+    </div>
+
+    <div id="navContainer" class="nav-buttons-container">
+        <button id="backBtn" class="nav-btn" onclick="goBack()">⬅️ 뒤로가기</button>
+        <button id="homeBtn" class="nav-btn" onclick="resetSteps()">🏠 홈으로</button>
     </div>
 
     <div id="gpsSection" class="gps-section">
@@ -135,8 +141,7 @@
     const buttonGrid = document.getElementById('buttonGrid');
     const cardList = document.getElementById('cardList');
     const themeToggle = document.getElementById('themeToggle');
-    const backBtn = document.getElementById('backBtn');
-    const homeBtn = document.getElementById('homeBtn');
+    const navContainer = document.getElementById('navContainer');
     const stepContainer = document.getElementById('stepContainer');
 
     // 다크모드 제어
@@ -208,10 +213,9 @@
         }
     }
 
-    // 네비게이션 버튼 가시성 업데이트
+    // 네비게이션 영역 표시 제어 (1단계일 땐 숨김, 2단계부터 활성화)
     function updateNav() {
-        backBtn.style.display = currentStep > 1 ? 'flex' : 'none';
-        homeBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+        navContainer.style.display = currentStep > 1 ? 'grid' : 'none';
     }
 
     // 뒤로가기 버튼 로직
@@ -300,7 +304,7 @@
         renderFinalCards(selectedApt, dong);
     }
 
-    // 최종 화면 출력 (이미지와 완전히 동일한 위아래 구조 및 3열 카드 격자 배치)
+    // 최종 화면 출력 (요청에 부합하는 리스트형 세로 누적 형태)
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
         const filtered = data.filter(item => item.아파트 === apt && String(item.동) === String(dong));
@@ -310,21 +314,26 @@
             return;
         }
 
+        // 전체 <공동비번> 상단 타이틀 배치
+        const mainTitle = document.createElement('div');
+        mainTitle.className = 'result-main-title';
+        mainTitle.textContent = '<공동비번>';
+        cardList.appendChild(mainTitle);
+
         filtered.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
             
-            const cleanDong = String(item.동).replace(/동/g, '').trim();
+            // 라인 텍스트가 숫자만 있을 경우 '라인' 문자 결합 예외 처리
+            let lineText = String(item.라인).includes('라인') ? item.라인 : `${item.라인}라인`;
             
             card.innerHTML = `
-                <div class="card-info-area">
-                    <div class="apt-name">${cleanDong}동</div>
-                    <div class="line-info">${item.라인}라인</div>
+                <div class="line-info">&lt;${lineText}&gt;</div>
+                <div class="pwd-box">
+                    <span class="pwd-highlight">${item.비번 || '-'}</span>
                 </div>
-                <div class="card-body-area">
-                    <div class="pwd-box">
-                        <span class="pwd-highlight">${item.비번 || '-'}</span>
-                    </div>
+                <div class="card-footer">
+                    <div class="type-info">기기: ${item.공동 || '기본'}</div>
                     <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">수정</button>
                 </div>
             `;
