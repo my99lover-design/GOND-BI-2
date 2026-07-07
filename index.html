@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🔑 김포B 공비</title>
     <style>
-        :root { --bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #3b82f6; --text-main: #111827; --text-sub: #6b7280; --accent: #ef4444; --border: #e5e7eb; --gps-btn-bg: #e0e7ff; --gps-btn-text: #4f46e5; --step-bg: #f3f4f6; }
+        :root { --bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #3b82f6; --text-main: #111827; --accent: #ef4444; --border: #e5e7eb; --step-bg: #f3f4f6; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-weight: bold; }
+        .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; font-weight: bold; }
         .gps-section { margin-bottom: 20px; display: none; }
         .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
-        .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .gps-btn { background: #e0e7ff; color: #4f46e5; border: none; padding: 14px 20px; border-radius: 16px; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; }
         .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .select-btn { background: var(--step-bg); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-weight: bold; cursor: pointer; }
@@ -26,9 +26,12 @@
 <body>
 <div class="container">
     <div class="header-area"><h1>🔑 김포B 공비</h1></div>
-    <div id="navContainer" class="nav-buttons-container"><button class="nav-btn" onclick="goBack()">⬅️ 뒤로</button><button class="nav-btn" onclick="resetSteps()">🏠 홈</button></div>
+    <div id="navContainer" class="nav-buttons-container">
+        <button class="nav-btn" onclick="goBack()">⬅️ 뒤로</button>
+        <button class="nav-btn" onclick="resetSteps()">🏠 홈</button>
+    </div>
     <div id="gpsSection" class="gps-section"><div class="gps-buttons" id="gpsButtons"></div></div>
-    <div id="stepContainer" class="step-container"><div id="buttonGrid" class="btn-grid">로딩 중...</div></div>
+    <div id="stepContainer" class="step-container"><div id="buttonGrid" class="btn-grid">데이터 로딩 중...</div></div>
     <div id="cardList" class="card-list"></div>
 </div>
 
@@ -36,34 +39,28 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxMc74RsguWtr-4Nx3w2OeTctpb8-ILGN5j41kW97YNY-0KMX4FOfdvQUKDL0UGTbxk/exec";
     let data = [], locations = {}, currentStep = 1, selectedRegion = "", selectedApt = "";
 
-    // 하버사인 거리 계산 (미터 단위)
-    function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
+    // 1. 데이터 로딩 최적화
     async function loadData() {
-        const [sheetRes, locRes] = await Promise.all([fetch(GAS_URL), fetch("locations.json?_=" + Date.now())]);
-        data = await sheetRes.json();
-        locations = await locRes.json();
+        const sheetPromise = fetch(GAS_URL).then(res => res.json());
+        const locPromise = fetch("locations.json?_=" + Date.now()).then(res => res.json());
+        [data, locations] = await Promise.all([sheetPromise, locPromise]);
         resetSteps();
         initGPS();
     }
 
+    // 2. GPS 로직 (정밀도 필터링 추가)
     function initGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition((pos) => {
-            // 정확도 30m 이상이면 신뢰하지 않고 패스
-            if (pos.coords.accuracy > 30) return;
-
+            // 위치 정확도가 50m보다 크면 무시 (오차 큰 값 제거)
+            if (pos.coords.accuracy > 50) return;
+            
             const uLat = pos.coords.latitude, uLon = pos.coords.longitude;
-            const targets = Object.keys(locations).map(key => ({
-                name: key,
-                dist: getDistance(uLat, uLon, locations[key].lat, locations[key].lon)
-            })).sort((a,b) => a.dist - b.dist).slice(0, 3);
+            // 직선거리 계산 (기존 방식 복구)
+            const targets = Object.keys(locations).map(key => {
+                const loc = locations[key];
+                return { name: key, dist: Math.sqrt((loc.lat-uLat)**2 + (loc.lon-uLon)**2) };
+            }).sort((a,b) => a.dist - b.dist).slice(0, 3);
             
             const btnArea = document.getElementById('gpsButtons');
             btnArea.innerHTML = '';
@@ -79,40 +76,15 @@
         }, null, { enableHighAccuracy: true });
     }
 
-    function resetSteps() {
-        currentStep = 1; document.getElementById('navContainer').style.display = 'none';
-        renderGrid([...new Set(data.map(i => i.지역).filter(Boolean))], (r) => selectRegionStep(r));
-    }
+    // ... 나머지 함수들 (resetSteps, selectRegionStep, selectAptStep, selectDongStep, renderGrid, goBack)
+    // 이전과 동일하므로 유지 ...
+    function resetSteps() { currentStep = 1; document.getElementById('navContainer').style.display = 'none'; renderGrid([...new Set(data.map(i => i.지역).filter(Boolean))], (r) => selectRegionStep(r)); }
+    function selectRegionStep(region) { currentStep = 2; document.getElementById('navContainer').style.display = 'grid'; selectedRegion = region; renderGrid([...new Set(data.filter(i => i.지역 === region).map(i => i.아파트).filter(Boolean))], (a) => selectAptStep(a)); }
+    function selectAptStep(apt) { currentStep = 3; selectedApt = apt; renderGrid([...new Set(data.filter(i => i.아파트 === apt).map(i => i.동).filter(Boolean))], (d) => selectDongStep(d)); }
+    function selectDongStep(dong) { currentStep = 4; document.getElementById('stepContainer').style.display = 'none'; document.getElementById('cardList').innerHTML = data.filter(i => i.동 === dong).map(i => `<div class="card"><div class="line-info">${i.라인}라인</div><div class="pwd-box">${i.비번}</div></div>`).join(''); }
+    function renderGrid(arr, callback) { const grid = document.getElementById('buttonGrid'); grid.innerHTML = ''; arr.forEach(item => { const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = item; btn.onclick = () => callback(item); grid.appendChild(btn); }); document.getElementById('stepContainer').style.display = 'block'; document.getElementById('cardList').innerHTML = ''; }
+    function goBack() { if(currentStep === 2) resetSteps(); else if(currentStep === 3) selectRegionStep(selectedRegion); else if(currentStep === 4) selectAptStep(selectedApt); }
 
-    function selectRegionStep(region) {
-        currentStep = 2; document.getElementById('navContainer').style.display = 'grid';
-        selectedRegion = region;
-        renderGrid([...new Set(data.filter(i => i.지역 === region).map(i => i.아파트).filter(Boolean))], (a) => selectAptStep(a));
-    }
-
-    function selectAptStep(apt) {
-        currentStep = 3; selectedApt = apt;
-        renderGrid([...new Set(data.filter(i => i.아파트 === apt).map(i => i.동).filter(Boolean))], (d) => selectDongStep(d));
-    }
-
-    function selectDongStep(dong) {
-        currentStep = 4; document.getElementById('stepContainer').style.display = 'none';
-        document.getElementById('cardList').innerHTML = data.filter(i => i.동 === dong).map(i => `<div class="card"><div class="line-info">${i.라인}라인</div><div class="pwd-box">${i.비번}</div></div>`).join('');
-    }
-
-    function renderGrid(arr, callback) {
-        const grid = document.getElementById('buttonGrid');
-        grid.innerHTML = '';
-        arr.forEach(item => {
-            const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = item;
-            btn.onclick = () => callback(item);
-            grid.appendChild(btn);
-        });
-        document.getElementById('stepContainer').style.display = 'block';
-        document.getElementById('cardList').innerHTML = '';
-    }
-
-    function goBack() { if(currentStep > 1) currentStep === 2 ? resetSteps() : currentStep === 3 ? selectRegionStep(selectedRegion) : selectAptStep(selectedApt); }
     loadData();
 </script>
 </body>
