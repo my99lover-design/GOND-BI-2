@@ -170,40 +170,53 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // ⚡ [오피스텔 대응 업그레이드] 아파트 컬럼 외에 동 컬럼에 있는 오피스텔명도 GPS 매칭
+    // 🎯 [GPS 거리 정렬 로직 완전 수정] 모든 좌표 정렬 후 상위 3개 추출
     function initGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition((position) => {
             const uLat = position.coords.latitude; const uLon = position.coords.longitude;
-            const uniqueTargets = {};
+            const targetList = [];
+            const processedNames = new Set();
             
-            data.forEach(item => {
-                // 1. 아파트 컬럼 기준 매칭 확인
-                if (item.아파트 && locations[item.아파트] && !uniqueTargets[item.아파트]) {
-                    uniqueTargets[item.아파트] = { name: item.아파트, type: 'apt', region: item.지역, targetDong: '', dist: getDistance(uLat, uLon, locations[item.아파트].lat, locations[item.아파트].lon) };
+            // 1. locations.json에 있는 모든 이름들을 돌며 거리 우선 계산
+            for (const key in locations) {
+                if (processedNames.has(key)) continue;
+                
+                const loc = locations[key];
+                const distance = getDistance(uLat, uLon, loc.lat, loc.lon);
+                
+                if (distance === Infinity) continue;
+                
+                // 구글 시트 데이터에서 해당 건물의 정보를 교차 탐색
+                const aptMatch = data.find(item => item.아파트 === key);
+                const dongMatch = data.find(item => item.동 === key);
+                
+                if (aptMatch) {
+                    targetList.push({ name: key, type: 'apt', region: aptMatch.지역, parentApt: '', dist: distance });
+                    processedNames.add(key);
+                } else if (dongMatch) {
+                    targetList.push({ name: key, type: 'officetel', region: dongMatch.지역, parentApt: dongMatch.아파트, dist: distance });
+                    processedNames.add(key);
                 }
-                // 2. 동 컬럼 기준 매칭 확인 (오피스텔 독자 명칭 대응)
-                if (item.동 && locations[item.동] && !uniqueTargets[item.동]) {
-                    uniqueTargets[item.동] = { name: item.동, type: 'officetel', region: item.지역, parentApt: item.아파트, dist: getDistance(uLat, uLon, locations[item.동].lat, locations[item.동].lon) };
-                }
-            });
+            }
             
-            const sorted = Object.values(uniqueTargets).filter(t => t.dist !== Infinity).sort((a,b) => a.dist - b.dist).slice(0,3);
-            if (sorted.length > 0) {
+            // 2. 물리적 거리가 가까운 순으로 칼같이 정렬 후 상위 3개 컷
+            const sortedTargets = targetList.sort((a, b) => a.dist - b.dist).slice(0, 3);
+            
+            // 3. UI 렌더링
+            if (sortedTargets.length > 0) {
                 const btnArea = document.getElementById('gpsButtons');
                 btnArea.innerHTML = '';
-                sorted.forEach(target => {
+                sortedTargets.forEach(target => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
-                    btn.textContent = target.type === 'officetel' ? `🏢 ${target.name}` : `🏢 ${target.name}`;
+                    btn.textContent = `🏢 ${target.name}`;
                     
                     btn.addEventListener('click', () => {
                         selectedRegion = target.region;
                         if (target.type === 'officetel') {
-                            // 오피스텔인 경우 동 단계를 스킵하고 최종 4단계로 다이렉트 진입
                             selectedApt = target.parentApt;
                             selectDongStep(target.name);
                         } else {
-                            // 일반 아파트인 경우 기존처럼 3단계 동 선택으로 진입
                             selectAptStep(target.name);
                         }
                     });
@@ -268,7 +281,6 @@
         if (currentStep === 2) resetSteps();
         else if (currentStep === 3) selectRegionStep(selectedRegion);
         else if (currentStep === 4) {
-            // 오피스텔 직통 진입 상태에서 뒤로가기 시 1단계나 2단계 유연한 대응 처리
             if(selectedApt && data.some(d => d.아파트 === selectedApt && d.동 === selectedDong)) {
                 selectAptStep(selectedApt);
             } else {
@@ -277,7 +289,6 @@
         }
     }
 
-    // 동 선택 화면용 공동비번 헤더 (아파트 이름 기준 검색)
     function showCommonPwdHeader(aptName) {
         const filteredApt = data.filter(item => item.아파트 === aptName);
         const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
@@ -376,7 +387,6 @@
 
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
-        // 아파트명이 명시된 경우와 그렇지 않은 오피스텔 독자 매칭 통합 처리
         const filtered = data.filter(item => {
             if (apt) {
                 return item.아파트 === apt && String(item.동) === String(dong);
