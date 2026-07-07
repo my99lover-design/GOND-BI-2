@@ -56,7 +56,9 @@
         .line-info { font-size: 1.15rem; font-weight: 800; color: var(--primary); text-align: left; }
         
         /* 비밀번호 박스 영역 */
-        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; }
+        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; margin-bottom: 4px; }
+        .pwd-container { display: flex; flex-direction: column; gap: 12px; }
+        .pwd-row { display: flex; flex-direction: column; gap: 4px; }
         
         /* 라인별 비밀번호 글씨크기 */
         .pwd-highlight { font-size: 1.02rem; font-weight: 700; color: var(--accent); letter-spacing: 0.3px; white-space: pre-wrap; word-break: break-all; }
@@ -170,7 +172,7 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // 🎯 [GPS 거리 정렬 로직 완전 수정] 모든 좌표 정렬 후 상위 3개 추출
+    // GPS 처리
     function initGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition((position) => {
@@ -178,7 +180,6 @@
             const targetList = [];
             const processedNames = new Set();
             
-            // 1. locations.json에 있는 모든 이름들을 돌며 거리 우선 계산
             for (const key in locations) {
                 if (processedNames.has(key)) continue;
                 
@@ -187,7 +188,6 @@
                 
                 if (distance === Infinity) continue;
                 
-                // 구글 시트 데이터에서 해당 건물의 정보를 교차 탐색
                 const aptMatch = data.find(item => item.아파트 === key);
                 const dongMatch = data.find(item => item.동 === key);
                 
@@ -200,10 +200,8 @@
                 }
             }
             
-            // 2. 물리적 거리가 가까운 순으로 칼같이 정렬 후 상위 3개 컷
             const sortedTargets = targetList.sort((a, b) => a.dist - b.dist).slice(0, 3);
             
-            // 3. UI 렌더링
             if (sortedTargets.length > 0) {
                 const btnArea = document.getElementById('gpsButtons');
                 btnArea.innerHTML = '';
@@ -227,7 +225,7 @@
         });
     }
 
-    // 데이터 로드 및 캐싱 로직
+    // 데이터 동기화
     async function loadData() {
         const cachedData = localStorage.getItem('pwd_data_cache');
         const cachedLoc = localStorage.getItem('loc_data_cache');
@@ -301,12 +299,11 @@
         commonPwdStandalone.style.display = 'block';
     }
 
-    // 1단계: 지역 선택
+    // 1단계
     function resetSteps() {
         currentStep = 1;
         selectedRegion = ""; selectedApt = ""; selectedDong = "";
         updateNav();
-        
         commonPwdStandalone.style.display = 'none'; 
         stepContainer.style.display = 'block';
         cardList.innerHTML = ''; 
@@ -323,13 +320,12 @@
         });
     }
 
-    // 2단계: 아파트 선택
+    // 2단계
     function selectRegionStep(region) {
         currentStep = 2;
         selectedRegion = region;
         selectedApt = ""; selectedDong = "";
         updateNav();
-        
         commonPwdStandalone.style.display = 'none'; 
         stepContainer.style.display = 'block';
         cardList.innerHTML = ''; 
@@ -346,15 +342,13 @@
         });
     }
 
-    // 3단계: 동 선택
+    // 3단계
     function selectAptStep(apt) {
         currentStep = 3;
         selectedApt = apt;
         selectedDong = "";
         updateNav();
-        
         showCommonPwdHeader(apt);
-
         stepContainer.style.display = 'block';
         cardList.innerHTML = ''; 
         
@@ -365,21 +359,18 @@
         dongs.forEach(dong => {
             const btn = document.createElement('button');
             btn.className = 'select-btn';
-            
             const dongNumber = String(dong).replace(/동/g, '').trim();
             btn.textContent = dongNumber; 
-            
             btn.addEventListener('click', () => selectDongStep(dong));
             buttonGrid.appendChild(btn);
         });
     }
 
-    // 4단계: 결과 화면 출력
+    // 4단계: 결과 화면 출력 (동일 라인 카드 병합 로직 구현)
     function selectDongStep(dong) {
         currentStep = 4;
         selectedDong = dong;
         updateNav();
-        
         commonPwdStandalone.style.display = 'none'; 
         stepContainer.style.display = 'none';
         renderFinalCards(selectedApt, dong);
@@ -400,19 +391,42 @@
             return;
         }
 
-        filtered.forEach(item => {
+        // 라인별로 데이터를 그룹화 (카드 중복 방지)
+        const groupedByLine = filtered.reduce((acc, curr) => {
+            let lineText = String(curr.라인).includes('라인') ? curr.라인 : `${curr.라인}라인`;
+            if (!acc[lineText]) acc[lineText] = [];
+            acc[lineText].push(curr);
+            return acc;
+        }, {});
+
+        // 라인 번호 기준 오름차순 정렬 (1,2라인 -> 3,4라인 순)
+        const sortedLines = Object.keys(groupedByLine).sort((a, b) => {
+            const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+            const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
+            return numA - numB;
+        });
+
+        // 렌더링 시작
+        sortedLines.forEach(lineText => {
             const card = document.createElement('div');
             card.className = 'card';
             
-            let lineText = String(item.라인).includes('라인') ? item.라인 : `${item.라인}라인`;
-            
+            // 하나의 라인 카드 내부에 복수의 패스워드와 수정 버튼 배치 구조화
+            let rowsHtml = groupedByLine[lineText].map(item => `
+                <div class="pwd-row">
+                    <div class="pwd-box">
+                        <span class="pwd-highlight">${item.비번 || '-'}</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">수정</button>
+                    </div>
+                </div>
+            `).join('');
+
             card.innerHTML = `
                 <div class="line-info">&lt;${lineText}&gt;</div>
-                <div class="pwd-box">
-                    <span class="pwd-highlight">${item.비번 || '-'}</span>
-                </div>
-                <div class="card-footer">
-                    <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">수정</button>
+                <div class="pwd-container">
+                    ${rowsHtml}
                 </div>
             `;
             cardList.appendChild(card);
@@ -451,7 +465,7 @@
         modal.style.display = 'flex';
     }
 
-    // 서버 추가/수정 요청
+    // 서버 요청들
     async function submitForm() {
         const rowId = document.getElementById('formRowId').value;
         const payload = {
@@ -478,7 +492,6 @@
         } catch (e) { alert("저장 실패 ❌"); loadData(); }
     }
 
-    // 서버 삭제 요청
     async function deleteData() {
         if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
         const rowId = document.getElementById('formRowId').value;
