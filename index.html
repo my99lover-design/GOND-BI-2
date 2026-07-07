@@ -86,39 +86,32 @@
 <body>
 
 <div class="container">
-    <!-- 상단 헤더 영역 -->
     <div class="header-area">
         <h1>🔑 김포B 공비</h1>
         <button id="themeToggle" class="theme-toggle">🌙</button>
     </div>
 
-    <!-- 🧭 대형 상시 네비게이션 버튼 구조 -->
     <div id="navContainer" class="nav-buttons-container">
         <button id="backBtn" class="nav-btn" onclick="goBack()">⬅️ 뒤로가기</button>
         <button id="homeBtn" class="nav-btn" onclick="resetSteps()">🏠 홈으로</button>
     </div>
 
-    <!-- GPS 메뉴 -->
     <div id="gpsSection" class="gps-section">
         <div class="gps-title">📍 내 주변(GPS)</div>
         <div id="gpsButtons" class="gps-buttons"></div>
     </div>
 
-    <!-- 📌 동 선택창 상단에만 노출될 공동비번 영역 -->
     <div id="commonPwdStandalone" class="common-pwd-area"></div>
     
-    <!-- 계층형 선택 영역 -->
     <div id="stepContainer" class="step-container">
         <div id="buttonGrid" class="btn-grid">데이터를 불러오는 중... ⏳</div>
     </div>
     
-    <!-- 최종 비번 출력 목록 -->
     <div id="cardList" class="card-list"></div>
 </div>
 
 <button class="add-floating-btn" onclick="openAddModal()">+</button>
 
-<!-- 수정/추가 모달 창 -->
 <div id="editorModal" class="modal">
     <div class="modal-content">
         <h3 id="modalTitle">데이터 관리</h3>
@@ -207,23 +200,58 @@
         });
     }
 
-    // 데이터 로드
+    // ⚡ [속도 최적화] 로컬 캐시 결합형 데이터 로드 함수
     async function loadData() {
-        try {
-            buttonGrid.innerHTML = '<div class="status-msg">데이터 동기화 중... ⏳</div>';
-            const sheetRes = await fetch(GAS_WEB_APP_URL);
-            data = await sheetRes.json();
+        // 1. 먼저 기존 캐시 데이터가 있는지 확인하여 0.1초 만에 즉시 렌더링
+        const cachedData = localStorage.getItem('pwd_data_cache');
+        const cachedLoc = localStorage.getItem('loc_data_cache');
+        
+        if (cachedData) {
+            data = JSON.parse(cachedData);
+            if (cachedLoc) locations = JSON.parse(cachedLoc);
             
+            // 캐시 데이터가 있다면 로딩 문구 없이 즉시 UI 구성
+            refreshUIByCurrentStep();
+            initGPS();
+        } else {
+            // 캐시가 완전히 처음인 경우에만 로딩 표시
+            buttonGrid.innerHTML = '<div class="status-msg">데이터 동기화 중... ⏳</div>';
+        }
+
+        // 2. 사용자가 첫 화면을 보는 도중 백그라운드에서 최신 데이터를 서버에서 조용히 가져옴
+        try {
+            const sheetRes = await fetch(GAS_WEB_APP_URL);
+            const newData = await sheetRes.json();
+            
+            let newLoc = {};
             try {
                 const locRes = await fetch(LOCATIONS_JSON_URL + `?_=${Date.now()}`);
-                locations = await locRes.json();
+                newLoc = await locRes.json();
             } catch(e) { console.log(e); }
 
-            resetSteps();
+            // 가져온 데이터를 브라우저 메모리에 최신화하여 저장
+            localStorage.setItem('pwd_data_cache', JSON.stringify(newData));
+            localStorage.setItem('loc_data_cache', JSON.stringify(newLoc));
+            
+            data = newData;
+            locations = newLoc;
+
+            // 백그라운드 로드가 끝나면 데이터를 최신 내용으로 부드럽게 새로고침 함
+            refreshUIByCurrentStep();
             initGPS();
         } catch (error) {
-            buttonGrid.innerHTML = '<div class="status-msg">통신 실패 ❌ 설정을 확인하세요.</div>';
+            if (!cachedData) {
+                buttonGrid.innerHTML = '<div class="status-msg">통신 실패 ❌ 연결을 확인하세요.</div>';
+            }
         }
+    }
+
+    // 현재 단계 상태에 맞춰 UI를 재그려주는 스마트 새로고침 래퍼 함수
+    function refreshUIByCurrentStep() {
+        if (currentStep === 1) resetSteps();
+        else if (currentStep === 2) selectRegionStep(selectedRegion);
+        else if (currentStep === 3) selectAptStep(selectedApt);
+        else if (currentStep === 4) selectDongStep(selectedDong);
     }
 
     function updateNav() {
@@ -236,7 +264,6 @@
         else if (currentStep === 4) selectAptStep(selectedApt);
     }
 
-    // 특정 아파트의 공동비번 정보 렌더링 도우미 함수
     function showCommonPwdHeader(aptName) {
         const filteredApt = data.filter(item => item.아파트 === aptName);
         const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
@@ -294,14 +321,13 @@
         });
     }
 
-    // 3단계: 동 선택 (★ 이 화면 상단에서만 공동비번이 노출됩니다)
+    // 3단계: 동 선택
     function selectAptStep(apt) {
         currentStep = 3;
         selectedApt = apt;
         selectedDong = "";
         updateNav();
         
-        // 동 목록 상단에 공동비번 노출
         showCommonPwdHeader(apt);
 
         stepContainer.style.display = 'block';
@@ -323,20 +349,17 @@
         });
     }
 
-    // 최종 완료 (결과 화면출력)
+    // 4단계: 결과 화면 출력
     function selectDongStep(dong) {
         currentStep = 4;
         selectedDong = dong;
         updateNav();
         
-        // 4단계 창에서는 공동비번을 보이지 않게 숨김 처리
         commonPwdStandalone.style.display = 'none'; 
-        
         stepContainer.style.display = 'none';
         renderFinalCards(selectedApt, dong);
     }
 
-    // 최종 화면 출력
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
         const filtered = data.filter(item => item.아파트 === apt && String(item.동) === String(dong));
@@ -346,7 +369,6 @@
             return;
         }
 
-        // 라인별 비밀번호 리스트 출력 (상단에 공동비번 없이 깔끔하게 시작)
         filtered.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
@@ -420,6 +442,8 @@
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+            // 저장 후에는 강제 만료 처리하여 새 데이터 수신
+            localStorage.removeItem('pwd_data_cache');
             loadData();
         } catch (e) { alert("저장 실패 ❌"); loadData(); }
     }
@@ -436,6 +460,7 @@
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
+            localStorage.removeItem('pwd_data_cache');
             loadData();
         } catch (e) { alert("삭제 실패 ❌"); loadData(); }
     }
