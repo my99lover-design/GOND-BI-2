@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🔑 공동현관 통합 관리 매니저</title>
+    <title>🔑 공동현관 비밀번호 폴더</title>
     <style>
         :root {
             --bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #3b82f6; --text-main: #111827;
@@ -15,35 +15,40 @@
         }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
         .container { width: 100%; max-width: 500px; padding-bottom: 80px; }
-        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h1 { font-size: 1.3rem; margin: 0; }
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { font-size: 1.2rem; margin: 0; cursor: pointer; }
         .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 0.85rem; }
         
-        /* GPS */
-        .gps-section { margin-bottom: 25px; display: none; }
-        .gps-title { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 8px; font-weight: bold; }
+        /* GPS 영역 */
+        .gps-section { margin-bottom: 20px; display: none; }
+        .gps-title { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 6px; font-weight: bold; }
         .gps-buttons { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
         .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
 
-        /* 검색창 */
-        .search-container { position: sticky; top: 10px; z-index: 100; margin-bottom: 20px; }
-        .search-box { width: 100%; padding: 15px; font-size: 1rem; border: 2px solid var(--border); border-radius: 16px; box-sizing: border-box; outline: none; background-color: var(--card-bg); color: var(--text-main); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        /* 경로 표시 내비게이션 (Home > 구래 > 데세리브) */
+        .nav-crumbs { font-size: 0.9rem; font-weight: bold; color: var(--primary); margin-bottom: 15px; display: flex; align-items: center; gap: 5px; }
+        .nav-link { cursor: pointer; text-decoration: underline; }
 
-        /* 카드 및 수정버튼 */
+        /* 대형 선택 버튼 스타일 (지역, 아파트, 동 선택용) */
+        .menu-grid { display: flex; flex-direction: column; gap: 10px; }
+        .menu-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); padding: 16px; border-radius: 14px; font-size: 1.05rem; font-weight: bold; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.1s; }
+        .menu-btn:active { transform: scale(0.98); background-color: var(--border); }
+        .menu-btn .arrow { color: var(--text-sub); font-size: 0.9rem; }
+
+        /* 최종 결과 카드 */
         .card-list { display: flex; flex-direction: column; gap: 12px; }
         .card { background: var(--card-bg); padding: 16px; border-radius: 16px; border: 1px solid var(--border); position: relative; }
         .card-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; }
         .apt-name { font-weight: 800; font-size: 1.1rem; }
         .line-info { font-size: 0.85rem; color: var(--text-sub); margin-top: 2px; }
-        .region-tag { background: var(--gps-btn-bg); color: var(--primary); padding: 4px 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; }
         .card-body { font-size: 0.9rem; border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: space-between; align-items: end; }
-        .pwd-highlight { font-size: 1.25rem; font-weight: 800; color: var(--accent); }
-        .edit-trigger-btn { background: none; border: 1px solid var(--border); color: var(--text-sub); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+        .pwd-highlight { font-size: 1.25rem; font-weight: 800; color: var(--accent); margin-top: 4px; }
+        .edit-trigger-btn { background: none; border: 1px solid var(--border); color: var(--text-sub); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
 
         /* 하단 고정 추가 버튼 */
         .add-floating-btn { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: 25px; font-size: 1.8rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; z-index: 200; }
 
-        /* 입력/수정 모달창 팝업 */
+        /* 모달창 팝업 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card-bg); padding: 20px; border-radius: 20px; width: 90%; max-width: 400px; box-sizing: border-box; }
         .modal h3 { margin-top: 0; margin-bottom: 15px; }
@@ -55,27 +60,25 @@
         .btn-submit { background: var(--primary); color: white; }
         .btn-cancel { background: var(--border); color: var(--text-main); }
         .btn-delete { background: var(--accent); color: white; }
-        .no-result { text-align: center; color: var(--text-sub); margin-top: 30px; }
+        .status-msg { text-align: center; color: var(--text-sub); margin-top: 30px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header-area">
-        <h1>🔑 김포B 공비</h1>
+        <h1 onclick="goHome()">🏠 김포B 공비</h1>
         <button id="themeToggle" class="theme-toggle">🌙 다크 모드</button>
     </div>
 
     <div id="gpsSection" class="gps-section">
-        <div class="gps-title">📍 내 주변 건물 (GPS)</div>
+        <div class="gps-title">📍 내 주변(GPS)</div>
         <div id="gpsButtons" class="gps-buttons"></div>
     </div>
     
-    <div class="search-container">
-        <input type="text" id="searchInput" class="search-box" placeholder="아파트, 동, 라인 검색...">
-    </div>
+    <div id="navCrumbs" class="nav-crumbs"></div>
     
-    <div id="cardList" class="card-list">데이터를 불러오는 중... ⏳</div>
+    <div id="mainContent" class="menu-grid">데이터를 불러오는 중... ⏳</div>
 </div>
 
 <button class="add-floating-btn" onclick="openAddModal()">+</button>
@@ -84,11 +87,11 @@
     <div class="modal-content">
         <h3 id="modalTitle">데이터 관리</h3>
         <input type="hidden" id="formRowId">
-        <div class="form-group"><label>지역</label><input type="text" id="formRegion"></div>
+        <div class="form-group"><label>지역 (예: 구래, 운양)</label><input type="text" id="formRegion"></div>
         <div class="form-group"><label>아파트 이름</label><input type="text" id="formApt"></div>
         <div class="form-group"><label>공동현관 기기종류</label><input type="text" id="formType"></div>
-        <div class="form-group"><label>동</label><input type="text" id="formDong"></div>
-        <div class="form-group"><label>라인</label><input type="text" id="formLine"></div>
+        <div class="form-group"><label>동 (숫자만)</label><input type="text" id="formDong"></div>
+        <div class="form-group"><label>라인 (예: 1,2 또는 3,4)</label><input type="text" id="formLine"></div>
         <div class="form-group"><label>비밀번호</label><input type="text" id="formPwd"></div>
         
         <div class="modal-buttons">
@@ -100,17 +103,22 @@
 </div>
 
 <script>
-    // ⚠️ 아래 큰따옴표 안에 아까 발급받은 진짜 구글 웹앱 주소(https://script.google.com/...)를 붙여넣으세요!
+    // ⚠️ 구글 Apps Script 웹앱 URL을 꼭 넣어주세요!
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxMc74RsguWtr-4Nx3w2OeTctpb8-ILGN5j41kW97YNY-0KMX4FOfdvQUKDL0UGTbxk/exec";
-    
     const LOCATIONS_JSON_URL = "locations.json"; 
 
     let data = [];
     let locations = {};
-    const searchInput = document.getElementById('searchInput');
-    const cardList = document.getElementById('cardList');
+    
+    // 현재 사용자가 선택해서 들어간 상태 기억 변수
+    let currentRegion = null;
+    let currentApt = null;
+
+    const mainContent = document.getElementById('mainContent');
+    const navCrumbs = document.getElementById('navCrumbs');
     const themeToggle = document.getElementById('themeToggle');
 
+    // 다크모드
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
     themeToggle.textContent = currentTheme === 'dark' ? '☀️ 라이트 모드' : '🌙 다크 모드';
@@ -121,6 +129,7 @@
         themeToggle.textContent = theme === 'dark' ? '☀️ 라이트 모드' : '🌙 다크 모드';
     });
 
+    // 거리 계산
     function getDistance(lat1, lon1, lat2, lon2) {
         if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
         const R = 6371;
@@ -130,6 +139,7 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
+    // GPS 초기화
     function initGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition((position) => {
@@ -138,7 +148,7 @@
             data.forEach(item => {
                 const loc = locations[item.아파트];
                 if (item.아파트 && loc && !uniqueApts[item.아파트]) {
-                    uniqueApts[item.아파트] = { name: item.아파트, dist: getDistance(uLat, uLon, loc.lat, loc.lon) };
+                    uniqueApts[item.아파트] = { name: item.아파트, region: item.지역, dist: getDistance(uLat, uLon, loc.lat, loc.lon) };
                 }
             });
             const sorted = Object.values(uniqueApts).filter(a => a.dist !== Infinity).sort((a,b) => a.dist - b.dist).slice(0,3);
@@ -148,7 +158,10 @@
                 sorted.forEach(apt => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
                     btn.textContent = `🏢 ${apt.name} (${apt.dist < 1 ? Math.round(apt.dist*1000)+'m' : apt.dist.toFixed(1)+'km'})`;
-                    btn.addEventListener('click', () => { searchInput.value = apt.name; renderCards(apt.name); });
+                    // GPS 버튼 누르면 해당 지역과 아파트를 자동 셋팅하고 동 목록으로 점프
+                    btn.addEventListener('click', () => {
+                        selectApt(apt.region, apt.name);
+                    });
                     btnArea.appendChild(btn);
                 });
                 document.getElementById('gpsSection').style.display = 'block';
@@ -156,9 +169,10 @@
         });
     }
 
+    // 초기 데이터 로딩
     async function loadData() {
         try {
-            cardList.innerHTML = "데이터를 동기화 중... ⏳";
+            mainContent.innerHTML = "<div class='status-msg'>데이터 실시간 동기화 중... ⏳</div>";
             const sheetRes = await fetch(GAS_WEB_APP_URL);
             data = await sheetRes.json();
             
@@ -167,53 +181,94 @@
                 locations = await locRes.json();
             } catch(e) { console.log(e); }
 
-            renderCards();
+            renderView();
             initGPS();
         } catch (error) {
-            cardList.innerHTML = '<p class="no-result">통신 실패 ❌ 구글 웹앱 URL을 확인하세요.</p>';
+            mainContent.innerHTML = '<p class="status-msg">통신 실패 ❌ 구글 웹앱 URL을 확인하세요.</p>';
         }
     }
 
-    function renderCards(filterText = '') {
-        cardList.innerHTML = '';
-        const query = filterText.toLowerCase().trim();
-        const filtered = data.filter(item => {
-            if (!query) return true;
-            return (item.아파트 && item.아파트.toLowerCase().includes(query)) || (item.지역 && item.지역.toLowerCase().includes(query)) || (item.동 && String(item.동).includes(query)) || (item.라인 && String(item.라인).includes(query));
-        });
+    // 메인 화면 통합 렌더러 (상태에 따라 다른 화면을 그려줌)
+    function renderView() {
+        mainContent.innerHTML = '';
+        updateCrumbs();
 
-        if (filtered.length === 0) { cardList.innerHTML = '<p class="no-result">결과 없음 🔍</p>'; return; }
-
-        filtered.forEach(item => {
-            const card = document.createElement('div'); card.className = 'card';
-            card.innerHTML = `
-                <div class="card-header">
-                    <div class="apt-info">
-                        <div class="apt-name">${item.아파트 || ''} ${item.동 || ''}동</div>
-                        <div class="line-info">${item.라인 || ''} 라인</div>
+        // 1단계: 초기 홈 화면 (지역 목록 보여주기)
+        if (!currentRegion && !currentApt) {
+            const regions = [...new Set(data.map(item => item.지역))].filter(Boolean);
+            if(regions.length === 0) { mainContent.innerHTML = "<p class='status-msg'>등록된 데이터가 없습니다. 아래 + 버튼을 눌러 추가하세요!</p>"; return;}
+            
+            regions.forEach(region => {
+                const btn = document.createElement('button'); btn.className = 'menu-btn';
+                btn.innerHTML = `<span>📍 ${region}</span><span class="arrow">▶</span>`;
+                btn.onclick = () => selectRegion(region);
+                mainContent.appendChild(btn);
+            });
+        } 
+        // 2단계: 특정 지역 클릭 후 (해당 지역의 아파트 목록 보여주기)
+        else if (currentRegion && !currentApt) {
+            const filteredApts = data.filter(item => item.지역 === currentRegion);
+            const apts = [...new Set(filteredApts.map(item => item.아파트))].filter(Boolean);
+            
+            apts.forEach(apt => {
+                const btn = document.createElement('button'); btn.className = 'menu-btn';
+                btn.innerHTML = `<span>🏢 ${apt}</span><span class="arrow">▶</span>`;
+                btn.onclick = () => selectApt(currentRegion, apt);
+                mainContent.appendChild(btn);
+            });
+        } 
+        // 3단계: 특정 아파트 클릭 후 (해당 아파트의 동 목록 및 비번 최종 카드 레이아웃)
+        else if (currentRegion && currentApt) {
+            const finalItems = data.filter(item => item.지역 === currentRegion && item.아파트 === currentApt);
+            
+            finalItems.forEach(item => {
+                const card = document.createElement('div'); card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="apt-info">
+                            <div class="apt-name">${item.동 || ''}동 (${item.라인 || '전체'}라인)</div>
+                        </div>
+                        <span class="region-tag">${item.공동 || '공동현관'}</span>
                     </div>
-                    <span class="region-tag">${item.지역 || ''}</span>
-                </div>
-                <div class="card-body">
-                    <div>
-                        <div class="type-info">종류: ${item.공동 || ''}</div>
-                        <div class="pwd-highlight">${item.비번 || ''}</div>
+                    <div class="card-body">
+                        <div>
+                            <div class="pwd-highlight">🔑 ${item.비번 || '없음'}</div>
+                        </div>
+                        <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">⚙️ 수정/삭제</button>
                     </div>
-                    <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">⚙️ 수정</button>
-                </div>
-            `;
-            cardList.appendChild(card);
-        });
+                `;
+                mainContent.appendChild(card);
+            });
+        }
     }
 
+    // 내비게이션 경로 업데이트 기능
+    function updateCrumbs() {
+        navCrumbs.innerHTML = '';
+        let html = `<span class="nav-link" onclick="goHome()">Home</span>`;
+        if (currentRegion) {
+            html += ` ➡️ <span class="nav-link" onclick="selectRegion('${currentRegion}')">${currentRegion}</span>`;
+        }
+        if (currentApt) {
+            html += ` ➡️ <span style="color:var(--text-main); font-weight:800;">${currentApt}</span>`;
+        }
+        navCrumbs.innerHTML = html;
+    }
+
+    // 단계 제어 함수들
+    function goHome() { currentRegion = null; currentApt = null; renderView(); }
+    function selectRegion(region) { currentRegion = region; currentApt = null; renderView(); }
+    function selectApt(region, apt) { currentRegion = region; currentApt = apt; renderView(); }
+
+    // 모달 제어
     const modal = document.getElementById('editorModal');
     function closeModal() { modal.style.display = 'none'; }
     
     function openAddModal() {
         document.getElementById('modalTitle').textContent = "🆕 비밀번호 추가";
         document.getElementById('formRowId').value = "";
-        document.getElementById('formRegion').value = "";
-        document.getElementById('formApt').value = searchInput.value;
+        document.getElementById('formRegion').value = currentRegion || "";
+        document.getElementById('formApt').value = currentApt || "";
         document.getElementById('formType').value = "";
         document.getElementById('formDong').value = "";
         document.getElementById('formLine').value = "";
@@ -225,7 +280,7 @@
     function openEditModal(rowId) {
         const item = data.find(d => d.rowId === rowId);
         if (!item) return;
-        document.getElementById('modalTitle').textContent = "⚙️ 데이터 수정";
+        document.getElementById('modalTitle').textContent = "⚙️ 데이터 수정/삭제";
         document.getElementById('formRowId').value = item.rowId;
         document.getElementById('formRegion').value = item.지역 || '';
         document.getElementById('formApt').value = item.아파트 || '';
@@ -237,6 +292,7 @@
         modal.style.display = 'flex';
     }
 
+    // 추가/수정 서버 전송
     async function submitForm() {
         const rowId = document.getElementById('formRowId').value;
         const payload = {
@@ -251,7 +307,7 @@
         };
 
         closeModal();
-        cardList.innerHTML = "구글 시트에 동기화 중... ⏳";
+        mainContent.innerHTML = "<div class='status-msg'>구글 시트에 동기화 중... ⏳</div>";
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -259,11 +315,12 @@
         } catch (e) { alert("저장 실패 ❌"); loadData(); }
     }
 
+    // 삭제 서버 전송
     async function deleteData() {
-        if(!confirm("정말 이 비밀번호를 삭제하시겠습니까?")) return;
+        if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
         const rowId = document.getElementById('formRowId').value;
         closeModal();
-        cardList.innerHTML = "데이터 삭제 중... ⏳";
+        mainContent.innerHTML = "<div class='status-msg'>데이터 삭제 중... ⏳</div>";
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
@@ -271,7 +328,6 @@
         } catch (e) { alert("삭제 실패 ❌"); loadData(); }
     }
 
-    searchInput.addEventListener('input', (e) => renderCards(e.target.value));
     loadData();
 </script>
 </body>
