@@ -18,12 +18,12 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
         .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
         
-        /* 상단 타이틀 및 다크모드 라인 */
+        /* 상단 헤더 영역 */
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 5px; }
         h1 { font-size: 1.5rem; margin: 0; }
         .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 1.1rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* 🧭 네비게이션 버튼: 목록 바로 위, 가로로 꽉 차게 2칸 배치 */
+        /* 🧭 네비게이션 버튼 (꽉 차는 2칸 구조) */
         .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; width: 100%; }
         .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.25rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
         .nav-btn:active { background: var(--step-bg); }
@@ -41,26 +41,29 @@
         .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         
-        /* 📊 최종 비밀번호 결과창: 긴 비밀번호 나열도 한눈에 보이게 세로 누적 구조로 정리 */
+        /* 📊 최종 결과창 컨테이너 */
         .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
         
-        /* 전체 대타이틀 (<공동비번>) */
-        .result-main-title { font-size: 1.4rem; font-weight: 900; color: var(--text-main); margin-bottom: 15px; margin-top: 5px; text-align: center; width: 100%; }
+        /* ✨ 공동비번 영역 (최상단 좌측 정렬) */
+        .common-pwd-area { text-align: left; width: 100%; padding: 5px 0 10px 5px; box-sizing: border-box; }
+        .common-pwd-title { font-size: 1.3rem; font-weight: 900; color: var(--text-main); margin-bottom: 6px; }
+        .common-pwd-value { font-size: 1.15rem; font-weight: 800; color: var(--primary); background: var(--card-bg); display: inline-block; padding: 6px 12px; border-radius: 10px; border: 1px dashed var(--border); }
         
-        /* 라인별 카드 레코더 */
+        /* 라인별 카드 */
         .card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; }
         
         /* 라인 타이틀 (<1,2라인>) */
-        .line-info { font-size: 1.2rem; font-weight: 800; color: var(--primary); text-align: left; }
+        .line-info { font-size: 1.15rem; font-weight: 800; color: var(--primary); text-align: left; }
         
         /* 비밀번호 박스 영역 */
-        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 14px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; }
-        .pwd-highlight { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: 0.5px; white-space: pre-wrap; word-break: break-all; }
+        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; }
         
-        /* 하단 기기 및 관리 버튼 라인 */
-        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; border-top: 1px dashed var(--border); padding-top: 8px; }
-        .type-info { color: var(--text-sub); font-size: 0.85rem; font-weight: bold; }
-        .edit-trigger-btn { background: none; border: none; color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; text-decoration: underline; opacity: 0.7; }
+        /* ⚠️ 라인별 비밀번호 글씨크기 축소 반영 */
+        .pwd-highlight { font-size: 1.02rem; font-weight: 700; color: var(--accent); letter-spacing: 0.3px; white-space: pre-wrap; word-break: break-all; }
+        
+        /* 하단 제어 라인 ('기기' 삭제 후 깔끔하게 우측 정렬) */
+        .card-footer { display: flex; justify-content: flex-end; align-items: center; margin-top: 2px; }
+        .edit-trigger-btn { background: none; border: none; color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; text-decoration: underline; opacity: 0.7; padding: 4px 0; }
 
         /* 하단 고정 추가 버튼 */
         .add-floating-btn { position: fixed; bottom: 25px; right: 25px; background: var(--primary); color: white; border: none; width: 60px; height: 60px; border-radius: 30px; font-size: 2.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 200; }
@@ -213,12 +216,10 @@
         }
     }
 
-    // 네비게이션 영역 표시 제어 (1단계일 땐 숨김, 2단계부터 활성화)
     function updateNav() {
         navContainer.style.display = currentStep > 1 ? 'grid' : 'none';
     }
 
-    // 뒤로가기 버튼 로직
     function goBack() {
         if (currentStep === 2) resetSteps();
         else if (currentStep === 3) selectRegionStep(selectedRegion);
@@ -304,7 +305,7 @@
         renderFinalCards(selectedApt, dong);
     }
 
-    // 최종 화면 출력 (요청에 부합하는 리스트형 세로 누적 형태)
+    // 최종 화면 출력
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
         const filtered = data.filter(item => item.아파트 === apt && String(item.동) === String(dong));
@@ -314,17 +315,24 @@
             return;
         }
 
-        // 전체 <공동비번> 상단 타이틀 배치
-        const mainTitle = document.createElement('div');
-        mainTitle.className = 'result-main-title';
-        mainTitle.textContent = '<공동비번>';
-        cardList.appendChild(mainTitle);
+        // 엑셀 '공동' 컬럼에서 첫 번째 유효한 데이터 확인하여 최상단에 공동비번 정보 표기
+        const commonData = filtered.find(item => item.공동 && item.공동.trim() !== "");
+        const commonValue = commonData ? commonData.공동 : "등록 없음";
 
+        // 최상단 좌측 정렬 공동비번 영역 생성
+        const commonArea = document.createElement('div');
+        commonArea.className = 'common-pwd-area';
+        commonArea.innerHTML = `
+            <div class="common-pwd-title">&lt;공동비번&gt;</div>
+            <div class="common-pwd-value">${commonValue}</div>
+        `;
+        cardList.appendChild(commonArea);
+
+        // 라인별 비밀번호 리스트 출력
         filtered.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
             
-            // 라인 텍스트가 숫자만 있을 경우 '라인' 문자 결합 예외 처리
             let lineText = String(item.라인).includes('라인') ? item.라인 : `${item.라인}라인`;
             
             card.innerHTML = `
@@ -333,7 +341,6 @@
                     <span class="pwd-highlight">${item.비번 || '-'}</span>
                 </div>
                 <div class="card-footer">
-                    <div class="type-info">기기: ${item.공동 || '기본'}</div>
                     <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">수정</button>
                 </div>
             `;
