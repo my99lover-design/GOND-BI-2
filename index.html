@@ -23,7 +23,7 @@
         h1 { font-size: 1.5rem; margin: 0; }
         .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 1.1rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* 🧭 네비게이션 버튼 (꽉 차는 2칸 구조) */
+        /* 🧭 네비게이션 버튼 */
         .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; width: 100%; }
         .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.25rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
         .nav-btn:active { background: var(--step-bg); }
@@ -44,8 +44,8 @@
         /* 📊 최종 결과창 컨테이너 */
         .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
         
-        /* ✨ 공동비번 영역 (최상단 좌측 정렬) */
-        .common-pwd-area { text-align: left; width: 100%; padding: 5px 0 10px 5px; box-sizing: border-box; }
+        /* ✨ 공동비번 영역 (상단 좌측 정렬) */
+        .common-pwd-area { text-align: left; width: 100%; padding: 5px 0 12px 5px; box-sizing: border-box; display: none; }
         .common-pwd-title { font-size: 1.3rem; font-weight: 900; color: var(--text-main); margin-bottom: 6px; }
         .common-pwd-value { font-size: 1.15rem; font-weight: 800; color: var(--primary); background: var(--card-bg); display: inline-block; padding: 6px 12px; border-radius: 10px; border: 1px dashed var(--border); }
         
@@ -58,10 +58,10 @@
         /* 비밀번호 박스 영역 */
         .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; }
         
-        /* ⚠️ 라인별 비밀번호 글씨크기 축소 반영 */
+        /* 라인별 비밀번호 글씨크기 */
         .pwd-highlight { font-size: 1.02rem; font-weight: 700; color: var(--accent); letter-spacing: 0.3px; white-space: pre-wrap; word-break: break-all; }
         
-        /* 하단 제어 라인 ('기기' 삭제 후 깔끔하게 우측 정렬) */
+        /* 하단 제어 라인 */
         .card-footer { display: flex; justify-content: flex-end; align-items: center; margin-top: 2px; }
         .edit-trigger-btn { background: none; border: none; color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; text-decoration: underline; opacity: 0.7; padding: 4px 0; }
 
@@ -86,30 +86,39 @@
 <body>
 
 <div class="container">
+    <!-- 상단 헤더 영역 -->
     <div class="header-area">
         <h1>🔑 김포B 공비</h1>
         <button id="themeToggle" class="theme-toggle">🌙</button>
     </div>
 
+    <!-- 🧭 대형 상시 네비게이션 버튼 구조 -->
     <div id="navContainer" class="nav-buttons-container">
         <button id="backBtn" class="nav-btn" onclick="goBack()">⬅️ 뒤로가기</button>
         <button id="homeBtn" class="nav-btn" onclick="resetSteps()">🏠 홈으로</button>
     </div>
 
+    <!-- GPS 메뉴 -->
     <div id="gpsSection" class="gps-section">
         <div class="gps-title">📍 내 주변(GPS)</div>
         <div id="gpsButtons" class="gps-buttons"></div>
     </div>
+
+    <!-- 📌 동 선택창 상단에만 노출될 공동비번 영역 -->
+    <div id="commonPwdStandalone" class="common-pwd-area"></div>
     
+    <!-- 계층형 선택 영역 -->
     <div id="stepContainer" class="step-container">
         <div id="buttonGrid" class="btn-grid">데이터를 불러오는 중... ⏳</div>
     </div>
     
+    <!-- 최종 비번 출력 목록 -->
     <div id="cardList" class="card-list"></div>
 </div>
 
 <button class="add-floating-btn" onclick="openAddModal()">+</button>
 
+<!-- 수정/추가 모달 창 -->
 <div id="editorModal" class="modal">
     <div class="modal-content">
         <h3 id="modalTitle">데이터 관리</h3>
@@ -146,6 +155,7 @@
     const themeToggle = document.getElementById('themeToggle');
     const navContainer = document.getElementById('navContainer');
     const stepContainer = document.getElementById('stepContainer');
+    const commonPwdStandalone = document.getElementById('commonPwdStandalone');
 
     // 다크모드 제어
     const currentTheme = localStorage.getItem('theme') || 'light';
@@ -226,12 +236,26 @@
         else if (currentStep === 4) selectAptStep(selectedApt);
     }
 
+    // 특정 아파트의 공동비번 정보 렌더링 도우미 함수
+    function showCommonPwdHeader(aptName) {
+        const filteredApt = data.filter(item => item.아파트 === aptName);
+        const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
+        const commonValue = commonData ? commonData.공동 : "등록 없음";
+
+        commonPwdStandalone.innerHTML = `
+            <div class="common-pwd-title">&lt;공동비번&gt;</div>
+            <div class="common-pwd-value">${commonValue}</div>
+        `;
+        commonPwdStandalone.style.display = 'block';
+    }
+
     // 1단계: 지역 선택
     function resetSteps() {
         currentStep = 1;
         selectedRegion = ""; selectedApt = ""; selectedDong = "";
         updateNav();
         
+        commonPwdStandalone.style.display = 'none'; 
         stepContainer.style.display = 'block';
         cardList.innerHTML = ''; 
         
@@ -254,6 +278,7 @@
         selectedApt = ""; selectedDong = "";
         updateNav();
         
+        commonPwdStandalone.style.display = 'none'; 
         stepContainer.style.display = 'block';
         cardList.innerHTML = ''; 
         
@@ -269,13 +294,16 @@
         });
     }
 
-    // 3단계: 동 선택
+    // 3단계: 동 선택 (★ 이 화면 상단에서만 공동비번이 노출됩니다)
     function selectAptStep(apt) {
         currentStep = 3;
         selectedApt = apt;
         selectedDong = "";
         updateNav();
         
+        // 동 목록 상단에 공동비번 노출
+        showCommonPwdHeader(apt);
+
         stepContainer.style.display = 'block';
         cardList.innerHTML = ''; 
         
@@ -301,6 +329,9 @@
         selectedDong = dong;
         updateNav();
         
+        // 4단계 창에서는 공동비번을 보이지 않게 숨김 처리
+        commonPwdStandalone.style.display = 'none'; 
+        
         stepContainer.style.display = 'none';
         renderFinalCards(selectedApt, dong);
     }
@@ -315,20 +346,7 @@
             return;
         }
 
-        // 엑셀 '공동' 컬럼에서 첫 번째 유효한 데이터 확인하여 최상단에 공동비번 정보 표기
-        const commonData = filtered.find(item => item.공동 && item.공동.trim() !== "");
-        const commonValue = commonData ? commonData.공동 : "등록 없음";
-
-        // 최상단 좌측 정렬 공동비번 영역 생성
-        const commonArea = document.createElement('div');
-        commonArea.className = 'common-pwd-area';
-        commonArea.innerHTML = `
-            <div class="common-pwd-title">&lt;공동비번&gt;</div>
-            <div class="common-pwd-value">${commonValue}</div>
-        `;
-        cardList.appendChild(commonArea);
-
-        // 라인별 비밀번호 리스트 출력
+        // 라인별 비밀번호 리스트 출력 (상단에 공동비번 없이 깔끔하게 시작)
         filtered.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
@@ -398,6 +416,7 @@
         buttonGrid.innerHTML = '<div class="status-msg">구글 시트 동기화 중... ⏳</div>';
         stepContainer.style.display = 'block';
         cardList.innerHTML = '';
+        commonPwdStandalone.style.display = 'none';
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -413,6 +432,7 @@
         buttonGrid.innerHTML = '<div class="status-msg">데이터 삭제 중... ⏳</div>';
         stepContainer.style.display = 'block';
         cardList.innerHTML = '';
+        commonPwdStandalone.style.display = 'none';
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
