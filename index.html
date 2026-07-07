@@ -170,28 +170,42 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // GPS 기반 아파트 자동 진입
+    // ⚡ [오피스텔 대응 업그레이드] 아파트 컬럼 외에 동 컬럼에 있는 오피스텔명도 GPS 매칭
     function initGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition((position) => {
             const uLat = position.coords.latitude; const uLon = position.coords.longitude;
-            const uniqueApts = {};
+            const uniqueTargets = {};
+            
             data.forEach(item => {
-                const loc = locations[item.아파트];
-                if (item.아파트 && loc && !uniqueApts[item.아파트]) {
-                    uniqueApts[item.아파트] = { name: item.아파트, region: item.지역, dist: getDistance(uLat, uLon, loc.lat, loc.lon) };
+                // 1. 아파트 컬럼 기준 매칭 확인
+                if (item.아파트 && locations[item.아파트] && !uniqueTargets[item.아파트]) {
+                    uniqueTargets[item.아파트] = { name: item.아파트, type: 'apt', region: item.지역, targetDong: '', dist: getDistance(uLat, uLon, locations[item.아파트].lat, locations[item.아파트].lon) };
+                }
+                // 2. 동 컬럼 기준 매칭 확인 (오피스텔 독자 명칭 대응)
+                if (item.동 && locations[item.동] && !uniqueTargets[item.동]) {
+                    uniqueTargets[item.동] = { name: item.동, type: 'officetel', region: item.지역, parentApt: item.아파트, dist: getDistance(uLat, uLon, locations[item.동].lat, locations[item.동].lon) };
                 }
             });
-            const sorted = Object.values(uniqueApts).filter(a => a.dist !== Infinity).sort((a,b) => a.dist - b.dist).slice(0,3);
+            
+            const sorted = Object.values(uniqueTargets).filter(t => t.dist !== Infinity).sort((a,b) => a.dist - b.dist).slice(0,3);
             if (sorted.length > 0) {
                 const btnArea = document.getElementById('gpsButtons');
                 btnArea.innerHTML = '';
-                sorted.forEach(apt => {
+                sorted.forEach(target => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
-                    btn.textContent = `🏢 ${apt.name}`;
+                    btn.textContent = target.type === 'officetel' ? `🏢 ${target.name}` : `🏢 ${target.name}`;
+                    
                     btn.addEventListener('click', () => {
-                        selectedRegion = apt.region;
-                        selectAptStep(apt.name);
+                        selectedRegion = target.region;
+                        if (target.type === 'officetel') {
+                            // 오피스텔인 경우 동 단계를 스킵하고 최종 4단계로 다이렉트 진입
+                            selectedApt = target.parentApt;
+                            selectDongStep(target.name);
+                        } else {
+                            // 일반 아파트인 경우 기존처럼 3단계 동 선택으로 진입
+                            selectAptStep(target.name);
+                        }
                     });
                     btnArea.appendChild(btn);
                 });
@@ -200,25 +214,20 @@
         });
     }
 
-    // ⚡ [속도 최적화] 로컬 캐시 결합형 데이터 로드 함수
+    // 데이터 로드 및 캐싱 로직
     async function loadData() {
-        // 1. 먼저 기존 캐시 데이터가 있는지 확인하여 0.1초 만에 즉시 렌더링
         const cachedData = localStorage.getItem('pwd_data_cache');
         const cachedLoc = localStorage.getItem('loc_data_cache');
         
         if (cachedData) {
             data = JSON.parse(cachedData);
             if (cachedLoc) locations = JSON.parse(cachedLoc);
-            
-            // 캐시 데이터가 있다면 로딩 문구 없이 즉시 UI 구성
             refreshUIByCurrentStep();
             initGPS();
         } else {
-            // 캐시가 완전히 처음인 경우에만 로딩 표시
             buttonGrid.innerHTML = '<div class="status-msg">데이터 동기화 중... ⏳</div>';
         }
 
-        // 2. 사용자가 첫 화면을 보는 도중 백그라운드에서 최신 데이터를 서버에서 조용히 가져옴
         try {
             const sheetRes = await fetch(GAS_WEB_APP_URL);
             const newData = await sheetRes.json();
@@ -229,14 +238,12 @@
                 newLoc = await locRes.json();
             } catch(e) { console.log(e); }
 
-            // 가져온 데이터를 브라우저 메모리에 최신화하여 저장
             localStorage.setItem('pwd_data_cache', JSON.stringify(newData));
             localStorage.setItem('loc_data_cache', JSON.stringify(newLoc));
             
             data = newData;
             locations = newLoc;
 
-            // 백그라운드 로드가 끝나면 데이터를 최신 내용으로 부드럽게 새로고침 함
             refreshUIByCurrentStep();
             initGPS();
         } catch (error) {
@@ -246,7 +253,6 @@
         }
     }
 
-    // 현재 단계 상태에 맞춰 UI를 재그려주는 스마트 새로고침 래퍼 함수
     function refreshUIByCurrentStep() {
         if (currentStep === 1) resetSteps();
         else if (currentStep === 2) selectRegionStep(selectedRegion);
@@ -261,9 +267,17 @@
     function goBack() {
         if (currentStep === 2) resetSteps();
         else if (currentStep === 3) selectRegionStep(selectedRegion);
-        else if (currentStep === 4) selectAptStep(selectedApt);
+        else if (currentStep === 4) {
+            // 오피스텔 직통 진입 상태에서 뒤로가기 시 1단계나 2단계 유연한 대응 처리
+            if(selectedApt && data.some(d => d.아파트 === selectedApt && d.동 === selectedDong)) {
+                selectAptStep(selectedApt);
+            } else {
+                resetSteps();
+            }
+        }
     }
 
+    // 동 선택 화면용 공동비번 헤더 (아파트 이름 기준 검색)
     function showCommonPwdHeader(aptName) {
         const filteredApt = data.filter(item => item.아파트 === aptName);
         const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
@@ -362,7 +376,14 @@
 
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
-        const filtered = data.filter(item => item.아파트 === apt && String(item.동) === String(dong));
+        // 아파트명이 명시된 경우와 그렇지 않은 오피스텔 독자 매칭 통합 처리
+        const filtered = data.filter(item => {
+            if (apt) {
+                return item.아파트 === apt && String(item.동) === String(dong);
+            } else {
+                return String(item.동) === String(dong);
+            }
+        });
 
         if (filtered.length === 0) {
             cardList.innerHTML = '<div class="status-msg">등록된 정보가 없습니다. 🔍</div>';
@@ -442,7 +463,6 @@
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-            // 저장 후에는 강제 만료 처리하여 새 데이터 수신
             localStorage.removeItem('pwd_data_cache');
             loadData();
         } catch (e) { alert("저장 실패 ❌"); loadData(); }
