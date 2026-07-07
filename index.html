@@ -18,55 +18,43 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
         .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
         
-        /* 상단 헤더 영역 */
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 5px; }
         h1 { font-size: 1.5rem; margin: 0; }
         .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 1.1rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* 🧭 네비게이션 버튼 */
         .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; width: 100%; }
         .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.25rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
         .nav-btn:active { background: var(--step-bg); }
         
-        /* GPS */
         .gps-section { margin-bottom: 20px; display: none; }
         .gps-title { font-size: 1rem; color: var(--text-sub); margin-bottom: 10px; font-weight: bold; }
         .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
         .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
 
-        /* 단계별 카테고리 선택 영역 */
         .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
         
-        /* 버튼 그리드 */
         .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         
-        /* 📊 최종 결과창 컨테이너 */
         .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
         
-        /* ✨ 공동비번 영역 */
         .common-pwd-area { text-align: left; width: 100%; padding: 5px 0 12px 5px; box-sizing: border-box; display: none; }
         .common-pwd-title { font-size: 1.3rem; font-weight: 900; color: var(--text-main); margin-bottom: 6px; }
         .common-pwd-value { font-size: 1.15rem; font-weight: 800; color: var(--primary); background: var(--card-bg); display: inline-block; padding: 6px 12px; border-radius: 10px; border: 1px dashed var(--border); }
         
-        /* 라인별 카드 */
         .card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; }
         .line-info { font-size: 1.15rem; font-weight: 800; color: var(--primary); text-align: left; }
         
-        /* 비밀번호 박스 영역 */
         .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; margin-bottom: 4px; }
         .pwd-container { display: flex; flex-direction: column; gap: 12px; }
         .pwd-row { display: flex; flex-direction: column; gap: 4px; }
         .pwd-highlight { font-size: 1.02rem; font-weight: 700; color: var(--accent); letter-spacing: 0.3px; white-space: pre-wrap; word-break: break-all; }
         
-        /* 하단 제어 라인 */
         .card-footer { display: flex; justify-content: flex-end; align-items: center; margin-top: 2px; }
         .edit-trigger-btn { background: none; border: none; color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; text-decoration: underline; opacity: 0.7; padding: 4px 0; }
 
-        /* 하단 고정 추가 버튼 */
         .add-floating-btn { position: fixed; bottom: 25px; right: 25px; background: var(--primary); color: white; border: none; width: 60px; height: 60px; border-radius: 30px; font-size: 2.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 200; }
 
-        /* 모달창 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 24px; width: 92%; max-width: 440px; box-sizing: border-box; }
         .modal h3 { margin-top: 0; margin-bottom: 20px; font-size: 1.3rem; }
@@ -148,7 +136,6 @@
     const stepContainer = document.getElementById('stepContainer');
     const commonPwdStandalone = document.getElementById('commonPwdStandalone');
 
-    // 다크모드 제어
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
     themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
@@ -159,7 +146,6 @@
         themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
     });
 
-    // 하버사인 GPS 거리 계산
     function getDistance(lat1, lon1, lat2, lon2) {
         if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
         const R = 6371;
@@ -168,7 +154,7 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // GPS 처리 (오차 감안하여 상위 5개 노출로 변경)
+    // 🛠️ 글자 포함 여부(유연한 매칭) 방식으로 완전히 개편된 GPS 로직
     function initGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition((position) => {
@@ -184,19 +170,20 @@
                 
                 if (distance === Infinity) continue;
                 
-                const aptMatch = data.find(item => item.아파트 === key);
-                const dongMatch = data.find(item => item.동 === key);
+                // 완벽 일치 대신 '포함 관계(includes)' 여부로 느슨하게 매칭 검사
+                const aptMatch = data.find(item => item.아파트 && (item.아파트.includes(key) || key.includes(item.아파트)));
+                const dongMatch = data.find(item => item.동 && (String(item.동).includes(key) || String(key).includes(item.동)));
                 
                 if (aptMatch) {
-                    targetList.push({ name: key, type: 'apt', region: aptMatch.지역, parentApt: '', dist: distance });
+                    targetList.push({ name: key, realName: aptMatch.아파트, type: 'apt', region: aptMatch.지역, parentApt: '', dist: distance });
                     processedNames.add(key);
                 } else if (dongMatch) {
-                    targetList.push({ name: key, type: 'officetel', region: dongMatch.지역, parentApt: dongMatch.아파트, dist: distance });
+                    targetList.push({ name: key, realName: dongMatch.동, type: 'officetel', region: dongMatch.지역, parentApt: dongMatch.아파트, dist: distance });
                     processedNames.add(key);
                 }
             }
             
-            // 실내 GPS 오차를 감안해 상위 5개 목록을 뽑아 배치합니다.
+            // 정렬 후 상위 5개 추출
             const sortedTargets = targetList.sort((a, b) => a.dist - b.dist).slice(0, 5);
             
             if (sortedTargets.length > 0) {
@@ -210,9 +197,9 @@
                         selectedRegion = target.region;
                         if (target.type === 'officetel') {
                             selectedApt = target.parentApt;
-                            selectDongStep(target.name);
+                            selectDongStep(target.realName);
                         } else {
-                            selectAptStep(target.name);
+                            selectAptStep(target.realName);
                         }
                     });
                     btnArea.appendChild(btn);
@@ -222,7 +209,6 @@
         }, null, { enableHighAccuracy: true });
     }
 
-    // 데이터 동기화
     async function loadData() {
         const cachedData = localStorage.getItem('pwd_data_cache');
         const cachedLoc = localStorage.getItem('loc_data_cache');
@@ -296,7 +282,6 @@
         commonPwdStandalone.style.display = 'block';
     }
 
-    // 1단계
     function resetSteps() {
         currentStep = 1;
         selectedRegion = ""; selectedApt = ""; selectedDong = "";
@@ -304,9 +289,7 @@
         commonPwdStandalone.style.display = 'none'; 
         stepContainer.style.display = 'block';
         cardList.innerHTML = ''; 
-        
         const regions = [...new Set(data.map(item => item.지역).filter(Boolean))];
-        
         buttonGrid.innerHTML = '';
         regions.forEach(region => {
             const btn = document.createElement('button');
@@ -317,18 +300,10 @@
         });
     }
 
-    // 2단계
     function selectRegionStep(region) {
-        currentStep = 2;
-        selectedRegion = region;
-        selectedApt = ""; selectedDong = "";
-        updateNav();
-        commonPwdStandalone.style.display = 'none'; 
-        stepContainer.style.display = 'block';
-        cardList.innerHTML = ''; 
-        
+        currentStep = 2; selectedRegion = region; selectedApt = ""; selectedDong = "";
+        updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
         const apts = [...new Set(data.filter(item => item.지역 === region).map(item => item.아파트).filter(Boolean))];
-        
         buttonGrid.innerHTML = '';
         apts.forEach(apt => {
             const btn = document.createElement('button');
@@ -339,19 +314,11 @@
         });
     }
 
-    // 3단계
     function selectAptStep(apt) {
-        currentStep = 3;
-        selectedApt = apt;
-        selectedDong = "";
-        updateNav();
-        showCommonPwdHeader(apt);
-        stepContainer.style.display = 'block';
-        cardList.innerHTML = ''; 
-        
+        currentStep = 3; selectedApt = apt; selectedDong = "";
+        updateNav(); showCommonPwdHeader(apt); stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
         const dongs = [...new Set(data.filter(item => item.아파트 === apt).map(item => item.동).filter(Boolean))];
         dongs.sort((a, b) => parseInt(a) - parseInt(b));
-
         buttonGrid.innerHTML = '';
         dongs.forEach(dong => {
             const btn = document.createElement('button');
@@ -363,13 +330,9 @@
         });
     }
 
-    // 4단계: 결과 화면 출력 (배열 오타 수정 완료)
     function selectDongStep(dong) {
-        currentStep = 4;
-        selectedDong = dong;
-        updateNav();
-        commonPwdStandalone.style.display = 'none'; 
-        stepContainer.style.display = 'none';
+        currentStep = 4; selectedDong = dong; updateNav();
+        commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'none';
         renderFinalCards(selectedApt, dong);
     }
 
@@ -388,22 +351,19 @@
             return;
         }
 
-        // 라인별 그룹화
         const groupedByLine = filtered.reduce((acc, curr) => {
             let lineText = String(curr.라인).includes('라인') ? curr.라인 : `${curr.라인}라인`;
-            if (!acc[lineText]) acc[lineText] = []; // 🛠️ 버그 오타 수정 완료
+            if (!acc[lineText]) acc[lineText] = [];
             acc[lineText].push(curr);
             return acc;
         }, {});
 
-        // 라인 오름차순 정렬
         const sortedLines = Object.keys(groupedByLine).sort((a, b) => {
             const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
             const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
             return numA - numB;
         });
 
-        // 결과 렌더링
         sortedLines.forEach(lineText => {
             const card = document.createElement('div');
             card.className = 'card';
@@ -421,15 +381,12 @@
 
             card.innerHTML = `
                 <div class="line-info">&lt;${lineText}&gt;</div>
-                <div class="pwd-container">
-                    ${rowsHtml}
-                </div>
+                <div class="pwd-container">${rowsHtml}</div>
             `;
             cardList.appendChild(card);
         });
     }
 
-    // 모달 관리
     const modal = document.getElementById('editorModal');
     function closeModal() { modal.style.display = 'none'; }
     
@@ -461,30 +418,22 @@
         modal.style.display = 'flex';
     }
 
-    // 서버 요청
     async function submitForm() {
         const rowId = document.getElementById('formRowId').value;
         const payload = {
-            action: rowId ? 'update' : 'add',
-            rowId: rowId,
-            지역: document.getElementById('formRegion').value,
-            아파트: document.getElementById('formApt').value,
-            공동: document.getElementById('formType').value,
-            동: document.getElementById('formDong').value,
-            라인: document.getElementById('formLine').value,
-            비번: document.getElementById('formPwd').value
+            action: rowId ? 'update' : 'add', rowId: rowId,
+            지역: document.getElementById('formRegion').value, 아파트: document.getElementById('formApt').value,
+            공동: document.getElementById('formType').value, 동: document.getElementById('formDong').value,
+            라인: document.getElementById('formLine').value, 비번: document.getElementById('formPwd').value
         };
 
         closeModal();
         buttonGrid.innerHTML = '<div class="status-msg">구글 시트 동기화 중... ⏳</div>';
-        stepContainer.style.display = 'block';
-        cardList.innerHTML = '';
-        commonPwdStandalone.style.display = 'none';
+        stepContainer.style.display = 'block'; cardList.innerHTML = ''; commonPwdStandalone.style.display = 'none';
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-            localStorage.removeItem('pwd_data_cache');
-            loadData();
+            localStorage.removeItem('pwd_data_cache'); loadData();
         } catch (e) { alert("저장 실패 ❌"); loadData(); }
     }
 
@@ -493,14 +442,11 @@
         const rowId = document.getElementById('formRowId').value;
         closeModal();
         buttonGrid.innerHTML = '<div class="status-msg">데이터 삭제 중... ⏳</div>';
-        stepContainer.style.display = 'block';
-        cardList.innerHTML = '';
-        commonPwdStandalone.style.display = 'none';
+        stepContainer.style.display = 'block'; cardList.innerHTML = ''; commonPwdStandalone.style.display = 'none';
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
-            localStorage.removeItem('pwd_data_cache');
-            loadData();
+            localStorage.removeItem('pwd_data_cache'); loadData();
         } catch (e) { alert("삭제 실패 ❌"); loadData(); }
     }
 
