@@ -153,12 +153,12 @@
     // 다크모드 제어
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
-    themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+    themeToggle.textContent = currentTheme === 'dark' ? '☀️ 밝기 조정' : '🌙 밝기 조정';
     themeToggle.addEventListener('click', () => {
         const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+        themeToggle.textContent = theme === 'dark' ? '☀️ 밝기 조정' : '🌙 밝기 조정';
     });
 
     // 하버사인 GPS 거리 계산
