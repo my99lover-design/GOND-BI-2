@@ -374,9 +374,10 @@
             return acc;
         }, {});
 
+        // 🛠️ 문자열에서 첫 번째 숫자만 추출하여 완벽하게 오름차순 정렬 (1,2 -> 3,4 순서 고정)
         const sortedLines = Object.keys(groupedByLine).sort((a, b) => {
-            const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
-            const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
+            const numA = parseInt(a.match(/\d+/)?.[0]) || 0;
+            const numB = parseInt(b.match(/\d+/)?.[0]) || 0;
             return numA - numB;
         });
 
