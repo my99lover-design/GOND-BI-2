@@ -39,24 +39,37 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxMc74RsguWtr-4Nx3w2OeTctpb8-ILGN5j41kW97YNY-0KMX4FOfdvQUKDL0UGTbxk/exec";
     let data = [], locations = {}, currentStep = 1, selectedRegion = "", selectedApt = "";
 
-    // 1. 데이터 로딩 최적화
-    async function loadData() {
-        const sheetPromise = fetch(GAS_URL).then(res => res.json());
-        const locPromise = fetch("locations.json?_=" + Date.now()).then(res => res.json());
-        [data, locations] = await Promise.all([sheetPromise, locPromise]);
-        resetSteps();
-        initGPS();
+    // 1. 초기 실행: 캐시 우선 로딩
+    function initApp() {
+        const cachedData = localStorage.getItem('cachedData');
+        const cachedLocs = localStorage.getItem('cachedLocs');
+        if (cachedData && cachedLocs) {
+            data = JSON.parse(cachedData);
+            locations = JSON.parse(cachedLocs);
+            resetSteps();
+        }
+        loadData(); // 백그라운드 서버 업데이트
     }
 
-    // 2. GPS 로직 (정밀도 필터링 추가)
+    // 2. 데이터 fetch 및 캐시 갱신
+    async function loadData() {
+        try {
+            const [sheetRes, locRes] = await Promise.all([fetch(GAS_URL), fetch("locations.json?_=" + Date.now())]);
+            data = await sheetRes.json();
+            locations = await locRes.json();
+            localStorage.setItem('cachedData', JSON.stringify(data));
+            localStorage.setItem('cachedLocs', JSON.stringify(locations));
+            resetSteps();
+            initGPS();
+        } catch (e) { console.error("Update failed", e); }
+    }
+
+    // 3. 정밀 GPS 로직 (30m 신뢰도 필터링 적용)
     function initGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition((pos) => {
-            // 위치 정확도가 50m보다 크면 무시 (오차 큰 값 제거)
-            if (pos.coords.accuracy > 50) return;
-            
+            if (pos.coords.accuracy > 30) return; // 30m 이상 오차 시 계산 안 함
             const uLat = pos.coords.latitude, uLon = pos.coords.longitude;
-            // 직선거리 계산 (기존 방식 복구)
             const targets = Object.keys(locations).map(key => {
                 const loc = locations[key];
                 return { name: key, dist: Math.sqrt((loc.lat-uLat)**2 + (loc.lon-uLon)**2) };
@@ -76,8 +89,7 @@
         }, null, { enableHighAccuracy: true });
     }
 
-    // ... 나머지 함수들 (resetSteps, selectRegionStep, selectAptStep, selectDongStep, renderGrid, goBack)
-    // 이전과 동일하므로 유지 ...
+    // 단계별 UI 로직
     function resetSteps() { currentStep = 1; document.getElementById('navContainer').style.display = 'none'; renderGrid([...new Set(data.map(i => i.지역).filter(Boolean))], (r) => selectRegionStep(r)); }
     function selectRegionStep(region) { currentStep = 2; document.getElementById('navContainer').style.display = 'grid'; selectedRegion = region; renderGrid([...new Set(data.filter(i => i.지역 === region).map(i => i.아파트).filter(Boolean))], (a) => selectAptStep(a)); }
     function selectAptStep(apt) { currentStep = 3; selectedApt = apt; renderGrid([...new Set(data.filter(i => i.아파트 === apt).map(i => i.동).filter(Boolean))], (d) => selectDongStep(d)); }
@@ -85,7 +97,7 @@
     function renderGrid(arr, callback) { const grid = document.getElementById('buttonGrid'); grid.innerHTML = ''; arr.forEach(item => { const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = item; btn.onclick = () => callback(item); grid.appendChild(btn); }); document.getElementById('stepContainer').style.display = 'block'; document.getElementById('cardList').innerHTML = ''; }
     function goBack() { if(currentStep === 2) resetSteps(); else if(currentStep === 3) selectRegionStep(selectedRegion); else if(currentStep === 4) selectAptStep(selectedApt); }
 
-    loadData();
+    initApp();
 </script>
 </body>
 </html>
