@@ -123,6 +123,7 @@
 
     let data = [];
     let locations = {};
+    let gpsWatchId = null; // 실시간 추적 ID 저장용
     
     let currentStep = 1;
     let selectedRegion = "";
@@ -154,11 +155,26 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // 🛠️ 글자 포함 여부(유연한 매칭) 방식으로 완전히 개편된 GPS 로직
+    // 🛠️ 실시간 보정형 하드웨어 고정밀 옵션 주입 로직
     function initGPS() {
         if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition((position) => {
-            const uLat = position.coords.latitude; const uLon = position.coords.longitude;
+        
+        // 기존에 작동 중인 GPS 추적이 있다면 초기화하여 배터리 및 정밀도 꼬임 방지
+        if (gpsWatchId !== null) {
+            navigator.geolocation.clearWatch(gpsWatchId);
+        }
+
+        // 고정밀 하드웨어 세팅 옵션
+        const gpsOptions = {
+            enableHighAccuracy: true, // 하드웨어 GPS 칩셋 강제 활성화 (정밀도 최대값)
+            timeout: 10000,           // 위치를 잡을 때까지 최대 10초 대기
+            maximumAge: 0             // 캐시된 이전 위치를 사용하지 않고 매번 새 좌표 수신
+        };
+
+        // watchPosition: 일회성이 아니라 좌표가 갱신되거나 오차가 줄어들 때마다 실시간 재연산
+        gpsWatchId = navigator.geolocation.watchPosition((position) => {
+            const uLat = position.coords.latitude; 
+            const uLon = position.coords.longitude;
             const targetList = [];
             const processedNames = new Set();
             
@@ -170,7 +186,6 @@
                 
                 if (distance === Infinity) continue;
                 
-                // 완벽 일치 대신 '포함 관계(includes)' 여부로 느슨하게 매칭 검사
                 const aptMatch = data.find(item => item.아파트 && (item.아파트.includes(key) || key.includes(item.아파트)));
                 const dongMatch = data.find(item => item.동 && (String(item.동).includes(key) || String(key).includes(item.동)));
                 
@@ -183,7 +198,6 @@
                 }
             }
             
-            // 정렬 후 상위 5개 추출
             const sortedTargets = targetList.sort((a, b) => a.dist - b.dist).slice(0, 5);
             
             if (sortedTargets.length > 0) {
@@ -206,7 +220,9 @@
                 });
                 document.getElementById('gpsSection').style.display = 'block';
             }
-        }, null, { enableHighAccuracy: true });
+        }, (err) => {
+            console.warn(`GPS 업데이트 보정 대기 중... (${err.message})`);
+        }, gpsOptions);
     }
 
     async function loadData() {
