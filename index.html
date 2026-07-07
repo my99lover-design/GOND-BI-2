@@ -7,34 +7,108 @@
     <style>
         :root { --bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #3b82f6; --text-main: #111827; --text-sub: #6b7280; --accent: #ef4444; --border: #e5e7eb; --gps-btn-bg: #e0e7ff; --gps-btn-text: #4f46e5; --step-bg: #f3f4f6; }
         [data-theme="dark"] { --bg-color: #111827; --card-bg: #1f2937; --primary: #60a5fa; --text-main: #f9fafb; --text-sub: #9ca3af; --accent: #f87171; --border: #374151; --gps-btn-bg: #312e81; --gps-btn-text: #c7d2fe; --step-bg: #374151; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
-        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 5px; }
-        h1 { font-size: 1.5rem; margin: 0; }
-        .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 1.1rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; width: 100%; }
-        .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.25rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-weight: bold; }
         .gps-section { margin-bottom: 20px; display: none; }
-        .gps-title { font-size: 1rem; color: var(--text-sub); margin-bottom: 10px; font-weight: bold; }
         .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
-        .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-        .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
+        .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; }
         .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
-        .common-pwd-area { text-align: left; width: 100%; padding: 5px 0 12px 5px; display: none; }
-        .common-pwd-title { font-size: 1.3rem; font-weight: 900; margin-bottom: 6px; }
-        .common-pwd-value { font-size: 1.15rem; font-weight: 800; color: var(--primary); background: var(--card-bg); display: inline-block; padding: 6px 12px; border-radius: 10px; border: 1px dashed var(--border); }
-        .card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; }
-        .line-info { font-size: 1.15rem; font-weight: 800; color: var(--primary); text-align: left; }
-        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; width: 100%; text-align: left; }
-        .pwd-highlight { font-size: 1.02rem; font-weight: 700; color: var(--accent); }
-        .add-floating-btn { position: fixed; bottom: 25px; right: 25px; background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 30px; font-size: 2.2rem; font-weight: bold; border: none; cursor: pointer; z-index: 200; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card-bg); padding: 25px; border-radius: 24px; width: 92%; max-width: 440px; }
+        .select-btn { background: var(--step-bg); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-weight: bold; cursor: pointer; }
+        .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+        .card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); }
+        .line-info { font-weight: 800; color: var(--primary); margin-bottom: 5px; }
+        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; font-weight: 700; color: var(--accent); }
     </style>
 </head>
 <body>
+<div class="container">
+    <div class="header-area"><h1>🔑 김포B 공비</h1><button id="themeToggle" class="theme-toggle">🌙</button></div>
+    <div id="navContainer" class="nav-buttons-container"><button class="nav-btn" onclick="goBack()">⬅️ 뒤로가기</button><button class="nav-btn" onclick="resetSteps()">🏠 홈으로</button></div>
+    <div id="gpsSection" class="gps-section"><div class="gps-buttons" id="gpsButtons"></div></div>
+    <div id="stepContainer" class="step-container"><div id="buttonGrid" class="btn-grid">데이터 로딩 중...</div></div>
+    <div id="cardList" class="card-list"></div>
+</div>
+
+<script>
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxMc74RsguWtr-4Nx3w2OeTctpb8-ILGN5j41kW97YNY-0KMX4FOfdvQUKDL0UGTbxk/exec";
+    let data = [], locations = {}, currentStep = 1, selectedRegion = "", selectedApt = "", selectedDong = "";
+
+    async function loadData() {
+        const [sheetRes, locRes] = await Promise.all([fetch(GAS_WEB_APP_URL), fetch("locations.json?_=" + Date.now())]);
+        data = await sheetRes.json();
+        locations = await locRes.json();
+        resetSteps();
+        initGPS();
+    }
+
+    function initGPS() {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const uLat = pos.coords.latitude, uLon = pos.coords.longitude;
+            const targets = Object.keys(locations).map(key => {
+                const loc = locations[key], d = Math.sqrt((loc.lat-uLat)**2 + (loc.lon-uLon)**2);
+                return { name: key, dist: d };
+            }).sort((a,b) => a.dist - b.dist).slice(0, 3);
+            
+            const btnArea = document.getElementById('gpsButtons');
+            targets.forEach(t => {
+                const btn = document.createElement('button'); btn.className = 'gps-btn'; btn.textContent = `📍 ${t.name}`;
+                btn.onclick = () => {
+                    const match = data.find(i => i.아파트 === t.name || i.동 === t.name);
+                    if (match) { selectedRegion = match.지역; match.아파트 === t.name ? selectAptStep(t.name) : selectDongStep(t.name); }
+                };
+                btnArea.appendChild(btn);
+            });
+            document.getElementById('gpsSection').style.display = 'block';
+        });
+    }
+
+    function resetSteps() {
+        currentStep = 1; document.getElementById('navContainer').style.display = 'none';
+        const regions = [...new Set(data.map(i => i.지역).filter(Boolean))];
+        renderGrid(regions, (r) => selectRegionStep(r));
+    }
+
+    function selectRegionStep(region) {
+        currentStep = 2; document.getElementById('navContainer').style.display = 'grid';
+        selectedRegion = region;
+        const apts = [...new Set(data.filter(i => i.지역 === region).map(i => i.아파트).filter(Boolean))];
+        renderGrid(apts, (a) => selectAptStep(a));
+    }
+
+    function selectAptStep(apt) {
+        currentStep = 3; selectedApt = apt;
+        const dongs = [...new Set(data.filter(i => i.아파트 === apt).map(i => i.동).filter(Boolean))];
+        renderGrid(dongs, (d) => selectDongStep(d));
+    }
+
+    function selectDongStep(dong) {
+        currentStep = 4; document.getElementById('stepContainer').style.display = 'none';
+        const list = data.filter(i => i.동 === dong);
+        document.getElementById('cardList').innerHTML = list.map(i => `<div class="card"><div class="line-info">${i.라인}라인</div><div class="pwd-box">${i.비번}</div></div>`).join('');
+    }
+
+    function renderGrid(arr, callback) {
+        const grid = document.getElementById('buttonGrid');
+        grid.innerHTML = '';
+        arr.forEach(item => {
+            const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = item;
+            btn.onclick = () => callback(item);
+            grid.appendChild(btn);
+        });
+        document.getElementById('stepContainer').style.display = 'block';
+        document.getElementById('cardList').innerHTML = '';
+    }
+
+    function goBack() { if(currentStep > 1) currentStep === 2 ? resetSteps() : currentStep === 3 ? selectRegionStep(selectedRegion) : selectAptStep(selectedApt); }
+    loadData();
+</script>
+</body>
+</html><body>
 <div class="container">
     <div class="header-area"><h1>🔑 김포B 공비</h1><button id="themeToggle" class="theme-toggle">🌙</button></div>
     <div id="navContainer" class="nav-buttons-container"><button class="nav-btn" onclick="goBack()">⬅️ 뒤로가기</button><button class="nav-btn" onclick="resetSteps()">🏠 홈으로</button></div>
