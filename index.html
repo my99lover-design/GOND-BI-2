@@ -18,56 +18,55 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
         .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
         
-        /* 상단 헤더 영역 확대 */
-        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px; }
-        h1 { font-size: 1.6rem; margin: 0; } /* 타이틀 크기 키움 */
-        .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 10px 16px; border-radius: 24px; cursor: pointer; color: var(--text-main); font-size: 1.05rem; font-weight: bold; } /* 테마 버튼 확대 */
+        /* 상단 헤더 및 네비게이션 */
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px; }
+        h1 { font-size: 1.5rem; margin: 0; }
+        .nav-buttons { display: flex; gap: 8px; }
+        .nav-btn { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 14px; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1rem; font-weight: bold; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
-        /* GPS 영역 확대 */
-        .gps-section { margin-bottom: 25px; display: none; }
-        .gps-title { font-size: 1rem; color: var(--text-sub); margin-bottom: 10px; font-weight: bold; } /* GPS 타이틀 확대 */
+        /* GPS */
+        .gps-section { margin-bottom: 20px; display: none; }
+        .gps-title { font-size: 1rem; color: var(--text-sub); margin-bottom: 10px; font-weight: bold; }
         .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
-        .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); } /* GPS 버튼 크게 확대 */
+        .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
 
-        /* 단계별 카테고리 선택 영역 확대 */
+        /* 단계별 카테고리 선택 영역 */
         .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
-        .step-title { font-size: 1.1rem; font-weight: bold; color: var(--text-sub); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; } /* 단계 설명 글자 확대 */
-        .reset-btn { background: none; border: none; color: var(--primary); font-weight: bold; cursor: pointer; font-size: 1rem; padding: 5px 10px; } /* 처음부터 버튼 확대 */
+        .step-title { font-size: 1.1rem; font-weight: bold; color: var(--text-sub); margin-bottom: 15px; text-align: center; }
         
-        /* 메인 버튼 그리드 키움 */
+        /* 버튼 그리드 */
         .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); } /* 일반 선택 버튼 대폭 확대 */
-        .select-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        /* 결과 카드 영역 확대 */
-        .card-list { display: flex; flex-direction: column; gap: 16px; }
-        .card { background: var(--card-bg); padding: 22px; border-radius: 20px; border: 1px solid var(--border); position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.02); }
-        .card-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 14px; }
-        .apt-name { font-weight: 800; font-size: 1.35rem; } /* 아파트 이름 확대 */
-        .line-info { font-size: 1.15rem; font-weight: bold; color: var(--primary); } /* 라인 정보 확대 */
+        .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         
-        .card-body { font-size: 1.1rem; border-top: 1px solid var(--border); padding-top: 14px; display: flex; justify-content: space-between; align-items: end; }
-        .pwd-box { background: rgba(239, 68, 68, 0.06); border: 1px solid var(--accent); padding: 12px 18px; border-radius: 12px; margin-top: 8px; display: inline-block; }
-        .pwd-highlight { font-size: 1.6rem; font-weight: 900; color: var(--accent); letter-spacing: 1px; } /* 비밀번호 강조 대폭 확대 */
-        .type-info { color: var(--text-sub); font-size: 1rem; margin-bottom: 6px; } /* 기기 종류 글자 확대 */
-        .edit-trigger-btn { background: none; border: 1px solid var(--border); color: var(--text-sub); padding: 8px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: bold; cursor: pointer; } /* 수정 버튼 확대 */
+        /* ✨ 최종 비밀번호 결과창: 3열 격자 배치로 축소 변경 */
+        .card-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; box-sizing: border-box; }
+        .card { background: var(--card-bg); padding: 10px; border-radius: 14px; border: 1px solid var(--border); position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; }
+        .card-header { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+        .apt-name { font-weight: 800; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .line-info { font-size: 0.95rem; font-weight: bold; color: var(--primary); }
+        
+        .card-body { font-size: 0.85rem; border-top: 1px solid var(--border); padding-top: 6px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
+        .pwd-box { background: rgba(239, 68, 68, 0.05); border: 1px solid var(--accent); padding: 6px 4px; border-radius: 8px; margin-top: 4px; text-align: center; word-break: break-all; }
+        .pwd-highlight { font-size: 1.15rem; font-weight: 900; color: var(--accent); } /* 크기를 줄여 3개 한 줄 안착 */
+        .type-info { color: var(--text-sub); font-size: 0.75rem; line-height: 1.1; }
+        .edit-trigger-btn { background: none; border: 1px solid var(--border); color: var(--text-sub); padding: 4px 0; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-top: 6px; width: 100%; text-align: center; }
 
-        /* 하단 고정 추가 버튼 확대 */
+        /* 하단 고정 추가 버튼 */
         .add-floating-btn { position: fixed; bottom: 25px; right: 25px; background: var(--primary); color: white; border: none; width: 60px; height: 60px; border-radius: 30px; font-size: 2.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 200; }
 
-        /* 모달창 확대 */
+        /* 모달창 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 24px; width: 92%; max-width: 440px; box-sizing: border-box; }
         .modal h3 { margin-top: 0; margin-bottom: 20px; font-size: 1.3rem; }
         .form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
         .form-group label { font-size: 0.95rem; color: var(--text-sub); font-weight: bold; }
-        .form-group input { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; } /* 입력창 크기 확대 */
+        .form-group input { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; }
         .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.1rem; } /* 팝업 버튼 확대 */
+        .modal-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
         .btn-submit { background: var(--primary); color: white; }
         .btn-cancel { background: var(--border); color: var(--text-main); }
         .btn-delete { background: var(--accent); color: white; }
-        .status-msg { text-align: center; color: var(--text-sub); margin-top: 25px; font-size: 1.1rem; }
+        .status-msg { text-align: center; color: var(--text-sub); margin-top: 25px; font-size: 1.1rem; width: 100%; grid-column: span 3; }
     </style>
 </head>
 <body>
@@ -75,7 +74,11 @@
 <div class="container">
     <div class="header-area">
         <h1>🔑 김포B 공비</h1>
-        <button id="themeToggle" class="theme-toggle">🌙 다크 모드</button>
+        <div class="nav-buttons">
+            <button id="backBtn" class="nav-btn" onclick="goBack()" style="display:none;">⬅️ 뒤로</button>
+            <button id="homeBtn" class="nav-btn" onclick="resetSteps()" style="display:none;">🏠 홈</button>
+            <button id="themeToggle" class="nav-btn">🌙</button>
+        </div>
     </div>
 
     <div id="gpsSection" class="gps-section">
@@ -83,15 +86,12 @@
         <div id="gpsButtons" class="gps-buttons"></div>
     </div>
     
-    <div class="step-container">
-        <div class="step-title">
-            <span id="stepLabel">🗺️ 지역을 선택해 주세요</span>
-            <button class="reset-btn" onclick="resetSteps()">🔄 처음부터</button>
-        </div>
+    <div id="stepContainer" class="step-container">
+        <div id="stepLabel" class="step-title">🗺️ 지역을 선택해 주세요</div>
         <div id="buttonGrid" class="btn-grid"></div>
     </div>
     
-    <div id="cardList" class="card-list">데이터를 불러오는 중... ⏳</div>
+    <div id="cardList" class="card-list"></div>
 </div>
 
 <button class="add-floating-btn" onclick="openAddModal()">+</button>
@@ -122,6 +122,8 @@
     let data = [];
     let locations = {};
     
+    // 현재 단계 추적용 (1: 지역, 2: 아파트, 3: 동, 4: 결과)
+    let currentStep = 1;
     let selectedRegion = "";
     let selectedApt = "";
     let selectedDong = "";
@@ -130,16 +132,19 @@
     const stepLabel = document.getElementById('stepLabel');
     const cardList = document.getElementById('cardList');
     const themeToggle = document.getElementById('themeToggle');
+    const backBtn = document.getElementById('backBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const stepContainer = document.getElementById('stepContainer');
 
     // 다크모드 제어
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
-    themeToggle.textContent = currentTheme === 'dark' ? '☀️ 라이트' : '🌙 다크';
+    themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
     themeToggle.addEventListener('click', () => {
         const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        themeToggle.textContent = theme === 'dark' ? '☀️ 라이트' : '🌙 다크';
+        themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
     });
 
     // 하버사인 GPS 거리 계산
@@ -169,7 +174,7 @@
                 btnArea.innerHTML = '';
                 sorted.forEach(apt => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
-                    btn.textContent = `🏢 ${apt.name} (${apt.dist < 1 ? Math.round(apt.dist*1000)+'m' : apt.dist.toFixed(1)+'km'})`;
+                    btn.textContent = `🏢 ${apt.name}`;
                     btn.addEventListener('click', () => {
                         selectedRegion = apt.region;
                         selectAptStep(apt.name);
@@ -184,7 +189,7 @@
     // 데이터 로드
     async function loadData() {
         try {
-            cardList.innerHTML = "데이터 동기화 중... ⏳";
+            stepLabel.textContent = "데이터 동기화 중... ⏳";
             const sheetRes = await fetch(GAS_WEB_APP_URL);
             data = await sheetRes.json();
             
@@ -196,15 +201,32 @@
             resetSteps();
             initGPS();
         } catch (error) {
-            cardList.innerHTML = '<p class="status-msg">통신 실패 ❌ 구글 웹앱 설정을 확인하세요.</p>';
+            stepLabel.textContent = "통신 실패 ❌ 설정을 확인하세요.";
         }
+    }
+
+    // 네비게이션 버튼 가시성 업데이트
+    function updateNav() {
+        backBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+        homeBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+    }
+
+    // 뒤로가기 버튼 로직
+    function goBack() {
+        if (currentStep === 2) resetSteps();
+        else if (currentStep === 3) selectRegionStep(selectedRegion);
+        else if (currentStep === 4) selectAptStep(selectedApt);
     }
 
     // 1단계: 지역 선택
     function resetSteps() {
+        currentStep = 1;
         selectedRegion = ""; selectedApt = ""; selectedDong = "";
-        cardList.innerHTML = '<p class="status-msg">단계를 선택하면 비밀번호 목록이 나타납니다. 👇</p>';
-        stepLabel.textContent = "🗺️ 1단계: 지역을 선택해 주세요";
+        updateNav();
+        
+        stepContainer.style.display = 'block';
+        cardList.innerHTML = ''; // ⚠️ 하단 목록 가림
+        stepLabel.textContent = "🗺️ 지역을 선택해 주세요";
         
         const regions = [...new Set(data.map(item => item.지역).filter(Boolean))];
         
@@ -220,9 +242,14 @@
 
     // 2단계: 아파트 선택
     function selectRegionStep(region) {
+        currentStep = 2;
         selectedRegion = region;
         selectedApt = ""; selectedDong = "";
-        stepLabel.textContent = `🏢 2단계: [${region}] 아파트 선택`;
+        updateNav();
+        
+        stepContainer.style.display = 'block';
+        cardList.innerHTML = ''; // ⚠️ 하단 목록 가림
+        stepLabel.textContent = `🏢 아파트를 선택해 주세요 (${region})`;
         
         const apts = [...new Set(data.filter(item => item.지역 === region).map(item => item.아파트).filter(Boolean))];
         
@@ -238,9 +265,14 @@
 
     // 3단계: 동 선택
     function selectAptStep(apt) {
+        currentStep = 3;
         selectedApt = apt;
         selectedDong = "";
-        stepLabel.textContent = `🔢 3단계: [${apt}] 동 선택`;
+        updateNav();
+        
+        stepContainer.style.display = 'block';
+        cardList.innerHTML = ''; // ⚠️ 요구사항 반영: 동 선택 전까지 아래 목록 안 나오게 제거
+        stepLabel.textContent = `🔢 동을 선택해 주세요 (${apt})`;
         
         const dongs = [...new Set(data.filter(item => item.아파트 === apt).map(item => item.동).filter(Boolean))];
         dongs.sort((a, b) => parseInt(a) - parseInt(b));
@@ -249,35 +281,34 @@
         dongs.forEach(dong => {
             const btn = document.createElement('button');
             btn.className = 'select-btn';
-            btn.textContent = `${dong}동`;
+            
+            // ⚠️ 요구사항 반영: '101동' 대신 숫자만 깔끔하게 '101' 형식으로 노출
+            const dongNumber = String(dong).replace(/동/g, '').trim();
+            btn.textContent = dongNumber; 
+            
             btn.addEventListener('click', () => selectDongStep(dong));
             buttonGrid.appendChild(btn);
         });
-        
-        renderFinalCards(apt, "");
     }
 
-    // 최종 완료
+    // 최종 완료 (결과 화면출력)
     function selectDongStep(dong) {
+        currentStep = 4;
         selectedDong = dong;
-        stepLabel.textContent = `✨ 완료: ${selectedApt} ${dong}동`;
-        buttonGrid.innerHTML = `<div style="grid-column: span 3; text-align:center; font-size:1.05rem; color:var(--primary); font-weight:bold; padding:10px 0;">조회 완료 된 건물입니다.</div>`;
+        updateNav();
+        
+        // 상단 선택창 숨기고 결과만 넓게 출력
+        stepContainer.style.display = 'none';
         renderFinalCards(selectedApt, dong);
     }
 
-    // 최종 화면 출력
+    // 최종 화면 출력 (한 줄에 3개 들어가는 가로 바둑판 구조)
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
-        const filtered = data.filter(item => {
-            if (dong) {
-                return item.아파트 === apt && String(item.동) === String(dong);
-            } else {
-                return item.아파트 === apt;
-            }
-        });
+        const filtered = data.filter(item => item.아파트 === apt && String(item.동) === String(dong));
 
         if (filtered.length === 0) {
-            cardList.innerHTML = '<p class="status-msg">등록된 라인 정보가 없습니다. 🔍</p>';
+            cardList.innerHTML = '<p class="status-msg">등록된 정보가 없습니다. 🔍</p>';
             return;
         }
 
@@ -286,14 +317,14 @@
             card.className = 'card';
             card.innerHTML = `
                 <div class="card-header">
-                    <div class="apt-name">${item.아파트} ${item.동}동</div>
-                    <div class="line-info">🚪 ${item.lines || item.라인} 라인</div>
+                    <div class="apt-name">${item.아파트}</div>
+                    <div class="line-info">🚪 ${item.라인}호</div>
                 </div>
                 <div class="card-body">
                     <div>
-                        <div class="type-info">기기종류: ⚙️ ${item.공동 || '미지정'}</div>
+                        <div class="type-info">${item.공동 || '기본'}</div>
                         <div class="pwd-box">
-                            <span class="pwd-highlight">${item.비번 || '정보없음'}</span>
+                            <span class="pwd-highlight">${item.비번 || '-'}</span>
                         </div>
                     </div>
                     <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">⚙️ 수정</button>
@@ -350,7 +381,9 @@
         };
 
         closeModal();
-        cardList.innerHTML = "구글 시트 동기화 중... ⏳";
+        stepLabel.textContent = "구글 시트 동기화 중... ⏳";
+        stepContainer.style.display = 'block';
+        cardList.innerHTML = '';
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -360,10 +393,12 @@
 
     // 서버 삭제 요청
     async function deleteData() {
-        if(!confirm("정말 이 라인의 비밀번호를 삭제하시겠습니까?")) return;
+        if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
         const rowId = document.getElementById('formRowId').value;
         closeModal();
-        cardList.innerHTML = "데이터 삭제 중... ⏳";
+        stepLabel.textContent = "데이터 삭제 중... ⏳";
+        stepContainer.style.display = 'block';
+        cardList.innerHTML = '';
         
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
