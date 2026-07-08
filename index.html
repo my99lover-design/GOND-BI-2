@@ -152,12 +152,12 @@
 
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
-    themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+    themeToggle.textContent = currentTheme === 'dark' ? '☀️ 밝기모드' : '🌙 밝기모드';
     themeToggle.addEventListener('click', () => {
         const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+        themeToggle.textContent = theme === 'dark' ? '☀️ 밝기모드' : '🌙 밝기모드';
     });
 
     function getDistance(lat1, lon1, lat2, lon2) {
