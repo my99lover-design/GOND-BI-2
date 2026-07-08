@@ -32,8 +32,26 @@
         .gps-title { font-size: 1rem; color: var(--text-sub); font-weight: bold; }
         .gps-status-badge { font-size: 0.85rem; font-weight: bold; padding: 4px 10px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border); }
         
-        .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
-        .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        /* 🛠️ 2x2 그리드 스타일 */
+.gps-buttons { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; /* 2열 고정 */
+    gap: 10px; 
+    padding-bottom: 8px; 
+}
+.gps-btn { 
+    background: var(--gps-btn-bg); 
+    color: var(--gps-btn-text); 
+    border: none; 
+    padding: 12px 10px; /* 세로/가로 여백 조절 */
+    border-radius: 16px; 
+    font-size: 1rem; 
+    font-weight: bold; 
+    cursor: pointer; 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    white-space: normal; /* 글자 길어지면 자동 줄바꿈 */
+    text-align: center;
+}
 
         .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
         
@@ -237,7 +255,8 @@
             }
             
             const sortedList = targetList.sort((a, b) => a.dist - b.dist);
-            const finalDisplayTargets = sortedList.slice(0, 3);
+            // 🌟 2x2 배치를 위해 4개로 변경
+            const finalDisplayTargets = sortedList.slice(0, 4);
             
             if (finalDisplayTargets.length > 0) {
                 const btnArea = document.getElementById('gpsButtons');
@@ -251,6 +270,23 @@
                     } else {
                         distanceText = `${target.dist.toFixed(2)}km`;
                     }
+
+                    // 🌟 innerHTML로 변경하여 아파트 이름과 거리를 2줄로 배치
+                    btn.innerHTML = `${target.realName}<br><span style="font-size:0.8em; opacity:0.8;">(${distanceText})</span>`;
+                    
+                    btn.addEventListener('click', () => {
+                        selectedRegion = target.region;
+                        if (target.type === 'officetel') {
+                            selectedApt = target.parentApt;
+                            selectDongStep(target.realName);
+                        } else {
+                            selectAptStep(target.realName);
+                        }
+                    });
+                    btnArea.appendChild(btn);
+                });
+                document.getElementById('gpsSection').style.display = 'block';
+            }
 
                     btn.textContent = `🏢 ${target.realName} (${distanceText})`;
                     
