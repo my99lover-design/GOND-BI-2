@@ -495,6 +495,7 @@
         modal.style.display = 'flex';
     }
 
+    // 🛠️ 1. 데이터 저장 및 유실 방지(임시저장) 함수
     async function submitForm() {
         const rowId = document.getElementById('formRowId').value;
         const payload = {
@@ -506,12 +507,38 @@
 
         closeModal();
         buttonGrid.innerHTML = '<div class="status-msg">구글 시트 동기화 중... ⏳</div>';
-        stepContainer.style.display = 'block'; cardList.innerHTML = ''; commonPwdStandalone.style.display = 'none';
         
         try {
-            await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-            localStorage.removeItem('pwd_data_cache'); loadData();
-        } catch (e) { alert("저장 실패 ❌"); loadData(); }
+            const response = await fetch(GAS_WEB_APP_URL, { 
+                method: 'POST', 
+                body: JSON.stringify(payload) 
+            });
+            
+            if (!response.ok) throw new Error("통신 실패");
+            
+            localStorage.removeItem('pwd_data_cache'); 
+            loadData();
+        } catch (e) {
+            localStorage.setItem('pending_update', JSON.stringify(payload));
+            alert("인터넷 연결이 불안정하여 데이터를 임시 저장했습니다. 💾\n다음에 앱을 켜면 자동으로 전송됩니다!");
+            loadData();
+        }
+    }
+
+    // 🛠️ 2. 앱 실행 시 임시 저장된 데이터 전송 로직
+    async function checkPendingData() {
+        const pending = localStorage.getItem('pending_update');
+        if (pending) {
+            try {
+                await fetch(GAS_WEB_APP_URL, { method: 'POST', body: pending });
+                localStorage.removeItem('pending_update');
+                localStorage.removeItem('pwd_data_cache');
+                alert("임시 저장되었던 데이터가 전송되었습니다! ✅");
+                loadData();
+            } catch (e) {
+                console.log("자동 재전송 실패, 다음 기회에...");
+            }
+        }
     }
 
     async function deleteData() {
@@ -526,8 +553,10 @@
             localStorage.removeItem('pwd_data_cache'); loadData();
         } catch (e) { alert("삭제 실패 ❌"); loadData(); }
     }
-
+    // 🛠️ 3. 앱 시작 시 이 함수가 가장 먼저 실행되도록 추가
+    checkPendingData(); 
     loadData();
+  
 </script>
 </body>
 </html>
