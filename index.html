@@ -89,6 +89,20 @@
         .btn-cancel { background: var(--border); color: var(--text-main); }
         .btn-delete { background: var(--accent); color: white; }
         .status-msg { text-align: center; color: var(--text-sub); font-size: 1.1rem; width: 100%; padding: 20px 0; }
+   /* 로딩 스피너 스타일 */
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
     </style>
 </head>
 <body>
@@ -434,18 +448,19 @@
     async function submitCommonPwdForm() {
     const newValue = document.getElementById('formCommonPwdValue').value;
     closeCommonModal();
+    buttonGrid.innerHTML = '<div class="status-msg"><div class="spinner"></div>변경 중...</div>';
     
     try {
         const payload = { action: 'updateCommonPwd', 아파트: selectedApt, 공동: newValue };
-        await fetch(GAS_WEB_APP_URL, { 
-            method: 'POST', 
-            body: JSON.stringify(payload) 
-        });
-        await loadData(); // 동기화
+        await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+        localStorage.removeItem('pwd_data_cache');
+        buttonGrid.innerHTML = '<div class="status-msg">✅ 공동비번 변경 완료!</div>';
+        setTimeout(async () => await loadData(), 1000);
     } catch (e) { 
-        alert("통신 실패! 연결을 확인해주세요."); 
+        buttonGrid.innerHTML = '<div class="status-msg">❌ 변경 실패</div>';
+        setTimeout(loadData, 1500);
     }
-}
+    }
 
 
 
@@ -521,15 +536,16 @@ async function submitForm() {
     };
 
     closeModal();
-    buttonGrid.innerHTML = '<div class="status-msg">구글 시트 동기화 중... ⏳</div>';
+    buttonGrid.innerHTML = '<div class="status-msg"><div class="spinner"></div>수정 중...</div>';
     
     try {
         await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
         localStorage.removeItem('pwd_data_cache');
-        await loadData(); // 즉시 새로고침
+        buttonGrid.innerHTML = '<div class="status-msg">✅ 수정 완료!</div>';
+        setTimeout(async () => await loadData(), 1000);
     } catch (e) {
-        alert("통신 실패! 연결을 확인하고 다시 시도해주세요.");
-        await loadData();
+        buttonGrid.innerHTML = '<div class="status-msg">❌ 통신 실패</div>';
+        setTimeout(loadData, 1500);
     }
 }
 
@@ -539,18 +555,18 @@ async function submitForm() {
     if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
     const rowId = document.getElementById('formRowId').value;
     closeModal();
-    buttonGrid.innerHTML = '<div class="status-msg">데이터 삭제 중... ⏳</div>';
+    buttonGrid.innerHTML = '<div class="status-msg"><div class="spinner"></div>삭제 중...</div>';
     
     try {
         await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
         localStorage.removeItem('pwd_data_cache');
-        await loadData(); // 즉시 새로고침
+        buttonGrid.innerHTML = '<div class="status-msg">🗑️ 삭제 완료!</div>';
+        setTimeout(async () => await loadData(), 1000);
     } catch (e) { 
-        alert("삭제 실패 ❌"); 
-        await loadData(); 
+        buttonGrid.innerHTML = '<div class="status-msg">❌ 삭제 실패</div>';
+        setTimeout(loadData, 1500);
     }
-}
-
+    }
     // 🛠️ 3. 앱 시작 시 이 함수가 가장 먼저 실행되도록 추가
     
     loadData();
