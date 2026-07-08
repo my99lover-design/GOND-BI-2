@@ -155,7 +155,7 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // 🛠️ 100% 완전 일치(===) 방식으로 롤백된 깔끔한 고정밀 GPS 로직
+    // 🛠️ 상위 3개 제한 및 현위치 기준 거리 표기(m/km 자동 변환)가 추가된 GPS 함수
     function initGPS() {
         if (!navigator.geolocation) return;
         
@@ -180,29 +180,40 @@
                 
                 if (distance === Infinity) continue;
                 
-                // 완벽하게 텍스트가 일치(===)하는 데이터만 매칭함 (오작동 제로)
-                const aptMatch = data.find(item => item.아파트 && item.아파트 === key);
-                const dongMatch = data.find(item => item.동 && String(item.동) === key);
+                const hasApt = data.some(item => item.아파트 && item.아파트 === key);
+                const hasDong = data.some(item => item.동 && String(item.동) === key);
                 
-                if (aptMatch) {
-                    targetList.push({ name: key, realName: aptMatch.아파트, type: 'apt', region: aptMatch.지역, parentApt: '', dist: distance });
-                } else if (dongMatch) {
-                    targetList.push({ name: key, realName: dongMatch.동, type: 'officetel', region: dongMatch.지역, parentApt: dongMatch.아파트, dist: distance });
+                if (hasApt) {
+                    const sample = data.find(item => item.아파트 === key);
+                    targetList.push({ name: key, realName: key, type: 'apt', region: sample ? sample.지역 : '', parentApt: '', dist: distance });
+                } else if (hasDong) {
+                    const sample = data.find(item => String(item.동) === key);
+                    targetList.push({ name: key, realName: key, type: 'officetel', region: sample ? sample.지역 : '', parentApt: sample ? sample.아파트 : '', dist: distance });
                 }
             }
             
-            // 거리 가깝고 정확히 매칭된 순서로 정렬
+            // 소수점 단위를 누락 없이 정밀하게 비교하여 오름차순 정렬
             const sortedList = targetList.sort((a, b) => a.dist - b.dist);
             
-            // 상위 5개 추출
-            const finalDisplayTargets = sortedList.slice(0, 5);
+            // 🛠️ 딱 상위 3개만 잘라내기
+            const finalDisplayTargets = sortedList.slice(0, 3);
             
             if (finalDisplayTargets.length > 0) {
                 const btnArea = document.getElementById('gpsButtons');
                 btnArea.innerHTML = '';
                 finalDisplayTargets.forEach(target => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
-                    btn.textContent = `🏢 ${target.realName}`;
+                    
+                    // 🛠️ 거리 포맷 변환 로직 (1km 미만은 m, 이상은 km로 소수점 둘째 자리까지)
+                    let distanceText = "";
+                    if (target.dist < 1) {
+                        distanceText = `${Math.round(target.dist * 1000)}m`;
+                    } else {
+                        distanceText = `${target.dist.toFixed(2)}km`;
+                    }
+
+                    // 버튼에 이름과 거리를 함께 표기 (예: 🏢 구래 예미지 (7.86km))
+                    btn.textContent = `🏢 ${target.realName} (${distanceText})`;
                     
                     btn.addEventListener('click', () => {
                         selectedRegion = target.region;
