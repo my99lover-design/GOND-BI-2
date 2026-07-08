@@ -209,9 +209,8 @@
         gpsWatchId = navigator.geolocation.watchPosition((position) => {
             const uLat = position.coords.latitude; 
             const uLon = position.coords.longitude;
-            const accuracy = position.coords.accuracy; // 오차 범위 오리지널 미터 단위
+            const accuracy = position.coords.accuracy;
             
-            // 🛠️ 실시간 수집된 오차 정확도 반경에 따라 신호 강도 3단계 표현
             if (accuracy <= 15) {
                 gpsStatusBadge.innerHTML = `<span style="color:#22c55e;">🟢 강함 (${Math.round(accuracy)}m)</span>`;
             } else if (accuracy <= 40) {
@@ -238,9 +237,7 @@
                     const targetLon = Number(loc.lon);
                     
                     const dist = getDistance(uLat, uLon, targetLat, targetLon);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                    }
+                    if (dist < minDistance) minDistance = dist;
                 });
 
                 if (minDistance === Infinity) continue;
@@ -255,40 +252,20 @@
             }
             
             const sortedList = targetList.sort((a, b) => a.dist - b.dist);
-            // 🌟 2x2 배치를 위해 4개로 변경
             const finalDisplayTargets = sortedList.slice(0, 4);
             
             if (finalDisplayTargets.length > 0) {
                 const btnArea = document.getElementById('gpsButtons');
                 btnArea.innerHTML = '';
+                
                 finalDisplayTargets.forEach(target => {
-                    const btn = document.createElement('button'); btn.className = 'gps-btn';
+                    const btn = document.createElement('button'); 
+                    btn.className = 'gps-btn';
                     
-                    let distanceText = "";
-                    if (target.dist < 1) {
-                        distanceText = `${Math.round(target.dist * 1000)}m`;
-                    } else {
-                        distanceText = `${target.dist.toFixed(2)}km`;
-                    }
+                    let distanceText = target.dist < 1 ? `${Math.round(target.dist * 1000)}m` : `${target.dist.toFixed(2)}km`;
 
-                    // 🌟 innerHTML로 변경하여 아파트 이름과 거리를 2줄로 배치
+                    // 🌟 중복 없이 깔끔하게 2줄 배치
                     btn.innerHTML = `${target.realName}<br><span style="font-size:0.8em; opacity:0.8;">(${distanceText})</span>`;
-                    
-                    btn.addEventListener('click', () => {
-                        selectedRegion = target.region;
-                        if (target.type === 'officetel') {
-                            selectedApt = target.parentApt;
-                            selectDongStep(target.realName);
-                        } else {
-                            selectAptStep(target.realName);
-                        }
-                    });
-                    btnArea.appendChild(btn);
-                });
-                document.getElementById('gpsSection').style.display = 'block';
-            }
-
-                    btn.textContent = `🏢 ${target.realName} (${distanceText})`;
                     
                     btn.addEventListener('click', () => {
                         selectedRegion = target.region;
