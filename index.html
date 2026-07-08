@@ -155,7 +155,7 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // 🛠️ 상위 3개 제한 및 현위치 기준 거리 표기(m/km 자동 변환)가 추가된 GPS 함수
+    // 🌟 [통합 최종본] 100% 완전 일치 + 다중 좌표 배열 지원 + 실시간 고정밀 소수점 반영 + 상위 3개 노출 GPS 로직
     function initGPS() {
         if (!navigator.geolocation) return;
         
@@ -170,32 +170,49 @@
         };
 
         gpsWatchId = navigator.geolocation.watchPosition((position) => {
+            // 기기 실시간 GPS 좌표 수집 (소수점 원본 전체 유실 없이 보존)
             const uLat = position.coords.latitude; 
             const uLon = position.coords.longitude;
             const targetList = [];
             
             for (const key in locations) {
-                const loc = locations[key];
-                const distance = getDistance(uLat, uLon, loc.lat, loc.lon);
-                
-                if (distance === Infinity) continue;
-                
+                // 구글 시트 데이터와 100% 명칭 완전 일치(===) 체크
                 const hasApt = data.some(item => item.아파트 && item.아파트 === key);
                 const hasDong = data.some(item => item.동 && String(item.동) === key);
                 
+                if (!hasApt && !hasDong) continue;
+
+                // 단일 객체 구조({})라도 배열([]) 처리가 되도록 자동 보정 방어벽
+                const coordsArray = Array.isArray(locations[key]) ? locations[key] : [locations[key]];
+                
+                // 여러 개의 세부 좌표 중 현재 내 위치와 '가장 가까운 최단 거리' 계산
+                let minDistance = Infinity;
+                coordsArray.forEach(loc => {
+                    // 문자열 취급 및 소수점 누락 원천 차단을 위해 Number 강제 치환
+                    const targetLat = Number(loc.lat);
+                    const targetLon = Number(loc.lon);
+                    
+                    const dist = getDistance(uLat, uLon, targetLat, targetLon);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                    }
+                });
+
+                if (minDistance === Infinity) continue;
+                
                 if (hasApt) {
                     const sample = data.find(item => item.아파트 === key);
-                    targetList.push({ name: key, realName: key, type: 'apt', region: sample ? sample.지역 : '', parentApt: '', dist: distance });
+                    targetList.push({ name: key, realName: key, type: 'apt', region: sample ? sample.지역 : '', parentApt: '', dist: minDistance });
                 } else if (hasDong) {
                     const sample = data.find(item => String(item.동) === key);
-                    targetList.push({ name: key, realName: key, type: 'officetel', region: sample ? sample.지역 : '', parentApt: sample ? sample.아파트 : '', dist: distance });
+                    targetList.push({ name: key, realName: key, type: 'officetel', region: sample ? sample.지역 : '', parentApt: sample ? sample.아파트 : '', dist: minDistance });
                 }
             }
             
-            // 소수점 단위를 누락 없이 정밀하게 비교하여 오름차순 정렬
+            // 미세한 정밀 소수점 차이까지 전부 포함하여 정밀 거리 오름차순 정렬
             const sortedList = targetList.sort((a, b) => a.dist - b.dist);
             
-            // 🛠️ 딱 상위 3개만 잘라내기
+            // 딱 상위 3개만 잘라내기
             const finalDisplayTargets = sortedList.slice(0, 3);
             
             if (finalDisplayTargets.length > 0) {
@@ -204,7 +221,7 @@
                 finalDisplayTargets.forEach(target => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
                     
-                    // 🛠️ 거리 포맷 변환 로직 (1km 미만은 m, 이상은 km로 소수점 둘째 자리까지)
+                    // 거리 포맷 변환 (1km 미만 미터 m 단위, 이상은 킬로미터 km 단위 표시)
                     let distanceText = "";
                     if (target.dist < 1) {
                         distanceText = `${Math.round(target.dist * 1000)}m`;
@@ -212,7 +229,6 @@
                         distanceText = `${target.dist.toFixed(2)}km`;
                     }
 
-                    // 버튼에 이름과 거리를 함께 표기 (예: 🏢 구래 예미지 (7.86km))
                     btn.textContent = `🏢 ${target.realName} (${distanceText})`;
                     
                     btn.addEventListener('click', () => {
@@ -294,6 +310,7 @@
         }
     }
 
+    // 🌟 첫 번째 숫자만 추출하여 완벽하게 오름차순 정렬하는 최종 라인 정렬 로직 포함
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
         const filtered = data.filter(item => {
