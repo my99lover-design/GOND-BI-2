@@ -431,26 +431,20 @@ function showCommonPwdHeader(aptName) {
     }
 
     async function submitCommonPwdForm() {
-        const newValue = document.getElementById('formCommonPwdValue').value;
-        handleCommonModalClose();
-        
-        buttonGrid.innerHTML = '<div class="status-msg">공동비밀번호 일괄 변경 중... ⏳</div>';
-        
-        const payload = {
-            action: 'updateCommonPwd',
-            아파트: selectedApt,
-            공동: newValue
-        };
-
-        try {
-            await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-            localStorage.removeItem('pwd_data_cache'); 
-            await loadData();
-        } catch (e) { 
-            alert("공동비번 수정 실패 ❌"); 
-            await loadData(); 
-        }
+    const newValue = document.getElementById('formCommonPwdValue').value;
+    closeCommonModal();
+    buttonGrid.innerHTML = '<div class="status-msg">공동비밀번호 일괄 변경 중... ⏳</div>';
+    
+    try {
+        await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'updateCommonPwd', 아파트: selectedApt, 공동: newValue }) });
+        localStorage.removeItem('pwd_data_cache');
+        await loadData();
+    } catch (e) { 
+        alert("수정 실패 ❌"); 
+        await loadData(); 
     }
+}
+
 
     function resetSteps() {
         currentStep = 1; selectedRegion = ""; selectedApt = ""; selectedDong = "";
@@ -514,67 +508,48 @@ function showCommonPwdHeader(aptName) {
         document.getElementById('deleteBtn').style.display = 'block';
         modal.style.display = 'flex';
     }
+async function submitForm() {
+    const rowId = document.getElementById('formRowId').value;
+    const payload = {
+        action: 'update', rowId: rowId,
+        지역: document.getElementById('formRegion').value, 아파트: document.getElementById('formApt').value,
+        공동: document.getElementById('formType').value, 동: document.getElementById('formDong').value,
+        라인: document.getElementById('formLine').value, 비번: document.getElementById('formPwd').value
+    };
 
-    // 🛠️ 1. 데이터 저장 및 유실 방지(임시저장) 함수
-    async function submitForm() {
-        const rowId = document.getElementById('formRowId').value;
-        const payload = {
-            action: 'update', rowId: rowId,
-            지역: document.getElementById('formRegion').value, 아파트: document.getElementById('formApt').value,
-            공동: document.getElementById('formType').value, 동: document.getElementById('formDong').value,
-            라인: document.getElementById('formLine').value, 비번: document.getElementById('formPwd').value
-        };
-
-        closeModal();
-        buttonGrid.innerHTML = '<div class="status-msg">구글 시트 동기화 중... ⏳</div>';
-        
-        try {
-            const response = await fetch(GAS_WEB_APP_URL, { 
-                method: 'POST', 
-                body: JSON.stringify(payload) 
-            });
-            
-            if (!response.ok) throw new Error("통신 실패");
-            
-            localStorage.removeItem('pwd_data_cache'); 
-            loadData();
-        } catch (e) {
-            localStorage.setItem('pending_update', JSON.stringify(payload));
-            alert("인터넷 연결이 불안정하여 데이터를 임시 저장했습니다. 💾\n다음에 앱을 켜면 자동으로 전송됩니다!");
-            loadData();
-        }
+    closeModal();
+    buttonGrid.innerHTML = '<div class="status-msg">구글 시트 동기화 중... ⏳</div>';
+    
+    try {
+        await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+        localStorage.removeItem('pwd_data_cache');
+        await loadData(); // 즉시 새로고침
+    } catch (e) {
+        alert("통신 실패! 연결을 확인하고 다시 시도해주세요.");
+        await loadData();
     }
+}
 
-    // 🛠️ 2. 앱 실행 시 임시 저장된 데이터 전송 로직
-    async function checkPendingData() {
-        const pending = localStorage.getItem('pending_update');
-        if (pending) {
-            try {
-                await fetch(GAS_WEB_APP_URL, { method: 'POST', body: pending });
-                localStorage.removeItem('pending_update');
-                localStorage.removeItem('pwd_data_cache');
-                alert("임시 저장되었던 데이터가 전송되었습니다! ✅");
-                loadData();
-            } catch (e) {
-                console.log("자동 재전송 실패, 다음 기회에...");
-            }
-        }
-    }
+    
 
     async function deleteData() {
-        if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
-        const rowId = document.getElementById('formRowId').value;
-        closeModal();
-        buttonGrid.innerHTML = '<div class="status-msg">데이터 삭제 중... ⏳</div>';
-        stepContainer.style.display = 'block'; cardList.innerHTML = ''; commonPwdStandalone.style.display = 'none';
-        
-        try {
-            await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
-            localStorage.removeItem('pwd_data_cache'); loadData();
-        } catch (e) { alert("삭제 실패 ❌"); loadData(); }
+    if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
+    const rowId = document.getElementById('formRowId').value;
+    closeModal();
+    buttonGrid.innerHTML = '<div class="status-msg">데이터 삭제 중... ⏳</div>';
+    
+    try {
+        await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
+        localStorage.removeItem('pwd_data_cache');
+        await loadData(); // 즉시 새로고침
+    } catch (e) { 
+        alert("삭제 실패 ❌"); 
+        await loadData(); 
     }
+}
+
     // 🛠️ 3. 앱 시작 시 이 함수가 가장 먼저 실행되도록 추가
-    checkPendingData(); 
+    
     loadData();
   
 </script>
