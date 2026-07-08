@@ -26,8 +26,12 @@
         .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.25rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
         .nav-btn:active { background: var(--step-bg); }
         
+        /* 🛠️ GPS 섹션 구조 개선 (신호 세기 인디케이터 탑재) */
         .gps-section { margin-bottom: 20px; display: none; }
-        .gps-title { font-size: 1rem; color: var(--text-sub); margin-bottom: 10px; font-weight: bold; }
+        .gps-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .gps-title { font-size: 1rem; color: var(--text-sub); font-weight: bold; }
+        .gps-status-badge { font-size: 0.85rem; font-weight: bold; padding: 4px 10px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border); }
+        
         .gps-buttons { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
         .gps-btn { background: var(--gps-btn-bg); color: var(--gps-btn-text); border: none; padding: 14px 20px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
 
@@ -38,7 +42,6 @@
         
         .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
         
-        /* 🛠️ 공동비번 레이아웃 구조 고도화 (수정 버튼 배치용) */
         .common-pwd-area { text-align: left; width: 100%; padding: 5px 0 12px 5px; box-sizing: border-box; display: none; }
         .common-pwd-title { font-size: 1.3rem; font-weight: 900; color: var(--text-main); margin-bottom: 6px; }
         .common-pwd-row { display: flex; align-items: center; gap: 10px; }
@@ -84,7 +87,10 @@
     </div>
 
     <div id="gpsSection" class="gps-section">
-        <div class="gps-title">📍 내 주변(GPS)</div>
+        <div class="gps-header-row">
+            <div class="gps-title">📍 내 주변(GPS)</div>
+            <div id="gpsStatusBadge" class="gps-status-badge">📡 신호 분석 중...</div>
+        </div>
         <div id="gpsButtons" class="gps-buttons"></div>
     </div>
 
@@ -131,7 +137,7 @@
 </div>
 
 <script>
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxMc74RsguWtr-4Nx3w2OeTctpb8-ILGN5j41kW97YNY-0KMX4FOfdvQUKDL0UGTbxk/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
     const LOCATIONS_JSON_URL = "locations.json"; 
 
     let data = [];
@@ -149,15 +155,16 @@
     const navContainer = document.getElementById('navContainer');
     const stepContainer = document.getElementById('stepContainer');
     const commonPwdStandalone = document.getElementById('commonPwdStandalone');
+    const gpsStatusBadge = document.getElementById('gpsStatusBadge');
 
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
-    themeToggle.textContent = currentTheme === 'dark' ? '☀️ 밝기모드' : '🌙 밝기모드';
+    themeToggle.textContent = currentTheme === 'dark' ? '☀️ 밝기전환' : '🌙 밝기전환';
     themeToggle.addEventListener('click', () => {
         const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        themeToggle.textContent = theme === 'dark' ? '☀️ 밝기모드' : '🌙 밝기모드';
+        themeToggle.textContent = theme === 'dark' ? '☀️ 밝기전환' : '🌙 밝기전환';
     });
 
     function getDistance(lat1, lon1, lat2, lon2) {
@@ -182,11 +189,20 @@
         };
 
         gpsWatchId = navigator.geolocation.watchPosition((position) => {
-            // ⭕ uLat, uLon 중복 선언 버그 완벽 수정 해결 완료
             const uLat = position.coords.latitude; 
             const uLon = position.coords.longitude;
+            const accuracy = position.coords.accuracy; // 오차 범위 오리지널 미터 단위
             
-            if (position.coords.accuracy > 60) return; 
+            // 🛠️ 실시간 수집된 오차 정확도 반경에 따라 신호 강도 3단계 표현
+            if (accuracy <= 15) {
+                gpsStatusBadge.innerHTML = `<span style="color:#22c55e;">🟢 강함 (${Math.round(accuracy)}m)</span>`;
+            } else if (accuracy <= 40) {
+                gpsStatusBadge.innerHTML = `<span style="color:#eab308;">🟡 중간 (${Math.round(accuracy)}m)</span>`;
+            } else {
+                gpsStatusBadge.innerHTML = `<span style="color:#ef4444;">🔴 약함 (${Math.round(accuracy)}m)</span>`;
+            }
+
+            if (accuracy > 60) return; 
             
             const targetList = [];
             
@@ -253,6 +269,7 @@
             }
         }, (err) => {
             console.warn(`GPS 보정 대기 중... (${err.message})`);
+            gpsStatusBadge.innerHTML = `<span style="color:#ef4444;">🔴 끊김 (오류)</span>`;
         }, gpsOptions);
     }
 
@@ -333,7 +350,7 @@
         }
 
         const groupedByLine = filtered.reduce((acc, curr) => {
-            let lineText = String(curr.라인).includes('라인') ? curr.lines : `${curr.라인}라인`;
+            let lineText = String(curr.라인).includes('라인') ? curr.라인 : `${curr.라인}라인`;
             if (!acc[lineText]) acc[lineText] = [];
             acc[lineText].push(curr);
             return acc;
@@ -368,7 +385,6 @@
         });
     }
 
-    // 🛠️ 2. 동 선택 화면(Step 3)에서 공동비번 옆에 [수정] 버튼 생성
     function showCommonPwdHeader(aptName) {
         const filteredApt = data.filter(item => item.아파트 === aptName);
         const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
@@ -384,7 +400,6 @@
         commonPwdStandalone.style.display = 'block';
     }
 
-    // 공동비번 전용 모달 열기
     function openCommonPwdModal(aptName, currentValue) {
         document.getElementById('commonModalAptLabel').textContent = `🏢 ${aptName} 공동비번`;
         document.getElementById('formCommonPwdValue').value = currentValue === "등록 없음" ? "" : currentValue;
@@ -395,7 +410,6 @@
         document.getElementById('commonEditorModal').style.display = 'none';
     }
 
-    // 공동비번 변경 제어 함수 (해당 아파트의 모든 라인 행의 '공동' 컬럼 일괄 업데이트)
     async function submitCommonPwdForm() {
         const newValue = document.getElementById('formCommonPwdValue').value;
         handleCommonModalClose();
