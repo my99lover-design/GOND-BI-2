@@ -123,7 +123,7 @@
 
     let data = [];
     let locations = {};
-    let gpsWatchId = null; // 실시간 추적 ID 저장용
+    let gpsWatchId = null; 
     
     let currentStep = 1;
     let selectedRegion = "";
@@ -155,57 +155,54 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // 🛠️ 실시간 보정형 하드웨어 고정밀 옵션 주입 로직
+    // 🛠️ 100% 완전 일치(===) 방식으로 롤백된 깔끔한 고정밀 GPS 로직
     function initGPS() {
         if (!navigator.geolocation) return;
         
-        // 기존에 작동 중인 GPS 추적이 있다면 초기화하여 배터리 및 정밀도 꼬임 방지
         if (gpsWatchId !== null) {
             navigator.geolocation.clearWatch(gpsWatchId);
         }
 
-        // 고정밀 하드웨어 세팅 옵션
         const gpsOptions = {
-            enableHighAccuracy: true, // 하드웨어 GPS 칩셋 강제 활성화 (정밀도 최대값)
-            timeout: 10000,           // 위치를 잡을 때까지 최대 10초 대기
-            maximumAge: 0             // 캐시된 이전 위치를 사용하지 않고 매번 새 좌표 수신
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         };
 
-        // watchPosition: 일회성이 아니라 좌표가 갱신되거나 오차가 줄어들 때마다 실시간 재연산
         gpsWatchId = navigator.geolocation.watchPosition((position) => {
             const uLat = position.coords.latitude; 
             const uLon = position.coords.longitude;
             const targetList = [];
-            const processedNames = new Set();
             
             for (const key in locations) {
-                if (processedNames.has(key)) continue;
-                
                 const loc = locations[key];
                 const distance = getDistance(uLat, uLon, loc.lat, loc.lon);
                 
                 if (distance === Infinity) continue;
                 
-                const aptMatch = data.find(item => item.아파트 && (item.아파트.includes(key) || key.includes(item.아파트)));
-                const dongMatch = data.find(item => item.동 && (String(item.동).includes(key) || String(key).includes(item.동)));
+                // 완벽하게 텍스트가 일치(===)하는 데이터만 매칭함 (오작동 제로)
+                const aptMatch = data.find(item => item.아파트 && item.아파트 === key);
+                const dongMatch = data.find(item => item.동 && String(item.동) === key);
                 
                 if (aptMatch) {
                     targetList.push({ name: key, realName: aptMatch.아파트, type: 'apt', region: aptMatch.지역, parentApt: '', dist: distance });
-                    processedNames.add(key);
                 } else if (dongMatch) {
                     targetList.push({ name: key, realName: dongMatch.동, type: 'officetel', region: dongMatch.지역, parentApt: dongMatch.아파트, dist: distance });
-                    processedNames.add(key);
                 }
             }
             
-            const sortedTargets = targetList.sort((a, b) => a.dist - b.dist).slice(0, 5);
+            // 거리 가깝고 정확히 매칭된 순서로 정렬
+            const sortedList = targetList.sort((a, b) => a.dist - b.dist);
             
-            if (sortedTargets.length > 0) {
+            // 상위 5개 추출
+            const finalDisplayTargets = sortedList.slice(0, 5);
+            
+            if (finalDisplayTargets.length > 0) {
                 const btnArea = document.getElementById('gpsButtons');
                 btnArea.innerHTML = '';
-                sortedTargets.forEach(target => {
+                finalDisplayTargets.forEach(target => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
-                    btn.textContent = `🏢 ${target.name}`;
+                    btn.textContent = `🏢 ${target.realName}`;
                     
                     btn.addEventListener('click', () => {
                         selectedRegion = target.region;
@@ -221,7 +218,7 @@
                 document.getElementById('gpsSection').style.display = 'block';
             }
         }, (err) => {
-            console.warn(`GPS 업데이트 보정 대기 중... (${err.message})`);
+            console.warn(`GPS 보정 대기 중... (${err.message})`);
         }, gpsOptions);
     }
 
@@ -286,72 +283,6 @@
         }
     }
 
-    function showCommonPwdHeader(aptName) {
-        const filteredApt = data.filter(item => item.아파트 === aptName);
-        const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
-        const commonValue = commonData ? commonData.공동 : "등록 없음";
-
-        commonPwdStandalone.innerHTML = `
-            <div class="common-pwd-title">&lt;공동비번&gt;</div>
-            <div class="common-pwd-value">${commonValue}</div>
-        `;
-        commonPwdStandalone.style.display = 'block';
-    }
-
-    function resetSteps() {
-        currentStep = 1;
-        selectedRegion = ""; selectedApt = ""; selectedDong = "";
-        updateNav();
-        commonPwdStandalone.style.display = 'none'; 
-        stepContainer.style.display = 'block';
-        cardList.innerHTML = ''; 
-        const regions = [...new Set(data.map(item => item.지역).filter(Boolean))];
-        buttonGrid.innerHTML = '';
-        regions.forEach(region => {
-            const btn = document.createElement('button');
-            btn.className = 'select-btn';
-            btn.textContent = region;
-            btn.addEventListener('click', () => selectRegionStep(region));
-            buttonGrid.appendChild(btn);
-        });
-    }
-
-    function selectRegionStep(region) {
-        currentStep = 2; selectedRegion = region; selectedApt = ""; selectedDong = "";
-        updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
-        const apts = [...new Set(data.filter(item => item.지역 === region).map(item => item.아파트).filter(Boolean))];
-        buttonGrid.innerHTML = '';
-        apts.forEach(apt => {
-            const btn = document.createElement('button');
-            btn.className = 'select-btn';
-            btn.textContent = apt;
-            btn.addEventListener('click', () => selectAptStep(apt));
-            buttonGrid.appendChild(btn);
-        });
-    }
-
-    function selectAptStep(apt) {
-        currentStep = 3; selectedApt = apt; selectedDong = "";
-        updateNav(); showCommonPwdHeader(apt); stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
-        const dongs = [...new Set(data.filter(item => item.아파트 === apt).map(item => item.동).filter(Boolean))];
-        dongs.sort((a, b) => parseInt(a) - parseInt(b));
-        buttonGrid.innerHTML = '';
-        dongs.forEach(dong => {
-            const btn = document.createElement('button');
-            btn.className = 'select-btn';
-            const dongNumber = String(dong).replace(/동/g, '').trim();
-            btn.textContent = dongNumber; 
-            btn.addEventListener('click', () => selectDongStep(dong));
-            buttonGrid.appendChild(btn);
-        });
-    }
-
-    function selectDongStep(dong) {
-        currentStep = 4; selectedDong = dong; updateNav();
-        commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'none';
-        renderFinalCards(selectedApt, dong);
-    }
-
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
         const filtered = data.filter(item => {
@@ -374,7 +305,6 @@
             return acc;
         }, {});
 
-        // 🛠️ 문자열에서 첫 번째 숫자만 추출하여 완벽하게 오름차순 정렬 (1,2 -> 3,4 순서 고정)
         const sortedLines = Object.keys(groupedByLine).sort((a, b) => {
             const numA = parseInt(a.match(/\d+/)?.[0]) || 0;
             const numB = parseInt(b.match(/\d+/)?.[0]) || 0;
@@ -402,6 +332,62 @@
             `;
             cardList.appendChild(card);
         });
+    }
+
+    function showCommonPwdHeader(aptName) {
+        const filteredApt = data.filter(item => item.아파트 === aptName);
+        const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
+        const commonValue = commonData ? commonData.공동 : "등록 없음";
+
+        commonPwdStandalone.innerHTML = `
+            <div class="common-pwd-title">&lt;공동비번&gt;</div>
+            <div class="common-pwd-value">${commonValue}</div>
+        `;
+        commonPwdStandalone.style.display = 'block';
+    }
+
+    function resetSteps() {
+        currentStep = 1; selectedRegion = ""; selectedApt = ""; selectedDong = "";
+        updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+        const regions = [...new Set(data.map(item => item.지역).filter(Boolean))];
+        buttonGrid.innerHTML = '';
+        regions.forEach(region => {
+            const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = region;
+            btn.addEventListener('click', () => selectRegionStep(region));
+            buttonGrid.appendChild(btn);
+        });
+    }
+
+    function selectRegionStep(region) {
+        currentStep = 2; selectedRegion = region; selectedApt = ""; selectedDong = "";
+        updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+        const apts = [...new Set(data.filter(item => item.지역 === region).map(item => item.아파트).filter(Boolean))];
+        buttonGrid.innerHTML = '';
+        apts.forEach(apt => {
+            const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = apt;
+            btn.addEventListener('click', () => selectAptStep(apt));
+            buttonGrid.appendChild(btn);
+        });
+    }
+
+    function selectAptStep(apt) {
+        currentStep = 3; selectedApt = apt; selectedDong = "";
+        updateNav(); showCommonPwdHeader(apt); stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+        const dongs = [...new Set(data.filter(item => item.아파트 === apt).map(item => item.동).filter(Boolean))];
+        dongs.sort((a, b) => parseInt(a) - parseInt(b));
+        buttonGrid.innerHTML = '';
+        dongs.forEach(dong => {
+            const btn = document.createElement('button'); btn.className = 'select-btn';
+            const dongNumber = String(dong).replace(/동/g, '').trim(); btn.textContent = dongNumber; 
+            btn.addEventListener('click', () => selectDongStep(dong));
+            buttonGrid.appendChild(btn);
+        });
+    }
+
+    function selectDongStep(dong) {
+        currentStep = 4; selectedDong = dong; updateNav();
+        commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'none';
+        renderFinalCards(selectedApt, dong);
     }
 
     const modal = document.getElementById('editorModal');
