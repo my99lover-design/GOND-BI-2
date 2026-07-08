@@ -205,8 +205,6 @@
             // 기기 실시간 GPS 좌표 수집 (소수점 원본 전체 유실 없이 보존)
             const uLat = position.coords.latitude; 
             const uLon = position.coords.longitude;
-            const uLat = position.coords.latitude; 
-const uLon = position.coords.longitude;
 
 // 🌟 오차 반경이 60m 이상으로 너무 큰 똥값 신호는 연산하지 않고 무시 (터널, 지하주차장 등 탈출 시 안정성 확보)
 if (position.coords.accuracy > 60) return;
