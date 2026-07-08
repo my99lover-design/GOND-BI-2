@@ -16,7 +16,7 @@
             --step-bg: #374151;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
-        .container { width: 100%; max-width: 500px; padding-bottom: 90px; }
+        .container { width: 100%; max-width: 500px; padding-bottom: 40px; }
         
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 5px; }
         h1 { font-size: 1.5rem; margin: 0; }
@@ -38,10 +38,13 @@
         
         .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
         
+        /* 🛠️ 공동비번 레이아웃 구조 고도화 (수정 버튼 배치용) */
         .common-pwd-area { text-align: left; width: 100%; padding: 5px 0 12px 5px; box-sizing: border-box; display: none; }
         .common-pwd-title { font-size: 1.3rem; font-weight: 900; color: var(--text-main); margin-bottom: 6px; }
+        .common-pwd-row { display: flex; align-items: center; gap: 10px; }
         .common-pwd-value { font-size: 1.15rem; font-weight: 800; color: var(--primary); background: var(--card-bg); display: inline-block; padding: 6px 12px; border-radius: 10px; border: 1px dashed var(--border); }
-        
+        .common-edit-btn { background: var(--step-bg); border: 1px solid var(--border); padding: 6px 12px; border-radius: 10px; font-size: 0.9rem; font-weight: bold; color: var(--text-sub); cursor: pointer; }
+
         .card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; }
         .line-info { font-size: 1.15rem; font-weight: 800; color: var(--primary); text-align: left; }
         
@@ -52,8 +55,6 @@
         
         .card-footer { display: flex; justify-content: flex-end; align-items: center; margin-top: 2px; }
         .edit-trigger-btn { background: none; border: none; color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; text-decoration: underline; opacity: 0.7; padding: 4px 0; }
-
-        .add-floating-btn { position: fixed; bottom: 25px; right: 25px; background: var(--primary); color: white; border: none; width: 60px; height: 60px; border-radius: 30px; font-size: 2.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 200; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 24px; width: 92%; max-width: 440px; box-sizing: border-box; }
@@ -96,14 +97,26 @@
     <div id="cardList" class="card-list"></div>
 </div>
 
-<button class="add-floating-btn" onclick="openAddModal()">+</button>
+<div id="commonEditorModal" class="modal">
+    <div class="modal-content">
+        <h3>⚙️ 공동비밀번호 수정</h3>
+        <div class="form-group">
+            <label id="commonModalAptLabel">아파트명</label>
+            <input type="text" id="formCommonPwdValue">
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-btn btn-submit" onclick="submitCommonPwdForm()">저장</button>
+            <button class="modal-btn btn-cancel" onclick="closeCommonModal()">취소</button>
+        </div>
+    </div>
+</div>
 
 <div id="editorModal" class="modal">
     <div class="modal-content">
         <h3 id="modalTitle">데이터 관리</h3>
         <input type="hidden" id="formRowId">
-        <div class="form-group"><label>지역 (예: 구래, 운양)</label><input type="text" id="formRegion"></div>
-        <div class="form-group"><label>아파트 이름</label><input type="text" id="formApt"></div>
+        <div class="form-group"><label>지역 (예: 구래, 운양)</label><input type="text" id="formRegion" readonly style="opacity:0.6;"></div>
+        <div class="form-group"><label>아파트 이름</label><input type="text" id="formApt" readonly style="opacity:0.6;"></div>
         <div class="form-group"><label>공동현관 기기종류</label><input type="text" id="formType"></div>
         <div class="form-group"><label>동 (숫자만 입력)</label><input type="text" id="formDong"></div>
         <div class="form-group"><label>라인 (예: 1,2 또는 3,4)</label><input type="text" id="formLine"></div>
@@ -147,47 +160,14 @@
         themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
     });
 
-// 🌟 지구 타원체 오차까지 반영하여 0.5mm 단위로 직선거리를 계산하는 Vincenty 공식
     function getDistance(lat1, lon1, lat2, lon2) {
         if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
-        
-        const a = 6378137, b = 6356752.314245, f = 1 / 298.257223563; // WGS-84 타원체 데이터
-        const L = (lon2 - lon1) * Math.PI / 180;
-        const U1 = Math.atan((1 - f) * Math.tan(lat1 * Math.PI / 180));
-        const U2 = Math.atan((1 - f) * Math.tan(lat2 * Math.PI / 180));
-        const sinU1 = Math.sin(U1), cosU1 = Math.cos(U1);
-        const sinU2 = Math.sin(U2), cosU2 = Math.cos(U2);
-        
-        let lng = L, lngP, iterLimit = 100;
-        let sinLng, cosLng, sinSigma, cosSigma, sigma, sinAlpha, cosSqAlpha, cos2SigmaM, C;
-        
-        do {
-            sinLng = Math.sin(lng);
-            cosLng = Math.cos(lng);
-            sinSigma = Math.sqrt((cosU2 * sinLng) * (cosU2 * sinLng) + (cosU1 * sinU2 - sinU1 * cosU2 * cosLng) * (cosU1 * sinU2 - sinU1 * cosU2 * cosLng));
-            if (sinSigma === 0) return 0; 
-            cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLng;
-            sigma = Math.atan2(sinSigma, cosSigma);
-            sinAlpha = cosU1 * cosU2 * sinLng / sinSigma;
-            cosSqAlpha = 1 - sinAlpha * sinAlpha;
-            cos2SigmaM = cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha;
-            if (isNaN(cos2SigmaM)) cos2SigmaM = 0; 
-            C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
-            lngP = lng;
-            lng = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
-        } while (Math.abs(lng - lngP) > 1e-12 && --iterLimit > 0);
-
-        if (iterLimit === 0) return Infinity;
-
-        const uSq = cosSqAlpha * (a * a - b * b) / (b * b);
-        const A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
-        const B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
-        const deltaSigma = B * sinSigma * (cos2SigmaM + B / 4 * (cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM) - B / 6 * cos2SigmaM * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2SigmaM * cos2SigmaM)));
-        
-        const distanceInMeters = b * A * (sigma - deltaSigma);
-        return distanceInMeters / 1000; // 기존 코드와 호환되도록 km 단위로 반환
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
-    // 🌟 [통합 최종본] 100% 완전 일치 + 다중 좌표 배열 지원 + 실시간 고정밀 소수점 반영 + 상위 3개 노출 GPS 로직
+
     function initGPS() {
         if (!navigator.geolocation) return;
         
@@ -202,28 +182,24 @@
         };
 
         gpsWatchId = navigator.geolocation.watchPosition((position) => {
-            // 기기 실시간 GPS 좌표 수집 (소수점 원본 전체 유실 없이 보존)
+            // ⭕ uLat, uLon 중복 선언 버그 완벽 수정 해결 완료
             const uLat = position.coords.latitude; 
             const uLon = position.coords.longitude;
-
-// 🌟 오차 반경이 60m 이상으로 너무 큰 똥값 신호는 연산하지 않고 무시 (터널, 지하주차장 등 탈출 시 안정성 확보)
-if (position.coords.accuracy > 60) return;
+            
+            if (position.coords.accuracy > 60) return; 
+            
             const targetList = [];
             
             for (const key in locations) {
-                // 구글 시트 데이터와 100% 명칭 완전 일치(===) 체크
                 const hasApt = data.some(item => item.아파트 && item.아파트 === key);
                 const hasDong = data.some(item => item.동 && String(item.동) === key);
                 
                 if (!hasApt && !hasDong) continue;
 
-                // 단일 객체 구조({})라도 배열([]) 처리가 되도록 자동 보정 방어벽
                 const coordsArray = Array.isArray(locations[key]) ? locations[key] : [locations[key]];
                 
-                // 여러 개의 세부 좌표 중 현재 내 위치와 '가장 가까운 최단 거리' 계산
                 let minDistance = Infinity;
                 coordsArray.forEach(loc => {
-                    // 문자열 취급 및 소수점 누락 원천 차단을 위해 Number 강제 치환
                     const targetLat = Number(loc.lat);
                     const targetLon = Number(loc.lon);
                     
@@ -244,10 +220,7 @@ if (position.coords.accuracy > 60) return;
                 }
             }
             
-            // 미세한 정밀 소수점 차이까지 전부 포함하여 정밀 거리 오름차순 정렬
             const sortedList = targetList.sort((a, b) => a.dist - b.dist);
-            
-            // 딱 상위 3개만 잘라내기
             const finalDisplayTargets = sortedList.slice(0, 3);
             
             if (finalDisplayTargets.length > 0) {
@@ -256,7 +229,6 @@ if (position.coords.accuracy > 60) return;
                 finalDisplayTargets.forEach(target => {
                     const btn = document.createElement('button'); btn.className = 'gps-btn';
                     
-                    // 거리 포맷 변환 (1km 미만 미터 m 단위, 이상은 킬로미터 km 단위 표시)
                     let distanceText = "";
                     if (target.dist < 1) {
                         distanceText = `${Math.round(target.dist * 1000)}m`;
@@ -345,7 +317,6 @@ if (position.coords.accuracy > 60) return;
         }
     }
 
-    // 🌟 첫 번째 숫자만 추출하여 완벽하게 오름차순 정렬하는 최종 라인 정렬 로직 포함
     function renderFinalCards(apt, dong) {
         cardList.innerHTML = '';
         const filtered = data.filter(item => {
@@ -362,7 +333,7 @@ if (position.coords.accuracy > 60) return;
         }
 
         const groupedByLine = filtered.reduce((acc, curr) => {
-            let lineText = String(curr.라인).includes('라인') ? curr.라인 : `${curr.라인}라인`;
+            let lineText = String(curr.라인).includes('라인') ? curr.lines : `${curr.라인}라인`;
             if (!acc[lineText]) acc[lineText] = [];
             acc[lineText].push(curr);
             return acc;
@@ -397,6 +368,7 @@ if (position.coords.accuracy > 60) return;
         });
     }
 
+    // 🛠️ 2. 동 선택 화면(Step 3)에서 공동비번 옆에 [수정] 버튼 생성
     function showCommonPwdHeader(aptName) {
         const filteredApt = data.filter(item => item.아파트 === aptName);
         const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
@@ -404,9 +376,46 @@ if (position.coords.accuracy > 60) return;
 
         commonPwdStandalone.innerHTML = `
             <div class="common-pwd-title">&lt;공동비번&gt;</div>
-            <div class="common-pwd-value">${commonValue}</div>
+            <div class="common-pwd-row">
+                <div class="common-pwd-value" id="commonPwdTextValue">${commonValue}</div>
+                <button class="common-edit-btn" onclick="openCommonPwdModal('${aptName}', '${commonValue}')">수정</button>
+            </div>
         `;
         commonPwdStandalone.style.display = 'block';
+    }
+
+    // 공동비번 전용 모달 열기
+    function openCommonPwdModal(aptName, currentValue) {
+        document.getElementById('commonModalAptLabel').textContent = `🏢 ${aptName} 공동비번`;
+        document.getElementById('formCommonPwdValue').value = currentValue === "등록 없음" ? "" : currentValue;
+        document.getElementById('commonEditorModal').style.display = 'flex';
+    }
+
+    function handleCommonModalClose() {
+        document.getElementById('commonEditorModal').style.display = 'none';
+    }
+
+    // 공동비번 변경 제어 함수 (해당 아파트의 모든 라인 행의 '공동' 컬럼 일괄 업데이트)
+    async function submitCommonPwdForm() {
+        const newValue = document.getElementById('formCommonPwdValue').value;
+        handleCommonModalClose();
+        
+        buttonGrid.innerHTML = '<div class="status-msg">공동비밀번호 일괄 변경 중... ⏳</div>';
+        
+        const payload = {
+            action: 'updateCommonPwd',
+            아파트: selectedApt,
+            공동: newValue
+        };
+
+        try {
+            await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+            localStorage.removeItem('pwd_data_cache'); 
+            await loadData();
+        } catch (e) { 
+            alert("공동비번 수정 실패 ❌"); 
+            await loadData(); 
+        }
     }
 
     function resetSteps() {
@@ -455,19 +464,7 @@ if (position.coords.accuracy > 60) return;
 
     const modal = document.getElementById('editorModal');
     function closeModal() { modal.style.display = 'none'; }
-    
-    function openAddModal() {
-        document.getElementById('modalTitle').textContent = "🆕 비밀번호 추가";
-        document.getElementById('formRowId').value = "";
-        document.getElementById('formRegion').value = selectedRegion;
-        document.getElementById('formApt').value = selectedApt;
-        document.getElementById('formType').value = "";
-        document.getElementById('formDong').value = selectedDong;
-        document.getElementById('formLine').value = "";
-        document.getElementById('formPwd').value = "";
-        document.getElementById('deleteBtn').style.display = 'none';
-        modal.style.display = 'flex';
-    }
+    function closeCommonModal() { document.getElementById('commonEditorModal').style.display = 'none'; }
 
     function openEditModal(rowId) {
         const item = data.find(d => d.rowId === rowId);
@@ -487,7 +484,7 @@ if (position.coords.accuracy > 60) return;
     async function submitForm() {
         const rowId = document.getElementById('formRowId').value;
         const payload = {
-            action: rowId ? 'update' : 'add', rowId: rowId,
+            action: 'update', rowId: rowId,
             지역: document.getElementById('formRegion').value, 아파트: document.getElementById('formApt').value,
             공동: document.getElementById('formType').value, 동: document.getElementById('formDong').value,
             라인: document.getElementById('formLine').value, 비번: document.getElementById('formPwd').value
