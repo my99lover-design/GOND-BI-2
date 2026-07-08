@@ -434,17 +434,19 @@
     async function submitCommonPwdForm() {
     const newValue = document.getElementById('formCommonPwdValue').value;
     closeCommonModal();
-    buttonGrid.innerHTML = '<div class="status-msg">공동비밀번호 일괄 변경 중... ⏳</div>';
     
     try {
-        await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'updateCommonPwd', 아파트: selectedApt, 공동: newValue }) });
-        localStorage.removeItem('pwd_data_cache');
-        await loadData();
+        const payload = { action: 'updateCommonPwd', 아파트: selectedApt, 공동: newValue };
+        await fetch(GAS_WEB_APP_URL, { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        });
+        await loadData(); // 동기화
     } catch (e) { 
-        alert("수정 실패 ❌"); 
-        await loadData(); 
+        alert("통신 실패! 연결을 확인해주세요."); 
     }
 }
+
 
 
     function resetSteps() {
