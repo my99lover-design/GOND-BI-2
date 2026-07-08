@@ -397,21 +397,24 @@
             cardList.appendChild(card);
         });
     }
-
-    function showCommonPwdHeader(aptName) {
+function showCommonPwdHeader(aptName) {
         const filteredApt = data.filter(item => item.아파트 === aptName);
-        const commonData = filteredApt.find(item => item.공동 && item.공동.trim() !== "");
+        
+        // 🌟 수정된 부분: String()으로 감싸서 숫자를 강제 문자열화하고, trim() 호출 전 값이 있는지 확실히 체크
+        const commonData = filteredApt.find(item => {
+            const val = String(item.공동 || ""); // 값이 없으면 빈 문자열로 처리
+            return val.trim() !== "";           // 공백 제거 후 내용이 있는 것만 찾음
+        });
+
         const commonValue = commonData ? commonData.공동 : "등록 없음";
 
         commonPwdStandalone.innerHTML = `
             <div class="common-pwd-title">&lt;공동비번&gt;</div>
-            <div class="common-pwd-row">
-                <div class="common-pwd-value" id="commonPwdTextValue">${commonValue}</div>
-                <button class="common-edit-btn" onclick="openCommonPwdModal('${aptName}', '${commonValue}')">수정</button>
-            </div>
+            <div class="common-pwd-value">${commonValue}</div>
         `;
         commonPwdStandalone.style.display = 'block';
-    }
+}
+    
 
     function openCommonPwdModal(aptName, currentValue) {
         document.getElementById('commonModalAptLabel').textContent = `🏢 ${aptName} 공동비번`;
