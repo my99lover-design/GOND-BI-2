@@ -32,27 +32,25 @@
         .gps-title { font-size: 1rem; color: var(--text-sub); font-weight: bold; }
         .gps-status-badge { font-size: 0.85rem; font-weight: bold; padding: 4px 10px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border); }
         
-    /* 내 주변 GPS 버튼 그리드 */
-.gps-btn-grid {
-    display: grid;
-    /* 가로 4개씩 고정 배치 */
-    grid-template-columns: repeat(4, 1fr); 
-    gap: 8px; /* 버튼 사이 간격 */
-    padding: 10px;
-    width: 100%;
+        /* 🛠️ 2x2 그리드 스타일 */
+.gps-buttons { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; /* 2열 고정 */
+    gap: 10px; 
+    padding-bottom: 8px; 
 }
-
-/* 버튼 스타일 (크기 축소) */
-.gps-btn {
-    padding: 8px 2px; /* 세로 8px, 가로 2px로 축소 */
-    font-size: 0.85rem; /* 글자 크기 살짝 축소 */
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-    white-space: nowrap; /* 글자 줄바꿈 방지 */
-    overflow: hidden;    /* 넘치는 글자 숨김 */
-    text-overflow: ellipsis; /* 글자가 길면 ... 처리 */
+.gps-btn { 
+    background: var(--gps-btn-bg); 
+    color: var(--gps-btn-text); 
+    border: none; 
+    padding: 12px 10px; /* 세로/가로 여백 조절 */
+    border-radius: 16px; 
+    font-size: 1rem; 
+    font-weight: bold; 
+    cursor: pointer; 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    white-space: normal; /* 글자 길어지면 자동 줄바꿈 */
+    text-align: center;
 }
 
 
