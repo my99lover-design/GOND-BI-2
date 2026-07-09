@@ -1,148 +1,592 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🔑 넘버원 김포B 공비</title>
-    <style>
-        :root { --bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #3b82f6; --text-main: #111827; --text-sub: #6b7280; --accent: #ef4444; --border: #e5e7eb; --gps-btn-bg: #e0e7ff; --gps-btn-text: #4f46e5; --step-bg: #f3f4f6; }
-        [data-theme="dark"] { --bg-color: #111827; --card-bg: #1f2937; --primary: #60a5fa; --text-main: #f9fafb; --text-sub: #9ca3af; --accent: #f87171; --border: #374151; --gps-btn-bg: #312e81; --gps-btn-text: #c7d2fe; --step-bg: #374151; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 500px; padding-bottom: 40px; }
-        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-main); }
-        .nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px; border-radius: 16px; cursor: pointer; font-weight: bold; }
-        .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .select-btn { background: var(--step-bg); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-weight: bold; cursor: pointer; }
-        .card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 14px; }
-        .pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; margin-bottom: 4px; font-weight: bold; color: var(--accent); }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: var(--card-bg); padding: 25px; border-radius: 24px; width: 92%; max-width: 440px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; box-sizing: border-box; }
-        .modal-buttons { display: flex; gap: 10px; }
-        .modal-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        .btn-submit { background: var(--primary); color: white; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🔑 넘버원 김포B 공비</title>
+<style>
+:root {
+--bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #3b82f6; --text-main: #111827;
+--text-sub: #6b7280; --accent: #ef4444; --border: #e5e7eb; --gps-btn-bg: #e0e7ff; --gps-btn-text: #4f46e5;
+--step-bg: #f3f4f6;
+}
+[data-theme="dark"] {
+--bg-color: #111827; --card-bg: #1f2937; --primary: #60a5fa; --text-main: #f9fafb;
+--text-sub: #9ca3af; --accent: #f87171; --border: #374151; --gps-btn-bg: #312e81; --gps-btn-text: #c7d2fe;
+--step-bg: #374151;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s; }
+.container { width: 100%; max-width: 500px; padding-bottom: 40px; }
+
+.header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 5px; }
+h1 { font-size: 1.5rem; margin: 0; }
+.theme-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 1.1rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+.nav-buttons-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; width: 100%; }
+.nav-btn { background: var(--card-bg); border: 2px solid var(--border); padding: 15px 0; border-radius: 16px; cursor: pointer; color: var(--text-main); font-size: 1.25rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
+.nav-btn:active { background: var(--step-bg); }
+
+/* 🛠️ GPS 섹션 구조 개선 (신호 세기 인디케이터 탑재) */
+.gps-section { margin-bottom: 20px; display: none; }
+.gps-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.gps-title { font-size: 1rem; color: var(--text-sub); font-weight: bold; }
+.gps-status-badge { font-size: 0.85rem; font-weight: bold; padding: 4px 10px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border); }
+
+/* 🛠️ 2x2 그리드 스타일 */
+.gps-buttons { 
+display: grid; 
+grid-template-columns: 1fr 1fr; /* 2열 고정 */
+gap: 10px; 
+padding-bottom: 8px; 
+}
+.gps-btn { 
+background: var(--gps-btn-bg); 
+color: var(--gps-btn-text); 
+border: none; 
+padding: 12px 10px; /* 세로/가로 여백 조절 */
+border-radius: 16px; 
+font-size: 1rem; 
+font-weight: bold; 
+cursor: pointer; 
+box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+white-space: normal; /* 글자 길어지면 자동 줄바꿈 */
+text-align: center;
+}
+
+.step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
+
+.btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+
+.card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
+
+.common-pwd-area { text-align: left; width: 100%; padding: 5px 0 12px 5px; box-sizing: border-box; display: none; }
+.common-pwd-title { font-size: 1.3rem; font-weight: 900; color: var(--text-main); margin-bottom: 6px; }
+.common-pwd-row { display: flex; align-items: center; gap: 10px; }
+.common-pwd-value { font-size: 1.15rem; font-weight: 800; color: var(--primary); background: var(--card-bg); display: inline-block; padding: 6px 12px; border-radius: 10px; border: 1px dashed var(--border); }
+.common-edit-btn { background: var(--step-bg); border: 1px solid var(--border); padding: 6px 12px; border-radius: 10px; font-size: 0.9rem; font-weight: bold; color: var(--text-sub); cursor: pointer; }
+
+.card { background: var(--card-bg); padding: 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; }
+.line-info { font-size: 1.15rem; font-weight: 800; color: var(--primary); text-align: left; }
+
+.pwd-box { background: rgba(239, 68, 68, 0.03); border: 1.5px solid var(--accent); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: left; line-height: 1.5; margin-bottom: 4px; }
+.pwd-container { display: flex; flex-direction: column; gap: 12px; }
+.pwd-row { display: flex; flex-direction: column; gap: 4px; }
+.pwd-highlight { font-size: 1.02rem; font-weight: 700; color: var(--accent); letter-spacing: 0.3px; white-space: pre-wrap; word-break: break-all; }
+
+.card-footer { display: flex; justify-content: flex-end; align-items: center; margin-top: 2px; }
+.edit-trigger-btn { background: none; border: none; color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; text-decoration: underline; opacity: 0.7; padding: 4px 0; }
+
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+.modal-content { background: var(--card-bg); padding: 25px; border-radius: 24px; width: 92%; max-width: 440px; box-sizing: border-box; }
+.modal h3 { margin-top: 0; margin-bottom: 20px; font-size: 1.3rem; }
+.form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.95rem; color: var(--text-sub); font-weight: bold; }
+.form-group input { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; }
+.modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+.modal-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+.btn-submit { background: var(--primary); color: white; }
+.btn-cancel { background: var(--border); color: var(--text-main); }
+.btn-delete { background: var(--accent); color: white; }
+.status-msg { text-align: center; color: var(--text-sub); font-size: 1.1rem; width: 100%; padding: 20px 0; }
+/* 로딩 스피너 스타일 */
+.spinner {
+width: 20px;
+height: 20px;
+border: 3px solid #e5e7eb;
+border-top: 3px solid var(--primary);
+border-radius: 50%;
+animation: spin 1s linear infinite;
+display: inline-block;
+vertical-align: middle;
+margin-right: 8px;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+</style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header-area">
-        <h1>넘버원🥇<div style="font-size: 1rem; color: var(--text-sub);">김포B 공비</div></h1>
-        <button id="themeToggle" class="theme-toggle">밝기전환</button>
-    </div>
+<div class="header-area">
+<h1 style="line-height: 1.2; text-align: left;">
+<div style="font-size: 3.0rem; font-weight: 900;">넘버원🥇</div>
+        <div style="font-size: 1.8rem; font-weight: 600; color: var(--text-sub);">김포B 공비</div>
+</h1>
+<button id="themeToggle" class="theme-toggle">🌙</button>
+</div>
 
-    <div id="navContainer" class="nav-buttons-container">
-        <button class="nav-btn" onclick="goBack()">⬅️ 뒤로</button>
-        <button class="nav-btn" onclick="resetSteps()">🏠 홈</button>
-    </div>
 
-    <div id="stepContainer" class="step-container">
-        <div id="buttonGrid" class="btn-grid">데이터 불러오는 중...</div>
-    </div>
-    <div id="cardList"></div>
+<div id="navContainer" class="nav-buttons-container">
+<button id="backBtn" class="nav-btn" onclick="goBack()">⬅️ 뒤로가기</button>
+<button id="homeBtn" class="nav-btn" onclick="resetSteps()">🏠 홈으로</button>
+</div>
+
+<div id="gpsSection" class="gps-section">
+<div class="gps-header-row">
+<div class="gps-title">📍 내 주변(GPS)</div>
+<div id="gpsStatusBadge" class="gps-status-badge">📡 신호 분석 중...</div>
+</div>
+<div id="gpsButtons" class="gps-buttons"></div>
+</div>
+
+<div id="commonPwdStandalone" class="common-pwd-area"></div>
+
+<div id="stepContainer" class="step-container">
+<div id="buttonGrid" class="btn-grid">데이터를 불러오는 중... ⏳</div>
+</div>
+
+<div id="cardList" class="card-list"></div>
+</div>
+
+<div id="commonEditorModal" class="modal">
+<div class="modal-content">
+<h3>⚙️ 공동비밀번호 수정</h3>
+<div class="form-group">
+<label id="commonModalAptLabel">아파트명</label>
+<input type="text" id="formCommonPwdValue">
+</div>
+<div class="modal-buttons">
+<button class="modal-btn btn-submit" onclick="submitCommonPwdForm()">저장</button>
+<button class="modal-btn btn-cancel" onclick="closeCommonModal()">취소</button>
+</div>
+</div>
 </div>
 
 <div id="editorModal" class="modal">
-    <div class="modal-content">
-        <h3 id="modalTitle">🔑 비밀번호 수정</h3>
-        <input type="hidden" id="formRowId">
-        <div class="form-group"><input type="text" id="formPwd"></div>
-        <div class="modal-buttons">
-            <button class="modal-btn btn-submit" onclick="submitForm()">저장</button>
-            <button class="modal-btn" onclick="closeModal()">취소</button>
-        </div>
-    </div>
+<div class="modal-content">
+<h3 id="modalTitle">🔑 비밀번호 수정</h3>
+<input type="hidden" id="formRowId">
+<div id="readOnlyInfo" style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 10px;"></div>
+
+<div class="form-group">
+<label>새 비밀번호</label>
+<input type="text" id="formPwd" placeholder="변경할 번호를 입력하세요">
 </div>
+
+<div class="modal-buttons">
+<button class="modal-btn btn-submit" onclick="submitForm()">저장</button>
+<button class="modal-btn btn-cancel" onclick="closeModal()">취소</button>
+</div>
+</div>
+</div>
+
 
 <script>
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
+const LOCATIONS_JSON_URL = "locations.json"; 
+
 let data = [];
-let state = { step: 1, region: "", apt: "", dong: "" };
+let locations = {};
+let gpsWatchId = null; 
 
-// 1. 공통 유틸리티
-const requestAPI = async (action, payload) => {
-    try {
-        await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action, ...payload }) });
-    } catch (e) { alert("통신 실패! 동기화합니다."); loadData(); }
+let currentStep = 1;
+let selectedRegion = "";
+let selectedApt = "";
+let selectedDong = "";
+
+const buttonGrid = document.getElementById('buttonGrid');
+const cardList = document.getElementById('cardList');
+const themeToggle = document.getElementById('themeToggle');
+const navContainer = document.getElementById('navContainer');
+const stepContainer = document.getElementById('stepContainer');
+const commonPwdStandalone = document.getElementById('commonPwdStandalone');
+const gpsStatusBadge = document.getElementById('gpsStatusBadge');
+
+const currentTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', currentTheme);
+themeToggle.textContent = currentTheme === 'dark' ? '☀️ 밝기전환' : '🌙 밝기전환';
+themeToggle.addEventListener('click', () => {
+const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+document.documentElement.setAttribute('data-theme', theme);
+localStorage.setItem('theme', theme);
+themeToggle.textContent = theme === 'dark' ? '☀️ 밝기전환' : '🌙 밝기전환';
+});
+
+function getDistance(lat1, lon1, lat2, lon2) {
+if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+const R = 6371;
+const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function initGPS() {
+if (!navigator.geolocation) return;
+
+if (gpsWatchId !== null) {
+navigator.geolocation.clearWatch(gpsWatchId);
+}
+
+const gpsOptions = {
+enableHighAccuracy: true,
+timeout: 10000,
+maximumAge: 0
 };
 
-const renderButtons = (items, onClick) => {
-    buttonGrid.innerHTML = '';
-    items.forEach(item => {
-        const btn = document.createElement('button');
-        btn.className = 'select-btn';
-        btn.textContent = item;
-        btn.onclick = () => onClick(item);
-        buttonGrid.appendChild(btn);
-    });
-};
+gpsWatchId = navigator.geolocation.watchPosition((position) => {
+const uLat = position.coords.latitude; 
+const uLon = position.coords.longitude;
+const accuracy = position.coords.accuracy;
 
-const closeModal = () => document.getElementById('editorModal').style.display = 'none';
+if (accuracy <= 15) {
+gpsStatusBadge.innerHTML = `<span style="color:#22c55e;">🟢 강함 (${Math.round(accuracy)}m)</span>`;
+} else if (accuracy <= 40) {
+gpsStatusBadge.innerHTML = `<span style="color:#eab308;">🟡 중간 (${Math.round(accuracy)}m)</span>`;
+} else {
+gpsStatusBadge.innerHTML = `<span style="color:#ef4444;">🔴 약함 (${Math.round(accuracy)}m)</span>`;
+}
 
-// 2. 로직 함수
-async function loadData() {
-    const cached = localStorage.getItem('pwd_data_cache');
-    if (cached) { data = JSON.parse(cached); refreshUI(); }
-    
-    try {
-        const res = await fetch(GAS_WEB_APP_URL);
-        const newData = await res.json();
-        if (JSON.stringify(data) !== JSON.stringify(newData)) {
-            data = newData;
-            localStorage.setItem('pwd_data_cache', JSON.stringify(newData));
-            refreshUI();
+if (accuracy > 60) return; 
+
+const targetList = [];
+
+for (const key in locations) {
+const hasApt = data.some(item => item.아파트 && item.아파트 === key);
+const hasDong = data.some(item => item.동 && String(item.동) === key);
+
+if (!hasApt && !hasDong) continue;
+
+const coordsArray = Array.isArray(locations[key]) ? locations[key] : [locations[key]];
+
+let minDistance = Infinity;
+coordsArray.forEach(loc => {
+const targetLat = Number(loc.lat);
+const targetLon = Number(loc.lon);
+
+const dist = getDistance(uLat, uLon, targetLat, targetLon);
+if (dist < minDistance) minDistance = dist;
+});
+
+if (minDistance === Infinity) continue;
+
+if (hasApt) {
+const sample = data.find(item => item.아파트 === key);
+targetList.push({ name: key, realName: key, type: 'apt', region: sample ? sample.지역 : '', parentApt: '', dist: minDistance });
+} else if (hasDong) {
+const sample = data.find(item => String(item.동) === key);
+targetList.push({ name: key, realName: key, type: 'officetel', region: sample ? sample.지역 : '', parentApt: sample ? sample.아파트 : '', dist: minDistance });
+}
+}
+
+const sortedList = targetList.sort((a, b) => a.dist - b.dist);
+const finalDisplayTargets = sortedList.slice(0, 4);
+
+if (finalDisplayTargets.length > 0) {
+const btnArea = document.getElementById('gpsButtons');
+btnArea.innerHTML = '';
+
+finalDisplayTargets.forEach(target => {
+const btn = document.createElement('button'); 
+btn.className = 'gps-btn';
+
+let distanceText = target.dist < 1 ? `${Math.round(target.dist * 1000)}m` : `${target.dist.toFixed(2)}km`;
+
+// 🌟 중복 없이 깔끔하게 2줄 배치
+btn.innerHTML = `${target.realName}<br><span style="font-size:0.8em; opacity:0.8;">(${distanceText})</span>`;
+
+btn.addEventListener('click', () => {
+selectedRegion = target.region;
+if (target.type === 'officetel') {
+selectedApt = target.parentApt;
+selectDongStep(target.realName);
+} else {
+selectAptStep(target.realName);
+}
+});
+btnArea.appendChild(btn);
+});
+document.getElementById('gpsSection').style.display = 'block';
+}
+}, (err) => {
+console.warn(`GPS 보정 대기 중... (${err.message})`);
+gpsStatusBadge.innerHTML = `<span style="color:#ef4444;">🔴 끊김 (오류)</span>`;
+}, gpsOptions);
+}
+
+async function loadData(silent = false) {
+    const cachedData = localStorage.getItem('pwd_data_cache');
+    const cachedLoc = localStorage.getItem('loc_data_cache');
+
+    // 1. 캐시가 있다면 즉시 화면에 표시 (사용자 경험 향상)
+    if (cachedData) {
+        data = JSON.parse(cachedData);
+        if (cachedLoc) locations = JSON.parse(cachedLoc);
+        if (!silent) {
+            refreshUIByCurrentStep();
+            initGPS();
         }
-    } catch (e) { buttonGrid.innerHTML = '데이터 로딩 실패'; }
-}
-
-function refreshUI() {
-    if (state.step === 1) {
-        const regions = [...new Set(data.map(i => i.지역).filter(Boolean))];
-        renderButtons(regions, (r) => { state.step = 2; state.region = r; refreshUI(); });
-    } else if (state.step === 2) {
-        const apts = [...new Set(data.filter(i => i.지역 === state.region).map(i => i.아파트).filter(Boolean))];
-        renderButtons(apts, (a) => { state.step = 3; state.apt = a; refreshUI(); });
-    } else if (state.step === 3) {
-        const dongs = [...new Set(data.filter(i => i.아파트 === state.apt).map(i => i.동).filter(Boolean))].sort((a,b)=>a-b);
-        renderButtons(dongs, (d) => { state.step = 4; state.dong = d; refreshUI(); });
     } else {
-        document.getElementById('stepContainer').style.display = 'none';
-        cardList.innerHTML = data.filter(i => i.아파트 === state.apt && i.동 == state.dong).map(item => `
-            <div class="card">
-                <div style="font-weight:bold">${item.라인}라인</div>
-                <div class="pwd-box">${item.비번}</div>
-                <button onclick="openModal(${item.rowId})">수정</button>
-            </div>
-        `).join('');
+        // 캐시가 아예 없을 때만 로딩 메시지 표시
+        buttonGrid.innerHTML = '<div class="status-msg">데이터 동기화 중... ⏳</div>';
     }
-    document.getElementById('navContainer').style.display = state.step > 1 ? 'grid' : 'none';
+
+    // 2. 백그라운드 데이터 갱신 (서버 데이터 가져오기)
+    try {
+        const [sheetRes, locRes] = await Promise.all([
+            fetch(GAS_WEB_APP_URL),
+            fetch(LOCATIONS_JSON_URL + `?_=${Date.now()}`).catch(() => ({}))
+        ]);
+
+        const newData = await sheetRes.json();
+        const newLoc = await locRes.json ? await locRes.json() : {};
+
+        // 3. 데이터가 실제로 변경되었을 때만 UI 업데이트
+        if (JSON.stringify(data) !== JSON.stringify(newData) || JSON.stringify(locations) !== JSON.stringify(newLoc)) {
+            data = newData;
+            locations = newLoc;
+            localStorage.setItem('pwd_data_cache', JSON.stringify(newData));
+            localStorage.setItem('loc_data_cache', JSON.stringify(newLoc));
+            
+            if (!silent) {
+                refreshUIByCurrentStep();
+                initGPS();
+            }
+        }
+    } catch (error) {
+        // 캐시가 없을 때만 에러 메시지 표시 (이미 데이터가 보이고 있다면 에러로 덮어쓰지 않음)
+        if (!cachedData) {
+            buttonGrid.innerHTML = '<div class="status-msg">통신 실패 ❌ 연결을 확인하세요.</div>';
+        }
+    }
 }
 
-function openModal(rowId) {
-    const item = data.find(d => d.rowId == rowId);
-    document.getElementById('formRowId').value = rowId;
-    document.getElementById('formPwd').value = item.비번;
-    document.getElementById('editorModal').style.display = 'flex';
+function refreshUIByCurrentStep() {
+if (currentStep === 1) resetSteps();
+else if (currentStep === 2) selectRegionStep(selectedRegion);
+else if (currentStep === 3) selectAptStep(selectedApt);
+else if (currentStep === 4) selectDongStep(selectedDong);
+}
+
+function updateNav() {
+navContainer.style.display = currentStep > 1 ? 'grid' : 'none';
+}
+
+function goBack() {
+if (currentStep === 2) resetSteps();
+else if (currentStep === 3) selectRegionStep(selectedRegion);
+else if (currentStep === 4) {
+if(selectedApt && data.some(d => d.아파트 === selectedApt && d.동 === selectedDong)) {
+selectAptStep(selectedApt);
+} else {
+resetSteps();
+}
+}
+}
+
+function renderFinalCards(apt, dong) {
+cardList.innerHTML = '';
+const filtered = data.filter(item => {
+if (apt) {
+return item.아파트 === apt && String(item.동) === String(dong);
+} else {
+return String(item.동) === String(dong);
+}
+});
+
+if (filtered.length === 0) {
+cardList.innerHTML = '<div class="status-msg">등록된 정보가 없습니다. 🔍</div>';
+return;
+}
+
+const groupedByLine = filtered.reduce((acc, curr) => {
+let lineText = String(curr.라인).includes('라인') ? curr.라인 : `${curr.라인}라인`;
+if (!acc[lineText]) acc[lineText] = [];
+acc[lineText].push(curr);
+return acc;
+}, {});
+
+const sortedLines = Object.keys(groupedByLine).sort((a, b) => {
+const numA = parseInt(a.match(/\d+/)?.[0]) || 0;
+const numB = parseInt(b.match(/\d+/)?.[0]) || 0;
+return numA - numB;
+});
+
+sortedLines.forEach(lineText => {
+const card = document.createElement('div');
+card.className = 'card';
+
+let rowsHtml = groupedByLine[lineText].map(item => `
+               <div class="pwd-row">
+                   <div class="pwd-box">
+                       <span class="pwd-highlight">${item.비번 || '-'}</span>
+                   </div>
+                   <div class="card-footer">
+                       <button class="edit-trigger-btn" onclick="openEditModal(${item.rowId})">수정</button>
+                   </div>
+               </div>
+           `).join('');
+
+card.innerHTML = `
+               <div class="line-info">&lt;${lineText}&gt;</div>
+               <div class="pwd-container">${rowsHtml}</div>
+           `;
+cardList.appendChild(card);
+});
+}
+
+function showCommonPwdHeader(aptName) {
+const filteredApt = data.filter(item => item.아파트 === aptName);
+const commonData = filteredApt.find(item => {
+const val = String(item.공동 || "");
+return val.trim() !== "";
+});
+
+const commonValue = commonData ? commonData.공동 : "등록 없음";
+
+commonPwdStandalone.innerHTML = `
+       <div class="common-pwd-title">&lt;공동비번&gt;</div>
+       <div class="common-pwd-row">
+           <div class="common-pwd-value">${commonValue}</div>
+           <button class="common-edit-btn" onclick="openCommonPwdModal('${aptName}', '${commonValue}')">수정</button>
+       </div>
+   `;
+commonPwdStandalone.style.display = 'block';
+}
+
+function openCommonPwdModal(aptName, currentValue) {
+document.getElementById('commonModalAptLabel').textContent = `🏢 ${aptName} 공동비번`;
+document.getElementById('formCommonPwdValue').value = currentValue === "등록 없음" ? "" : currentValue;
+document.getElementById('commonEditorModal').style.display = 'flex';
+}
+
+function handleCommonModalClose() {
+document.getElementById('commonEditorModal').style.display = 'none';
+}
+
+async function submitCommonPwdForm() {
+    const newValue = document.getElementById('formCommonPwdValue').value;
+    
+    // 1. [낙관적 업데이트] 
+    data.filter(item => item.아파트 === selectedApt).forEach(item => item.공동 = newValue);
+    localStorage.setItem('pwd_data_cache', JSON.stringify(data));
+    showCommonPwdHeader(selectedApt); // 헤더만 빠르게 갱신
+    
+    closeCommonModal();
+
+    // 2. [백그라운드 저장]
+    try {
+        await fetch(GAS_WEB_APP_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'updateCommonPwd', 아파트: selectedApt, 공동: newValue }) 
+        });
+    } catch (e) {
+        alert("저장 실패!");
+        await loadData();
+    }
+}
+
+function resetSteps() {
+currentStep = 1; selectedRegion = ""; selectedApt = ""; selectedDong = "";
+updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+const regions = [...new Set(data.map(item => item.지역).filter(Boolean))];
+buttonGrid.innerHTML = '';
+regions.forEach(region => {
+const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = region;
+btn.addEventListener('click', () => selectRegionStep(region));
+buttonGrid.appendChild(btn);
+});
+}
+
+function selectRegionStep(region) {
+currentStep = 2; selectedRegion = region; selectedApt = ""; selectedDong = "";
+updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+const apts = [...new Set(data.filter(item => item.지역 === region).map(item => item.아파트).filter(Boolean))];
+buttonGrid.innerHTML = '';
+apts.forEach(apt => {
+const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = apt;
+btn.addEventListener('click', () => selectAptStep(apt));
+buttonGrid.appendChild(btn);
+});
+}
+
+function selectAptStep(apt) {
+currentStep = 3; selectedApt = apt; selectedDong = "";
+updateNav(); showCommonPwdHeader(apt); stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+const dongs = [...new Set(data.filter(item => item.아파트 === apt).map(item => item.동).filter(Boolean))];
+dongs.sort((a, b) => parseInt(a) - parseInt(b));
+buttonGrid.innerHTML = '';
+dongs.forEach(dong => {
+const btn = document.createElement('button'); btn.className = 'select-btn';
+const dongNumber = String(dong).replace(/동/g, '').trim(); btn.textContent = dongNumber; 
+btn.addEventListener('click', () => selectDongStep(dong));
+buttonGrid.appendChild(btn);
+});
+}
+
+function selectDongStep(dong) {
+currentStep = 4; selectedDong = dong; updateNav();
+commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'none';
+renderFinalCards(selectedApt, dong);
+}
+
+const modal = document.getElementById('editorModal');
+function closeModal() { modal.style.display = 'none'; }
+function closeCommonModal() { document.getElementById('commonEditorModal').style.display = 'none'; }
+
+function openEditModal(rowId) {
+const item = data.find(d => d.rowId === rowId);
+if (!item) return;
+
+document.getElementById('formRowId').value = item.rowId;
+// 정보는 위쪽에 작게 표시
+document.getElementById('readOnlyInfo').textContent = `${item.아파트} ${item.동}동 ${item.라인}`;
+document.getElementById('formPwd').value = item.비번 || '';
+
+modal.style.display = 'flex';
+// 💡 저장 버튼 누르기 직전 비번 칸에 바로 포커스
+document.getElementById('formPwd').focus(); 
 }
 
 async function submitForm() {
     const rowId = document.getElementById('formRowId').value;
     const newPwd = document.getElementById('formPwd').value;
+    
+    // 1. [낙관적 업데이트] 즉시 반영
     const item = data.find(d => d.rowId == rowId);
-    if(item) item.비번 = newPwd;
-    localStorage.setItem('pwd_data_cache', JSON.stringify(data));
-    refreshUI();
+    if (item) {
+        item.비번 = newPwd;
+        localStorage.setItem('pwd_data_cache', JSON.stringify(data));
+        refreshUIByCurrentStep();
+    }
     closeModal();
-    await requestAPI('update', { rowId, 비번: newPwd });
+
+    // 2. [백그라운드 저장] 실패 시에만 복구
+    try {
+        await fetch(GAS_WEB_APP_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'update', rowId, 비번: newPwd }) 
+        });
+    } catch (e) {
+        alert("저장 실패! 다시 시도하세요.");
+        await loadData();
+    }
 }
 
-function resetSteps() { state = { step: 1 }; document.getElementById('stepContainer').style.display = 'block'; cardList.innerHTML = ''; refreshUI(); }
-function goBack() { state.step--; refreshUI(); }
+async function deleteData() {
+    if(!confirm("정말 삭제하시겠습니까?")) return;
+    const rowId = document.getElementById('formRowId').value;
+    
+    // 1. [낙관적 업데이트]
+    data = data.filter(d => d.rowId != rowId);
+    localStorage.setItem('pwd_data_cache', JSON.stringify(data));
+    closeModal();
+    refreshUIByCurrentStep();
+
+    // 2. [백그라운드 저장]
+    try {
+        await fetch(GAS_WEB_APP_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'delete', rowId: rowId }) 
+        });
+    } catch (e) {
+        alert("삭제 실패!");
+        await loadData();
+    }
+}
 
 loadData();
+
 </script>
 </body>
 </html>
