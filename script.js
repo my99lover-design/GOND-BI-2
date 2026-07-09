@@ -115,31 +115,18 @@ function refreshUIByCurrentStep() {
     const headerTitle = document.querySelector('.header-area h1');
     const themeToggle = document.getElementById('themeToggle');
 
-    // 1단계(첫 화면)일 때: 모든 요소 표시
     if (currentStep === 1) {
         gpsSection.style.display = 'block';
         themeToggle.style.display = 'block';
-        // 헤더 2줄 스타일 유지
-        headerTitle.innerHTML = `
-            <div style="font-size: 3.0rem; font-weight: 900;">넘버원🥇</div>
-            <div style="font-size: 1.8rem; font-weight: 600; color: var(--text-sub);">김포B 공비</div>`;
-    } 
-    // 2단계 이상(데이터 진입 후): GPS 및 기타 부가 요소 숨김
-    else {
+        headerTitle.innerHTML = `<div style="font-size: 3.0rem; font-weight: 900;">넘버원🥇</div><div style="font-size: 1.8rem; font-weight: 600; color: var(--text-sub);">김포B 공비</div>`;
+    } else {
         gpsSection.style.display = 'none';
         themeToggle.style.display = 'none';
-        // 헤더를 1줄로 축소하여 공간 확보
         headerTitle.innerHTML = `<div style="font-size: 1.5rem; font-weight: 900;">넘버원 김포B 공비</div>`;
     }
-
-    // 단계별 이동 로직 실행
-    if (currentStep === 1) resetSteps();
-    else if (currentStep === 2) selectRegionStep(selectedRegion);
-    else if (currentStep === 3) selectAptStep(selectedApt);
-    else if (currentStep === 4) selectDongStep(selectedDong);
-    
     updateNav();
 }
+
 function updateNav() { navContainer.style.display = currentStep > 1 ? 'grid' : 'none'; }
 function goBack() {
     if (currentStep === 2) resetSteps(); else if (currentStep === 3) selectRegionStep(selectedRegion);
@@ -175,21 +162,34 @@ async function submitCommonPwdForm() {
     catch (e) { alert("저장 실패!"); await loadData(); }
 }
 function resetSteps() {
-    currentStep = 1; selectedRegion = ""; selectedApt = ""; selectedDong = ""; updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+    currentStep = 1; selectedRegion = ""; selectedApt = ""; selectedDong = "";
+    stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
     const regions = [...new Set(data.map(item => item.지역).filter(Boolean))]; buttonGrid.innerHTML = '';
     regions.forEach(region => { const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = region; btn.addEventListener('click', () => selectRegionStep(region)); buttonGrid.appendChild(btn); });
+    refreshUIByCurrentStep(); // 상태 반영
 }
+
 function selectRegionStep(region) {
-    currentStep = 2; selectedRegion = region; selectedApt = ""; selectedDong = ""; updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+    currentStep = 2; selectedRegion = region;
+    stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
     const apts = [...new Set(data.filter(item => item.지역 === region).map(item => item.아파트).filter(Boolean))]; buttonGrid.innerHTML = '';
     apts.forEach(apt => { const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = apt; btn.addEventListener('click', () => selectAptStep(apt)); buttonGrid.appendChild(btn); });
+    refreshUIByCurrentStep(); // 상태 반영
 }
+
 function selectAptStep(apt) {
-    currentStep = 3; selectedApt = apt; selectedDong = ""; updateNav(); showCommonPwdHeader(apt); stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
+    currentStep = 3; selectedApt = apt;
+    showCommonPwdHeader(apt); stepContainer.style.display = 'block'; cardList.innerHTML = ''; 
     const dongs = [...new Set(data.filter(item => item.아파트 === apt).map(item => item.동).filter(Boolean))].sort((a, b) => parseInt(a) - parseInt(b)); buttonGrid.innerHTML = '';
     dongs.forEach(dong => { const btn = document.createElement('button'); btn.className = 'select-btn'; btn.textContent = String(dong).replace(/동/g, '').trim(); btn.addEventListener('click', () => selectDongStep(dong)); buttonGrid.appendChild(btn); });
+    refreshUIByCurrentStep(); // 상태 반영
 }
-function selectDongStep(dong) { currentStep = 4; selectedDong = dong; updateNav(); commonPwdStandalone.style.display = 'none'; stepContainer.style.display = 'none'; renderFinalCards(selectedApt, dong); }
+
+function selectDongStep(dong) {
+    currentStep = 4; selectedDong = dong;
+    stepContainer.style.display = 'none'; renderFinalCards(selectedApt, dong);
+    refreshUIByCurrentStep(); // 상태 반영
+}
 function openEditModal(rowId) {
     const item = data.find(d => d.rowId === rowId); if (!item) return;
     document.getElementById('formRowId').value = item.rowId; document.getElementById('readOnlyInfo').textContent = `${item.아파트} ${item.동}동 ${item.라인}`; document.getElementById('formPwd').value = item.비번 || '';
