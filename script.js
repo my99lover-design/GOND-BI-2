@@ -111,8 +111,34 @@ async function loadData(silent = false) {
 }
 
 function refreshUIByCurrentStep() {
-    if (currentStep === 1) resetSteps(); else if (currentStep === 2) selectRegionStep(selectedRegion);
-    else if (currentStep === 3) selectAptStep(selectedApt); else if (currentStep === 4) selectDongStep(selectedDong);
+    const gpsSection = document.getElementById('gpsSection');
+    const headerTitle = document.querySelector('.header-area h1');
+    const themeToggle = document.getElementById('themeToggle');
+
+    // 1단계(첫 화면)일 때: 모든 요소 표시
+    if (currentStep === 1) {
+        gpsSection.style.display = 'block';
+        themeToggle.style.display = 'block';
+        // 헤더 2줄 스타일 유지
+        headerTitle.innerHTML = `
+            <div style="font-size: 3.0rem; font-weight: 900;">넘버원🥇</div>
+            <div style="font-size: 1.8rem; font-weight: 600; color: var(--text-sub);">김포B 공비</div>`;
+    } 
+    // 2단계 이상(데이터 진입 후): GPS 및 기타 부가 요소 숨김
+    else {
+        gpsSection.style.display = 'none';
+        themeToggle.style.display = 'none';
+        // 헤더를 1줄로 축소하여 공간 확보
+        headerTitle.innerHTML = `<div style="font-size: 1.5rem; font-weight: 900;">넘버원 김포B 공비</div>`;
+    }
+
+    // 단계별 이동 로직 실행
+    if (currentStep === 1) resetSteps();
+    else if (currentStep === 2) selectRegionStep(selectedRegion);
+    else if (currentStep === 3) selectAptStep(selectedApt);
+    else if (currentStep === 4) selectDongStep(selectedDong);
+    
+    updateNav();
 }
 function updateNav() { navContainer.style.display = currentStep > 1 ? 'grid' : 'none'; }
 function goBack() {
