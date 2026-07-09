@@ -64,17 +64,29 @@ function initGPS() {
         if (sortedList.length > 0) {
             const btnArea = document.getElementById('gpsButtons');
             btnArea.innerHTML = '';
-            sortedList.forEach(target => {
-                const btn = document.createElement('button'); btn.className = 'gps-btn';
-                let distanceText = target.dist < 1 ? `${Math.round(target.dist * 1000)}m` : `${target.dist.toFixed(2)}km`;
-                btn.innerHTML = `${target.realName}<br><span style="font-size:0.8em; opacity:0.8;">(${distanceText})</span>`;
-                btn.addEventListener('click', () => {
-                    selectedRegion = target.region;
-                    if (target.type === 'officetel') { selectedApt = target.parentApt; selectDongStep(target.realName); }
-                    else { selectAptStep(target.realName); }
-                });
-                btnArea.appendChild(btn);
-            });
+            // initGPS() 함수 내부의 버튼 생성 로직 수정
+sortedList.forEach(target => {
+    const btn = document.createElement('button'); 
+    btn.className = 'gps-btn';
+    
+    // 4칸 배열을 위해 거리를 숫자로만 짧게 표시하거나, 
+    // 필요에 따라 아래와 같이 조정하여 한 줄 혹은 두 줄로 구성
+    let distanceText = target.dist < 1 ? `${Math.round(target.dist * 1000)}m` : `${target.dist.toFixed(1)}km`;
+    
+    // 4칸을 위해 너무 길지 않게 이름 표시
+    btn.innerHTML = `${target.realName}<br><span style="font-size:0.7em; opacity:0.8;">${distanceText}</span>`;
+    
+    btn.addEventListener('click', () => {
+        selectedRegion = target.region;
+        if (target.type === 'officetel') { 
+            selectedApt = target.parentApt; 
+            selectDongStep(target.realName); 
+        } else { 
+            selectAptStep(target.realName); 
+        }
+    });
+    btnArea.appendChild(btn);
+});
             document.getElementById('gpsSection').style.display = 'block';
         }
     }, (err) => { gpsStatusBadge.innerHTML = `<span style="color:#ef4444;">🔴 끊김 (오류)</span>`; }, gpsOptions);
