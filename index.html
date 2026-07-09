@@ -304,42 +304,51 @@ gpsStatusBadge.innerHTML = `<span style="color:#ef4444;">🔴 끊김 (오류)</s
 }, gpsOptions);
 }
 
-async function loadData() {
-const cachedData = localStorage.getItem('pwd_data_cache');
-const cachedLoc = localStorage.getItem('loc_data_cache');
+async function loadData(silent = false) {
+    const cachedData = localStorage.getItem('pwd_data_cache');
+    const cachedLoc = localStorage.getItem('loc_data_cache');
 
-if (cachedData) {
-data = JSON.parse(cachedData);
-if (cachedLoc) locations = JSON.parse(cachedLoc);
-refreshUIByCurrentStep();
-initGPS();
-} else {
-buttonGrid.innerHTML = '<div class="status-msg">데이터 동기화 중... ⏳</div>';
-}
+    // 1. 캐시가 있다면 즉시 화면에 표시 (사용자 경험 향상)
+    if (cachedData) {
+        data = JSON.parse(cachedData);
+        if (cachedLoc) locations = JSON.parse(cachedLoc);
+        if (!silent) {
+            refreshUIByCurrentStep();
+            initGPS();
+        }
+    } else {
+        // 캐시가 아예 없을 때만 로딩 메시지 표시
+        buttonGrid.innerHTML = '<div class="status-msg">데이터 동기화 중... ⏳</div>';
+    }
 
-try {
-const sheetRes = await fetch(GAS_WEB_APP_URL);
-const newData = await sheetRes.json();
+    // 2. 백그라운드 데이터 갱신 (서버 데이터 가져오기)
+    try {
+        const [sheetRes, locRes] = await Promise.all([
+            fetch(GAS_WEB_APP_URL),
+            fetch(LOCATIONS_JSON_URL + `?_=${Date.now()}`).catch(() => ({}))
+        ]);
 
-let newLoc = {};
-try {
-const locRes = await fetch(LOCATIONS_JSON_URL + `?_=${Date.now()}`);
-newLoc = await locRes.json();
-} catch(e) { console.log(e); }
+        const newData = await sheetRes.json();
+        const newLoc = await locRes.json ? await locRes.json() : {};
 
-localStorage.setItem('pwd_data_cache', JSON.stringify(newData));
-localStorage.setItem('loc_data_cache', JSON.stringify(newLoc));
-
-data = newData;
-locations = newLoc;
-
-refreshUIByCurrentStep();
-initGPS();
-} catch (error) {
-if (!cachedData) {
-buttonGrid.innerHTML = '<div class="status-msg">통신 실패 ❌ 연결을 확인하세요.</div>';
-}
-}
+        // 3. 데이터가 실제로 변경되었을 때만 UI 업데이트
+        if (JSON.stringify(data) !== JSON.stringify(newData) || JSON.stringify(locations) !== JSON.stringify(newLoc)) {
+            data = newData;
+            locations = newLoc;
+            localStorage.setItem('pwd_data_cache', JSON.stringify(newData));
+            localStorage.setItem('loc_data_cache', JSON.stringify(newLoc));
+            
+            if (!silent) {
+                refreshUIByCurrentStep();
+                initGPS();
+            }
+        }
+    } catch (error) {
+        // 캐시가 없을 때만 에러 메시지 표시 (이미 데이터가 보이고 있다면 에러로 덮어쓰지 않음)
+        if (!cachedData) {
+            buttonGrid.innerHTML = '<div class="status-msg">통신 실패 ❌ 연결을 확인하세요.</div>';
+        }
+    }
 }
 
 function refreshUIByCurrentStep() {
@@ -446,23 +455,26 @@ document.getElementById('commonEditorModal').style.display = 'none';
 }
 
 async function submitCommonPwdForm() {
-const newValue = document.getElementById('formCommonPwdValue').value;
-closeCommonModal();
-buttonGrid.innerHTML = '<div class="status-msg"><div class="spinner"></div>변경 중...</div>';
+    const newValue = document.getElementById('formCommonPwdValue').value;
+    
+    // 1. [낙관적 업데이트] 
+    data.filter(item => item.아파트 === selectedApt).forEach(item => item.공동 = newValue);
+    localStorage.setItem('pwd_data_cache', JSON.stringify(data));
+    showCommonPwdHeader(selectedApt); // 헤더만 빠르게 갱신
+    
+    closeCommonModal();
 
-try {
-const payload = { action: 'updateCommonPwd', 아파트: selectedApt, 공동: newValue };
-await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-localStorage.removeItem('pwd_data_cache');
-buttonGrid.innerHTML = '<div class="status-msg">✅ 공동비번 변경 완료!</div>';
-setTimeout(async () => await loadData(), 1000);
-} catch (e) { 
-buttonGrid.innerHTML = '<div class="status-msg">❌ 변경 실패</div>';
-setTimeout(loadData, 1500);
+    // 2. [백그라운드 저장]
+    try {
+        await fetch(GAS_WEB_APP_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'updateCommonPwd', 아파트: selectedApt, 공동: newValue }) 
+        });
+    } catch (e) {
+        alert("저장 실패!");
+        await loadData();
+    }
 }
-}
-
-
 
 function resetSteps() {
 currentStep = 1; selectedRegion = ""; selectedApt = ""; selectedDong = "";
@@ -527,54 +539,51 @@ document.getElementById('formPwd').focus();
 }
 
 async function submitForm() {
-const rowId = document.getElementById('formRowId').value;
-const oldItem = data.find(d => d.rowId == rowId); // 기존 데이터 찾기
+    const rowId = document.getElementById('formRowId').value;
+    const newPwd = document.getElementById('formPwd').value;
+    
+    // 1. [낙관적 업데이트] 즉시 반영
+    const item = data.find(d => d.rowId == rowId);
+    if (item) {
+        item.비번 = newPwd;
+        localStorage.setItem('pwd_data_cache', JSON.stringify(data));
+        refreshUIByCurrentStep();
+    }
+    closeModal();
 
-const payload = {
-action: 'update',
-rowId: rowId,
-지역: oldItem.지역, 
-아파트: oldItem.아파트,
-공동: oldItem.공동,
-동: oldItem.동,
-라인: oldItem.라인,
-비번: document.getElementById('formPwd').value // 비번만 새로 입력받음
-};
-
-closeModal();
-buttonGrid.innerHTML = '<div class="status-msg"><div class="spinner"></div>저장 중...</div>';
-
-try {
-await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-localStorage.removeItem('pwd_data_cache');
-buttonGrid.innerHTML = '<div class="status-msg">✅ 수정 완료!</div>';
-setTimeout(async () => await loadData(), 1000);
-} catch (e) {
-buttonGrid.innerHTML = '<div class="status-msg">❌ 통신 실패</div>';
-setTimeout(loadData, 1500);
+    // 2. [백그라운드 저장] 실패 시에만 복구
+    try {
+        await fetch(GAS_WEB_APP_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'update', rowId, 비번: newPwd }) 
+        });
+    } catch (e) {
+        alert("저장 실패! 다시 시도하세요.");
+        await loadData();
+    }
 }
-}
-
-
-
 
 async function deleteData() {
-if(!confirm("정말 이 데이터를 삭제하시겠습니까?")) return;
-const rowId = document.getElementById('formRowId').value;
-closeModal();
-buttonGrid.innerHTML = '<div class="status-msg"><div class="spinner"></div>삭제 중...</div>';
+    if(!confirm("정말 삭제하시겠습니까?")) return;
+    const rowId = document.getElementById('formRowId').value;
+    
+    // 1. [낙관적 업데이트]
+    data = data.filter(d => d.rowId != rowId);
+    localStorage.setItem('pwd_data_cache', JSON.stringify(data));
+    closeModal();
+    refreshUIByCurrentStep();
 
-try {
-await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rowId: rowId }) });
-localStorage.removeItem('pwd_data_cache');
-buttonGrid.innerHTML = '<div class="status-msg">🗑️ 삭제 완료!</div>';
-setTimeout(async () => await loadData(), 1000);
-} catch (e) { 
-buttonGrid.innerHTML = '<div class="status-msg">❌ 삭제 실패</div>';
-setTimeout(loadData, 1500);
+    // 2. [백그라운드 저장]
+    try {
+        await fetch(GAS_WEB_APP_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'delete', rowId: rowId }) 
+        });
+    } catch (e) {
+        alert("삭제 실패!");
+        await loadData();
+    }
 }
-}
-// 🛠️ 3. 앱 시작 시 이 함수가 가장 먼저 실행되도록 추가
 
 loadData();
 
