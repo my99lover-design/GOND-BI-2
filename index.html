@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🔑 넘버원 김포B 공비</title>
     <style>
+        /* 헤더 높이 최소화 */
+.header-area { 
+    margin-bottom: 5px !important; 
+    margin-top: 0 !important; 
+}
+
+.header-area h1 { 
+    line-height: 1 !important; 
+}
+
+/* 제목 폰트 크기를 유지하며 높이만 압축 */
+.header-area h1 div:first-child { font-size: 2.2rem !important; }
+.header-area h1 div:last-child { font-size: 1.4rem !important; }
         :root {
             --bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #3b82f6; --text-main: #111827;
             --text-sub: #6b7280; --accent: #ef4444; --border: #e5e7eb; --gps-btn-bg: #e0e7ff; --gps-btn-text: #4f46e5;
@@ -56,8 +69,20 @@
 
         .step-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
         
-        .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .select-btn { background: var(--step-bg); color: var(--text-main); border: 1px solid var(--border); padding: 18px 5px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .btn-grid, .gps-buttons { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; 
+    gap: 6px !important; /* 간격을 살짝 줄여서 공간 확보 */
+    padding: 5px !important;
+    width: 100%;
+}
+        .select-btn, .gps-btn { 
+    padding: 10px 2px !important; /* 세로 높이 유지, 가로 여백 최소화 */
+    font-size: 0.8rem !important; /* 4개 배치에 맞게 폰트 축소 */
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; /* 글자 길면 ... 처리 */
+    border-radius: 12px !important;
         
         .card-list { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
         
