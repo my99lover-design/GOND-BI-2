@@ -17,9 +17,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHT
 const LOCATIONS_URL = "./locations.json";
 
 const APP_CONFIG = Object.freeze({
-    CACHE_KEY: "gimpoB_common_password_v5",
-    CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v5",
-    CACHE_VERSION_KEY: "gimpoB_data_version_v1",
+    CACHE_KEY: "gimpoB_common_password_v6",
+    CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6",
+    CACHE_VERSION_KEY: "gimpoB_data_version_v2",
     LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1",
     LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1",
     THEME_KEY: "gimpoB_theme_v2",
@@ -563,8 +563,7 @@ function isOfficeApartmentCategory(value) {
 }
 
 function normalizeApartmentValue(value) {
-    const apartment = cleanText(value).normalize("NFC");
-    return isOfficeApartmentMarker(apartment) ? "오피" : apartment;
+    return cleanText(value).normalize("NFC");
 }
 
 function isValidCoordinate(latitude, longitude) {
