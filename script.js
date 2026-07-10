@@ -540,9 +540,24 @@ function normalizeGpsName(value) {
         .replace(/[\s\u200B-\u200D\u2060\uFEFF]/gu, "");
 }
 
+function normalizeOfficeLabel(value) {
+    return cleanText(value)
+        .normalize("NFC")
+        .replace(/\s+/g, "")
+        .replace(/[.．。]+$/g, "")
+        .toUpperCase();
+}
+
+/* 오피, 오피., OP처럼 같은 항목으로 합쳐야 하는 기본 표기 */
 function isOfficeApartmentMarker(value) {
-    const marker = cleanText(value).normalize("NFC").replace(/\s+/g, "").replace(/[.．。]+$/g, "").toUpperCase();
+    const marker = normalizeOfficeLabel(value);
     return marker === "오피" || marker === "OP" || marker === "오피스텔" || marker === "OFFICETEL";
+}
+
+/* 길건너오피, 먹자오피, 예미지OP처럼 이름은 유지하되 오피로 취급할 항목 */
+function isOfficeApartmentCategory(value) {
+    const marker = normalizeOfficeLabel(value);
+    return isOfficeApartmentMarker(marker) || marker.includes("오피") || marker.endsWith("OP");
 }
 
 function normalizeApartmentValue(value) {
@@ -617,7 +632,7 @@ function isUsableRecord(record) {
 }
 
 function isOfficeRecord(record) {
-    return isOfficeApartmentMarker(record?.apartment);
+    return isOfficeApartmentCategory(record?.apartment);
 }
 
 function firstValue(object, keys) {
@@ -1065,7 +1080,7 @@ function sortApartmentsWithOfficeLast(values) {
     const officeApartments = [];
 
     for (const value of values || []) {
-        if (isOfficeApartmentMarker(value)) officeApartments.push(value);
+        if (isOfficeApartmentCategory(value)) officeApartments.push(value);
         else normalApartments.push(value);
     }
 
@@ -1076,8 +1091,8 @@ function sortApartmentsWithOfficeLast(values) {
 }
 
 function compareApartments(a, b) {
-    const isOfficeA = isOfficeApartmentMarker(a);
-    const isOfficeB = isOfficeApartmentMarker(b);
+    const isOfficeA = isOfficeApartmentCategory(a);
+    const isOfficeB = isOfficeApartmentCategory(b);
 
     if (isOfficeA !== isOfficeB) return isOfficeA ? 1 : -1;
     return naturalCompare(normalizeApartmentValue(a), normalizeApartmentValue(b));
