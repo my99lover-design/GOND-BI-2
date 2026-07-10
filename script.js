@@ -995,11 +995,12 @@ function renderCurrentView() {
             renderApartmentButtons();
             break;
         case "dongs":
-            renderCommonPassword();
+            if (!isOfficeApartmentCategory(state.selectedApartment)) {
+                renderCommonPassword();
+            }
             renderDongButtons();
             break;
         case "cards":
-            renderCommonPassword();
             renderPasswordCards();
             break;
         case "regions":
@@ -1145,6 +1146,9 @@ function formatDongLabel(dong) {
 }
 
 function renderCommonPassword() {
+    if (state.view !== "dongs") return;
+    if (isOfficeApartmentCategory(state.selectedApartment)) return;
+
     const apartmentRecords = getSelectedApartmentRecords();
     if (apartmentRecords.length === 0) return;
 
