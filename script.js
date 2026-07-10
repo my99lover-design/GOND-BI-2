@@ -2471,15 +2471,7 @@ function getNearbyApartments(currentLatitude, currentLongitude, buttonCount = AP
 
     results.sort((a, b) => a.distance - b.distance || naturalCompare(a.displayName, b.displayName));
 
-    let selected = results.slice(0, limit);
-    if (!selected.some(item => item.isOffice)) {
-        const nearestOffice = results.find(item => item.isOffice);
-        if (nearestOffice) {
-            selected = results.filter(item => !item.isOffice).slice(0, Math.max(0, limit - 1));
-            selected.push(nearestOffice);
-            selected.sort((a, b) => a.distance - b.distance || naturalCompare(a.displayName, b.displayName));
-        }
-    }
+    const selected = results.slice(0, limit);
 
     state.gpsNearbyCache = selected.slice(0, limit);
     state.gpsCacheLocation = currentPoint;
