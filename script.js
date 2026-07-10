@@ -2214,6 +2214,7 @@ function handleGpsSuccess(position) {
     if (shouldUseNewLocation(state.currentLocation, newLocation)) {
         state.currentLocation = newLocation;
         saveLastLocation(newLocation);
+        invalidateGpsCache();
         renderGpsButtons();
     }
 
