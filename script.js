@@ -6,7 +6,7 @@
    - 거리 km 소수점 둘째 자리
    - 오피 관련 아파트 맨 뒤 정렬
    - 일반 아파트는 B열, 오피스텔은 D열 건물명으로 GPS 매칭
-   - GPS 4개에 가까운 오피 항목 최소 1개 포함
+   - 아파트·오피스텔 통합 실제 거리순 GPS 4개
    - 수정기록 및 되돌리기
    - 4자리 PIN 관리자 인증(30분)
    - 화면 즉시 반영
@@ -344,7 +344,7 @@ function rebuildDataIndexes() {
 
         const isOffice = isOfficeRecord(record);
         const locationName = isOffice ? cleanText(record.dong) : apartment;
-        const exactName = normalizeApartmentName(locationName);
+        const exactName = normalizeGpsName(locationName);
         if (!exactName) continue;
 
         const gpsKey = isOffice
@@ -510,7 +510,7 @@ function normalizeLocationData(rawLocations) {
     for (const [apartmentName, coordinateList] of Object.entries(rawLocations)) {
         if (!Array.isArray(coordinateList)) continue;
 
-        const normalizedName = normalizeApartmentName(apartmentName);
+        const normalizedName = normalizeGpsName(apartmentName);
         if (!normalizedName) continue;
 
         const coordinates = coordinateList
@@ -528,6 +528,12 @@ function normalizeLocationData(rawLocations) {
 
 function normalizeApartmentName(value) {
     return cleanText(value).normalize("NFC");
+}
+
+function normalizeGpsName(value) {
+    return cleanText(value)
+        .normalize("NFC")
+        .replace(/[\s\u200B-\u200D\u2060\uFEFF]/gu, "");
 }
 
 function isOfficeApartmentMarker(value) {
@@ -2135,18 +2141,15 @@ function normalizePasswordForCompare(value) {
 /* ========================= GPS ========================= */
 
 function initializeGpsEvents() {
-    document.addEventListener("visibilitychange", syncGpsWatch);
-    window.addEventListener("pageshow", syncGpsWatch);
-    window.addEventListener("pagehide", stopGpsWatch);
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) startGps();
+    });
+
+    window.addEventListener("pageshow", startGps);
 }
 
 function syncGpsWatch() {
-    const shouldRun =
-        document.visibilityState === "visible" &&
-        state.view === "regions";
-
-    if (shouldRun) startGps();
-    else stopGpsWatch();
+    startGps();
 }
 
 function startGps() {
@@ -2166,14 +2169,14 @@ function startGps() {
     );
 
     navigator.geolocation.getCurrentPosition(
-        handleGpsSuccess,
-        handleGpsInitialError,
-        {
-            enableHighAccuracy: false,
-            timeout: 6000,
-            maximumAge: 60 * 1000
-        }
-    );
+    handleGpsSuccess,
+    handleGpsInitialError,
+    {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    }
+);
 
     state.gpsWatchId = navigator.geolocation.watchPosition(
         handleGpsSuccess,
