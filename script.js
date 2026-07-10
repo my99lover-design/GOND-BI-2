@@ -554,10 +554,12 @@ function isOfficeApartmentMarker(value) {
     return marker === "오피" || marker === "OP" || marker === "오피스텔" || marker === "OFFICETEL";
 }
 
-/* 길건너오피, 먹자오피, 예미지OP처럼 이름은 유지하되 오피로 취급할 항목 */
+/* 기본 오피 표기와 구래동의 길건너오피·먹자오피만 오피로 취급 */
 function isOfficeApartmentCategory(value) {
     const marker = normalizeOfficeLabel(value);
-    return isOfficeApartmentMarker(marker) || marker.includes("오피") || marker.endsWith("OP");
+    return isOfficeApartmentMarker(marker) ||
+        marker === "길건너오피" ||
+        marker === "먹자오피";
 }
 
 function normalizeApartmentValue(value) {
