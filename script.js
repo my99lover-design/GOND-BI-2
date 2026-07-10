@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================
-   넘버원 김포B 공비 - 자동 갱신 최종본
+   넘버원 김포B 공비 - 화면 깜빡임·공동비번 표시 수정본 20260711-3
    - locations.json 정확 일치(LH2 ≠ LH2.)
    - 거리 km 소수점 둘째 자리
    - 오피 관련 아파트 맨 뒤 정렬
@@ -980,8 +980,7 @@ function renderCurrentView() {
     updateHeaderAndNavigation();
     elements.buttonGrid.replaceChildren();
     elements.cardList.replaceChildren();
-    elements.commonPwdStandalone.replaceChildren();
-    elements.commonPwdStandalone.style.display = "none";
+    hideCommonPassword();
     elements.cardList.style.display = "none";
     elements.stepContainer.style.display = "block";
 
@@ -1145,7 +1144,14 @@ function formatDongLabel(dong) {
     return value;
 }
 
+function hideCommonPassword() {
+    elements.commonPwdStandalone.replaceChildren();
+    elements.commonPwdStandalone.style.display = "none";
+    elements.commonPwdStandalone.hidden = true;
+}
+
 function renderCommonPassword() {
+    hideCommonPassword();
     if (state.view !== "dongs") return;
     if (isOfficeApartmentCategory(state.selectedApartment)) return;
 
@@ -1174,6 +1180,7 @@ function renderCommonPassword() {
 
     row.append(value, editButton);
     elements.commonPwdStandalone.append(title, row);
+    elements.commonPwdStandalone.hidden = false;
     elements.commonPwdStandalone.style.display = "block";
 }
 
@@ -1182,6 +1189,7 @@ function getSelectedApartmentRecords() {
 }
 
 function renderPasswordCards() {
+    hideCommonPassword();
     elements.stepContainer.style.display = "none";
     elements.cardList.style.display = "flex";
 
@@ -2184,7 +2192,6 @@ function initializeGpsEvents() {
     });
 
     window.addEventListener("pageshow", restartGpsWatch);
-    window.addEventListener("focus", restartGpsWatch);
 }
 
 function syncGpsWatch() {
@@ -2729,24 +2736,12 @@ function tryApplyAppUpdate() {
 /* ========================= PWA 서비스워커 ========================= */
 
 if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.addEventListener("message", event => {
-        if (event.data?.type === "APP_UPDATED") scheduleAppUpdateReload();
-    });
-
     window.addEventListener("load", async () => {
-        const hadController = Boolean(navigator.serviceWorker.controller);
-        let refreshing = false;
-
-        if (hadController) {
-            navigator.serviceWorker.addEventListener("controllerchange", () => {
-                if (refreshing) return;
-                refreshing = true;
-                window.location.reload();
-            });
-        }
-
         try {
-            const registration = await navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" });
+            const registration = await navigator.serviceWorker.register(
+                "./service-worker.js",
+                { updateViaCache: "none" }
+            );
             await registration.update();
         } catch (error) {
             console.error("서비스워커 등록 실패:", error);
