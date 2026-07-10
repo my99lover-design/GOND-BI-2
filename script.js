@@ -35,10 +35,9 @@ const APP_CONFIG = Object.freeze({
     DATA_CHECK_INTERVAL: 5 * 60 * 1000,
     CACHE_WRITE_DELAY: 120,
     GPS_BUTTON_COUNT: 4,
-    GPS_RECALC_DISTANCE: 20,
+    GPS_RECALC_DISTANCE: 10,
     HISTORY_LIMIT: 100,
     ADMIN_SESSION_MS: 30 * 60 * 1000,
-    GPS_WATCH_TIME: 30000,
     RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000]
 });
 
@@ -152,6 +151,7 @@ async function initializeApp() {
     initializeModalEvents();
     initializePendingSync();
     initializeFreshnessChecks();
+    initializeGpsEvents();
     renderLoading("데이터를 불러오는 중입니다...");
 
     const cachedRecords = applyPendingOperationsToRecords(loadCachedRecords());
@@ -162,7 +162,7 @@ async function initializeApp() {
     }
 
     loadCachedLocations();
-    startGps();
+    syncGpsWatch();
 
     await Promise.allSettled([
         refreshRecordsFromServer(false),
@@ -1004,6 +1004,7 @@ function updateHeaderAndNavigation() {
     updateInstallButtonVisibility();
     if (elements.historyBtn) elements.historyBtn.hidden = !isHome;
     if (elements.adminBtn) elements.adminBtn.hidden = !isHome;
+    syncGpsWatch();
 }
 
 function renderRegionButtons() {
@@ -2133,8 +2134,23 @@ function normalizePasswordForCompare(value) {
 
 /* ========================= GPS ========================= */
 
+function initializeGpsEvents() {
+    document.addEventListener("visibilitychange", syncGpsWatch);
+    window.addEventListener("pageshow", syncGpsWatch);
+    window.addEventListener("pagehide", stopGpsWatch);
+}
+
+function syncGpsWatch() {
+    const shouldRun =
+        document.visibilityState === "visible" &&
+        state.view === "regions";
+
+    if (shouldRun) startGps();
+    else stopGpsWatch();
+}
+
 function startGps() {
-    loadLastLocation();
+    if (!state.currentLocation) loadLastLocation();
 
     if (!("geolocation" in navigator)) {
         updateGpsStatus("🔴 GPS 미지원", "error");
@@ -2142,22 +2158,32 @@ function startGps() {
         return;
     }
 
-    updateGpsStatus(state.currentLocation ? "🟡 최근 위치" : "📡 위치 확인 중", "loading");
+    if (state.gpsWatchId !== null) return;
 
-    navigator.geolocation.getCurrentPosition(handleGpsSuccess, handleGpsInitialError, {
-        enableHighAccuracy: false,
-        timeout: 6000,
-        maximumAge: 10 * 60 * 1000
-    });
+    updateGpsStatus(
+        state.currentLocation ? "🟡 위치 갱신 중" : "📡 위치 확인 중",
+        "loading"
+    );
 
-    state.gpsWatchId = navigator.geolocation.watchPosition(handleGpsSuccess, handleGpsWatchError, {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 5000
-    });
+    navigator.geolocation.getCurrentPosition(
+        handleGpsSuccess,
+        handleGpsInitialError,
+        {
+            enableHighAccuracy: false,
+            timeout: 6000,
+            maximumAge: 60 * 1000
+        }
+    );
 
-    clearTimeout(state.gpsStopTimer);
-    state.gpsStopTimer = window.setTimeout(stopGpsWatch, APP_CONFIG.GPS_WATCH_TIME);
+    state.gpsWatchId = navigator.geolocation.watchPosition(
+        handleGpsSuccess,
+        handleGpsWatchError,
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 3000
+        }
+    );
 }
 
 function stopGpsWatch() {
@@ -2192,20 +2218,46 @@ function handleGpsSuccess(position) {
     }
 
     updateGpsAccuracyStatus(newLocation.accuracy);
-    if (newLocation.accuracy !== null && newLocation.accuracy <= 30) stopGpsWatch();
 }
 
 function shouldUseNewLocation(currentLocation, newLocation) {
     if (!currentLocation) return true;
 
+    const currentLatitude = Number(currentLocation.latitude);
+    const currentLongitude = Number(currentLocation.longitude);
+    const newLatitude = Number(newLocation.latitude);
+    const newLongitude = Number(newLocation.longitude);
+
+    if (
+        !isValidCoordinate(currentLatitude, currentLongitude) ||
+        !isValidCoordinate(newLatitude, newLongitude)
+    ) {
+        return true;
+    }
+
+    const movedDistance = calculateDistanceMeters(
+        currentLatitude,
+        currentLongitude,
+        newLatitude,
+        newLongitude
+    );
+
+    if (movedDistance >= APP_CONFIG.GPS_RECALC_DISTANCE) return true;
+
     const currentAccuracy = Number(currentLocation.accuracy);
     const newAccuracy = Number(newLocation.accuracy);
+
+    if (
+        Number.isFinite(newAccuracy) &&
+        (!Number.isFinite(currentAccuracy) || newAccuracy + 10 < currentAccuracy)
+    ) {
+        return true;
+    }
+
     const currentTime = Number(currentLocation.timestamp) || 0;
     const newTime = Number(newLocation.timestamp) || Date.now();
 
-    if (Number.isFinite(newAccuracy) && !Number.isFinite(currentAccuracy)) return true;
-    if (Number.isFinite(newAccuracy) && Number.isFinite(currentAccuracy) && newAccuracy < currentAccuracy) return true;
-    return newTime - currentTime > 15000;
+    return newTime - currentTime >= 60 * 1000;
 }
 
 function handleGpsInitialError(error) {
