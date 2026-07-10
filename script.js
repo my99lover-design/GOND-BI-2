@@ -114,6 +114,7 @@ const state = {
     currentLocation: null,
     gpsWatchId: null,
     gpsStopTimer: null,
+    gpsRestartTimer: null,
     gpsNearbyCache: [],
     gpsCacheLocation: null,
     gpsCacheGeneration: -1,
@@ -365,7 +366,10 @@ function rebuildDataIndexes() {
 
     indexes.regions = [...regionSet].sort(compareRegions);
     for (const [region, apartmentSet] of apartmentsByRegionSet.entries()) {
-        indexes.apartmentsByRegion.set(region, [...apartmentSet].sort(compareApartments));
+        indexes.apartmentsByRegion.set(
+            region,
+            sortApartmentsWithOfficeLast([...apartmentSet])
+        );
     }
     for (const [apartmentKey, dongSet] of dongsByApartmentSet.entries()) {
         indexes.dongsByApartment.set(apartmentKey, [...dongSet].sort(naturalCompare));
@@ -538,7 +542,7 @@ function normalizeGpsName(value) {
 
 function isOfficeApartmentMarker(value) {
     const marker = cleanText(value).normalize("NFC").replace(/\s+/g, "").replace(/[.．。]+$/g, "").toUpperCase();
-    return marker === "오피" || marker === "OP";
+    return marker === "오피" || marker === "OP" || marker === "오피스텔" || marker === "OFFICETEL";
 }
 
 function normalizeApartmentValue(value) {
@@ -1040,7 +1044,9 @@ function selectRegion(region) {
 }
 
 function renderApartmentButtons() {
-    const apartments = state.indexes.apartmentsByRegion.get(state.selectedRegion) || [];
+    const apartments = sortApartmentsWithOfficeLast(
+        state.indexes.apartmentsByRegion.get(state.selectedRegion) || []
+    );
 
     if (apartments.length === 0) {
         renderStatusMessage("등록된 아파트가 없습니다.");
@@ -1054,15 +1060,27 @@ function renderApartmentButtons() {
     }
 }
 
-function compareApartments(a, b) {
-    const apartmentA = normalizeApartmentValue(a);
-    const apartmentB = normalizeApartmentValue(b);
-    const isOfficeA = isOfficeApartmentMarker(apartmentA);
-    const isOfficeB = isOfficeApartmentMarker(apartmentB);
+function sortApartmentsWithOfficeLast(values) {
+    const normalApartments = [];
+    const officeApartments = [];
 
-    if (isOfficeA && !isOfficeB) return 1;
-    if (!isOfficeA && isOfficeB) return -1;
-    return naturalCompare(apartmentA, apartmentB);
+    for (const value of values || []) {
+        if (isOfficeApartmentMarker(value)) officeApartments.push(value);
+        else normalApartments.push(value);
+    }
+
+    normalApartments.sort(naturalCompare);
+    officeApartments.sort(naturalCompare);
+
+    return [...normalApartments, ...officeApartments];
+}
+
+function compareApartments(a, b) {
+    const isOfficeA = isOfficeApartmentMarker(a);
+    const isOfficeB = isOfficeApartmentMarker(b);
+
+    if (isOfficeA !== isOfficeB) return isOfficeA ? 1 : -1;
+    return naturalCompare(normalizeApartmentValue(a), normalizeApartmentValue(b));
 }
 
 function selectApartment(apartment) {
@@ -1786,7 +1804,7 @@ function renderAdminDashboard() {
 
     const gpsTotal = state.indexes.gpsPlaces.length;
     const gpsMissingItems = state.indexes.gpsPlaces
-        .filter(item => !state.locationMap.has(item.exactName))
+        .filter(item => !findLocationEntryForPlace(item))
         .map(item => item.displayName)
         .filter((value, index, array) => value && array.indexOf(value) === index)
         .sort(naturalCompare);
@@ -2142,18 +2160,37 @@ function normalizePasswordForCompare(value) {
 
 function initializeGpsEvents() {
     document.addEventListener("visibilitychange", () => {
-        if (!document.hidden) startGps();
+        if (!document.hidden) restartGpsWatch();
     });
 
-    window.addEventListener("pageshow", startGps);
+    window.addEventListener("pageshow", restartGpsWatch);
+    window.addEventListener("focus", restartGpsWatch);
 }
 
 function syncGpsWatch() {
-    startGps();
+    if (state.gpsWatchId === null) startGps();
+}
+
+function restartGpsWatch() {
+    clearTimeout(state.gpsRestartTimer);
+    stopGpsWatch();
+
+    state.gpsRestartTimer = window.setTimeout(() => {
+        state.gpsRestartTimer = null;
+        startGps();
+    }, 200);
 }
 
 function startGps() {
-    if (!state.currentLocation) loadLastLocation();
+    if (!state.currentLocation) {
+        loadLastLocation();
+
+        if (state.currentLocation) {
+            updateGpsStatus("🟡 최근 위치", "cached");
+            invalidateGpsCache();
+            renderGpsButtons();
+        }
+    }
 
     if (!("geolocation" in navigator)) {
         updateGpsStatus("🔴 GPS 미지원", "error");
@@ -2169,14 +2206,14 @@ function startGps() {
     );
 
     navigator.geolocation.getCurrentPosition(
-    handleGpsSuccess,
-    handleGpsInitialError,
-    {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-    }
-);
+        handleGpsSuccess,
+        handleGpsInitialError,
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 30 * 1000
+        }
+    );
 
     state.gpsWatchId = navigator.geolocation.watchPosition(
         handleGpsSuccess,
@@ -2424,6 +2461,38 @@ function createGpsPlaceholderButton(text = "") {
     return button;
 }
 
+function normalizeOfficeGpsAlias(value) {
+    return normalizeGpsName(value)
+        .toUpperCase()
+        .replace(/[()（）\[\]{}·ㆍ_\-–—]/gu, "")
+        .replace(/오피스텔|OFFICETEL/gu, "")
+        .replace(/오피$/u, "");
+}
+
+function findLocationEntryForPlace(placeInfo) {
+    const exactEntry = state.locationMap.get(placeInfo.exactName);
+    if (exactEntry || !placeInfo.isOffice) return exactEntry || null;
+
+    const targetAlias = normalizeOfficeGpsAlias(placeInfo.displayName);
+    if (targetAlias.length < 2) return null;
+
+    const matches = [];
+
+    for (const [locationName, locationEntry] of state.locationMap.entries()) {
+        const locationAlias = normalizeOfficeGpsAlias(locationName);
+        if (!locationAlias) continue;
+
+        const isSame = locationAlias === targetAlias;
+        const isContained = targetAlias.length >= 4 && locationAlias.length >= 4 &&
+            (locationAlias.includes(targetAlias) || targetAlias.includes(locationAlias));
+
+        if (isSame || isContained) matches.push(locationEntry);
+        if (matches.length > 1) return null;
+    }
+
+    return matches[0] || null;
+}
+
 function getNearbyApartments(currentLatitude, currentLongitude, buttonCount = APP_CONFIG.GPS_BUTTON_COUNT) {
     const limit = Math.max(1, Number(buttonCount) || APP_CONFIG.GPS_BUTTON_COUNT);
     const currentPoint = {
@@ -2446,7 +2515,7 @@ function getNearbyApartments(currentLatitude, currentLongitude, buttonCount = AP
     const results = [];
 
     for (const placeInfo of state.indexes.gpsPlaces) {
-        const locationEntry = state.locationMap.get(placeInfo.exactName);
+        const locationEntry = findLocationEntryForPlace(placeInfo);
         if (!locationEntry) continue;
 
         let shortestDistance = Infinity;
@@ -2605,6 +2674,7 @@ function showToast(message) {
 }
 
 window.addEventListener("beforeunload", () => {
+    clearTimeout(state.gpsRestartTimer);
     flushRecordsCache();
     stopGpsWatch();
 });
