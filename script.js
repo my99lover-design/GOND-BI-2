@@ -1153,7 +1153,7 @@ function startGps() {
     }
     if (state.gpsWatchId !== null) return;
     updateGpsStatus( state.currentLocation ? "🟡 위치 갱신 중" : "📡 위치 확인 중", "loading" );
-    navigator.geolocation.getCurrentPosition( handleGpsSuccess, handleGpsInitialError, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30 * 1000 } );
+    navigator.geolocation.getCurrentPosition( handleGpsSuccess, handleGpsInitialError, { enableHighAccuracy: false, timeout: 5000, maximumAge: 5 * 60 * 1000 } );
     state.gpsWatchId = navigator.geolocation.watchPosition( handleGpsSuccess, handleGpsWatchError, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 } );
 }
 function stopGpsWatch() {
