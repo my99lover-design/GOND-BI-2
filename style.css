@@ -139,3 +139,20 @@ button { touch-action:manipulation; }
 .restore-backup-btn { flex:0 0 auto; padding:8px 10px; border:1px solid var(--danger); border-radius:9px; background:rgba(239,68,68,.06); color:var(--danger); font-size:.78rem; font-weight:900; cursor:pointer; }
 .restore-backup-btn:disabled { opacity:.45; cursor:default; }
 @media (max-width:390px) { .admin-modal-content { width:95vw; max-height:82vh; padding:14px; } .admin-content { max-height:calc(82vh - 68px); } .admin-metrics { gap:6px; } .admin-metric { padding:8px; } .admin-metric-value { font-size:1rem; } }
+
+/* ========================= 게이트 위치 이미지 ========================= */
+.gate-location-action { width:100%; }
+.gate-location-btn { width:100%; padding:15px 18px; border:0; border-radius:15px; background:#16a34a; color:#fff; font-size:1.08rem; font-weight:900; box-shadow:0 4px 10px rgba(22,163,74,.24); cursor:pointer; }
+.gate-location-btn:active { transform:scale(.985); }
+.gate-image-open { overflow:hidden; }
+.gate-image-modal { z-index:2200; background:rgba(0,0,0,.92); }
+.gate-image-modal-content { display:flex; flex-direction:column; width:100vw; height:100vh; height:100dvh; max-width:none; padding:0; border-radius:0; background:#111827; overflow:hidden; }
+.gate-image-toolbar { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; padding-top:max(10px,env(safe-area-inset-top)); background:#111827; color:#fff; border-bottom:1px solid rgba(255,255,255,.15); }
+.gate-image-title { font-size:1rem; font-weight:900; }
+.gate-image-help { margin-top:2px; color:#cbd5e1; font-size:.72rem; font-weight:700; }
+.gate-image-tools { display:flex; align-items:center; gap:8px; }
+.gate-image-tool-btn,.gate-image-close-btn { border:1px solid rgba(255,255,255,.25); background:#1f2937; color:#fff; font-weight:900; cursor:pointer; }
+.gate-image-tool-btn { padding:8px 10px; border-radius:9px; font-size:.78rem; }
+.gate-image-close-btn { width:38px; height:38px; padding:0; border-radius:50%; font-size:1.65rem; line-height:1; }
+.gate-image-stage { position:relative; flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none; user-select:none; background:#0b1020; }
+.gate-image { display:block; max-width:100%; max-height:100%; object-fit:contain; transform:translate3d(0,0,0) scale(1); transform-origin:center center; will-change:transform; user-select:none; -webkit-user-drag:none; }

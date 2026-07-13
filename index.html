@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=20260713-2">
 </head>
 <body>
 <div class="container">
@@ -126,7 +126,25 @@
     </div>
 </div>
 
+<div id="gateImageModal" class="modal gate-image-modal" role="dialog" aria-modal="true" aria-labelledby="gateImageTitle">
+    <div class="gate-image-modal-content">
+        <div class="gate-image-toolbar">
+            <div>
+                <div id="gateImageTitle" class="gate-image-title">게이트 위치</div>
+                <div class="gate-image-help">두 손가락 확대 · 확대 후 드래그</div>
+            </div>
+            <div class="gate-image-tools">
+                <button id="gateImageResetBtn" class="gate-image-tool-btn" type="button">원위치</button>
+                <button id="gateImageCloseBtn" class="gate-image-close-btn" type="button" aria-label="게이트 이미지 닫기">×</button>
+            </div>
+        </div>
+        <div id="gateImageStage" class="gate-image-stage">
+            <img id="gateImage" class="gate-image" alt="게이트 위치 안내" draggable="false">
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260711-3"></script>
+<script src="script.js?v=20260713-2"></script>
 </body>
 </html>

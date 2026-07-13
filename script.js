@@ -2,6 +2,12 @@
 /* 넘버원 김포B 공비 - 시트 직접 수정 자동 갱신 20260713-1 */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
+const GATE_IMAGES = Object.freeze({
+    "썬앤빌": { src: "./gate-images/썬앤빌.png", label: "썬앤빌" },
+    "럭스A": { src: "./gate-images/럭스A.png", label: "럭스A" },
+    "럭스B": { src: "./gate-images/럭스B.png", label: "럭스B" },
+    "루체뷰1": { src: "./gate-images/루체뷰1.png", label: "럭스B" }
+});
 const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, HISTORY_LIMIT: 100, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const elements = {
     headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdValue: document.getElementById("addPwdValue"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminGpsWarning: document.getElementById("adminGpsWarning"), createBackupBtn: document.getElementById("createBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
@@ -16,6 +22,7 @@ async function initializeApp() {
     initializeHistoryButton();
     initializeAdminButton();
     initializeModalEvents();
+    initializeGateImageModal();
     initializePendingSync();
     initializeFreshnessChecks();
     initializeGpsEvents();
@@ -635,6 +642,7 @@ function renderPasswordCards() {
     hideCommonPassword();
     elements.stepContainer.style.display = "none";
     elements.cardList.style.display = "flex";
+    renderGateLocationButton();
     let records;
     if (state.selectedDong && state.selectedDong !== "전체") {
         records = state.indexes.recordsByApartmentDong.get( makeKey(state.selectedRegion, state.selectedApartment, normalizeDongValue(state.selectedDong)) ) || [];
@@ -690,6 +698,94 @@ function createPasswordCard(record) {
     card.append(lineTitle, passwordContainer, footer);
     return card;
 }
+/* ========================= 게이트 위치 이미지 ========================= */
+const gateView = { scale: 1, x: 0, y: 0, pointers: new Map() };
+function getGateImageInfo(name) {
+    const key = cleanText(name).normalize("NFC");
+
+    if (key === "썬앤빌") return GATE_IMAGES.sun;
+    if (key === "럭스A") return GATE_IMAGES.luxeA;
+    if (key === "럭스B") return GATE_IMAGES.luxeB;
+    if (key === "루체뷰1") return GATE_IMAGES.luceView1;
+
+    return null;
+}
+function getSelectedGateBuildingName() {
+    if (!isOfficeApartmentCategory(state.selectedApartment)) return "";
+    if (state.selectedDong && state.selectedDong !== "전체") return state.selectedDong;
+    const dongs = uniqueValues(getSelectedApartmentRecords().map(record => normalizeDongValue(record.dong)).filter(dong => dong !== "전체"));
+    return dongs.length === 1 ? dongs[0] : "";
+}
+function renderGateLocationButton() {
+    const building = getSelectedGateBuildingName();
+    const info = getGateImageInfo(building);
+    if (!info) return;
+    const wrap = document.createElement("div");
+    wrap.className = "gate-location-action";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "gate-location-btn";
+    button.textContent = "📍 게이트 위치";
+    button.addEventListener("click", () => openGateImageModal(info, building));
+    wrap.appendChild(button);
+    elements.cardList.appendChild(wrap);
+}
+function initializeGateImageModal() {
+    const modal = document.getElementById("gateImageModal");
+    const stage = document.getElementById("gateImageStage");
+    const image = document.getElementById("gateImage");
+    if (!modal || !stage || !image) return;
+    document.getElementById("gateImageCloseBtn").addEventListener("click", closeGateImageModal);
+    document.getElementById("gateImageResetBtn").addEventListener("click", resetGateImageView);
+    image.addEventListener("load", resetGateImageView);
+    stage.addEventListener("pointerdown", event => { stage.setPointerCapture(event.pointerId); gateView.pointers.set(event.pointerId, gatePoint(event, stage)); });
+    stage.addEventListener("pointermove", event => {
+        if (!gateView.pointers.has(event.pointerId)) return;
+        const before = new Map(gateView.pointers);
+        gateView.pointers.set(event.pointerId, gatePoint(event, stage));
+        const oldPoints = [...before.values()], newPoints = [...gateView.pointers.values()];
+        if (newPoints.length === 1 && gateView.scale > 1) { gateView.x += newPoints[0].x - oldPoints[0].x; gateView.y += newPoints[0].y - oldPoints[0].y; }
+        else if (newPoints.length >= 2) {
+            const oldMid = gateMid(oldPoints[0], oldPoints[1]), newMid = gateMid(newPoints[0], newPoints[1]);
+            const oldDistance = Math.max(1, gateDistance(oldPoints[0], oldPoints[1]));
+            const nextScale = Math.min(5, Math.max(1, gateView.scale * gateDistance(newPoints[0], newPoints[1]) / oldDistance));
+            const cx = stage.clientWidth / 2, cy = stage.clientHeight / 2;
+            const qx = (oldMid.x - cx - gateView.x) / gateView.scale, qy = (oldMid.y - cy - gateView.y) / gateView.scale;
+            gateView.x = newMid.x - cx - qx * nextScale; gateView.y = newMid.y - cy - qy * nextScale; gateView.scale = nextScale;
+        }
+        clampGateImageView(); applyGateImageView();
+    });
+    const endPointer = event => gateView.pointers.delete(event.pointerId);
+    stage.addEventListener("pointerup", endPointer); stage.addEventListener("pointercancel", endPointer);
+    stage.addEventListener("wheel", event => { event.preventDefault(); zoomGateImageAt(event.offsetX, event.offsetY, gateView.scale * (event.deltaY < 0 ? 1.18 : .85)); }, { passive: false });
+    stage.addEventListener("dblclick", event => zoomGateImageAt(event.offsetX, event.offsetY, gateView.scale > 1 ? 1 : 2.5));
+    document.addEventListener("keydown", event => { if (event.key === "Escape" && modal.style.display === "flex") closeGateImageModal(); });
+}
+function gatePoint(event, stage) { const rect = stage.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; }
+function gateDistance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function gateMid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+function openGateImageModal(info, building) {
+    const modal = document.getElementById("gateImageModal"), image = document.getElementById("gateImage");
+    document.getElementById("gateImageTitle").textContent = `${cleanText(building) || info.label} 게이트 위치`;
+    image.src = info.src; image.alt = `${cleanText(building) || info.label} 게이트 위치 안내`;
+    resetGateImageView(); modal.style.display = "flex"; document.body.classList.add("gate-image-open");
+}
+function closeGateImageModal() { const modal = document.getElementById("gateImageModal"); if (!modal) return; modal.style.display = "none"; document.body.classList.remove("gate-image-open"); gateView.pointers.clear(); resetGateImageView(); }
+function resetGateImageView() { gateView.scale = 1; gateView.x = 0; gateView.y = 0; gateView.pointers.clear(); applyGateImageView(); }
+function zoomGateImageAt(x, y, requestedScale) {
+    const stage = document.getElementById("gateImageStage"); if (!stage) return;
+    const nextScale = Math.min(5, Math.max(1, requestedScale)), cx = stage.clientWidth / 2, cy = stage.clientHeight / 2;
+    const qx = (x - cx - gateView.x) / gateView.scale, qy = (y - cy - gateView.y) / gateView.scale;
+    gateView.x = x - cx - qx * nextScale; gateView.y = y - cy - qy * nextScale; gateView.scale = nextScale;
+    clampGateImageView(); applyGateImageView();
+}
+function clampGateImageView() {
+    const stage = document.getElementById("gateImageStage"), image = document.getElementById("gateImage"); if (!stage || !image) return;
+    if (gateView.scale <= 1) { gateView.scale = 1; gateView.x = 0; gateView.y = 0; return; }
+    const maxX = Math.max(0, (image.clientWidth * gateView.scale - stage.clientWidth) / 2), maxY = Math.max(0, (image.clientHeight * gateView.scale - stage.clientHeight) / 2);
+    gateView.x = Math.max(-maxX, Math.min(maxX, gateView.x)); gateView.y = Math.max(-maxY, Math.min(maxY, gateView.y));
+}
+function applyGateImageView() { const image = document.getElementById("gateImage"); if (image) image.style.transform = `translate3d(${gateView.x}px,${gateView.y}px,0) scale(${gateView.scale})`; }
 function formatLineLabel(line) { const value = cleanText(line); if (!value) return "공용"; return /라인$/u.test(value) ? value : `${value}라인`; }
 function splitPasswords(value) { const text = cleanText(value); if (!text) return []; return uniqueValues( text.split(/\s*(?:\/|\||,|\r?\n)\s*/u) .map(item => item.trim()) .filter(Boolean) ); }
 function createSelectButton(label) { const button = document.createElement("button"); button.type = "button"; button.className = "select-btn"; button.textContent = label; button.title = label; return button; }

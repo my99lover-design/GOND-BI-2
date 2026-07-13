@@ -1,10 +1,10 @@
-const CACHE_NAME = "gimpo-b-pwa-runtime-v3";
+const CACHE_NAME = "gimpo-b-pwa-runtime-v4";
 
 const APP_SHELL = [
     "./",
     "./index.html",
-    "./style.css",
-    "./script.js?v=20260711-3",
+    "./style.css?v=20260713-2",
+    "./script.js?v=20260713-2",
     "./manifest.json",
     "./icons/icon-180.png",
     "./icons/icon-192.png",
