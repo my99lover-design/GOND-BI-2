@@ -6,7 +6,7 @@ const GATE_IMAGES = Object.freeze({
     "썬앤빌": { src: "./gate-images/썬앤빌.png", label: "썬앤빌" },
     "럭스A": { src: "./gate-images/럭스A.png", label: "럭스A" },
     "럭스B": { src: "./gate-images/럭스B.png", label: "럭스B" },
-    "루체뷰1": { src: "./gate-images/루체뷰1.png", label: "럭스B" }
+    "루체뷰1": { src: "./gate-images/루체뷰1.png", label: "루체뷰1" }
 });
 const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, HISTORY_LIMIT: 100, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const elements = {
@@ -702,13 +702,7 @@ function createPasswordCard(record) {
 const gateView = { scale: 1, x: 0, y: 0, pointers: new Map() };
 function getGateImageInfo(name) {
     const key = cleanText(name).normalize("NFC");
-
-    if (key === "썬앤빌") return GATE_IMAGES.sun;
-    if (key === "럭스A") return GATE_IMAGES.luxeA;
-    if (key === "럭스B") return GATE_IMAGES.luxeB;
-    if (key === "루체뷰1") return GATE_IMAGES.luceView1;
-
-    return null;
+    return GATE_IMAGES[key] || null;
 }
 function getSelectedGateBuildingName() {
     if (!isOfficeApartmentCategory(state.selectedApartment)) return "";
