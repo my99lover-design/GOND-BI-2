@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 화면 깜빡임·공동비번 표시 수정본 20260711-3 */
+/* 넘버원 김포B 공비 - 시트 직접 수정 자동 갱신 20260713-1 */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
 const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, HISTORY_LIMIT: 100, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
@@ -123,10 +123,14 @@ async function refreshRecordsFromServer(force = false) {
     state.networkLoading = true;
     try {
         if (!force && state.records.length > 0 && state.dataVersion) {
-            const versionResponse = await requestApi("getDataVersion");
-            const serverVersion = extractDataVersion(versionResponse);
-            state.lastDataCheckAt = Date.now();
-            if (serverVersion && serverVersion === state.dataVersion) return;
+            try {
+                const versionResponse = await requestApi("getDataVersion");
+                const serverVersion = extractDataVersion(versionResponse);
+                state.lastDataCheckAt = Date.now();
+                if (serverVersion && serverVersion === state.dataVersion) return;
+            } catch (versionError) {
+                console.warn("데이터 버전 확인 실패, 전체 데이터를 다시 확인합니다:", versionError);
+            }
         }
         const response = await requestApi("getData");
         const rawData = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : [];
@@ -1153,7 +1157,7 @@ function startGps() {
     }
     if (state.gpsWatchId !== null) return;
     updateGpsStatus( state.currentLocation ? "🟡 위치 갱신 중" : "📡 위치 확인 중", "loading" );
-    navigator.geolocation.getCurrentPosition( handleGpsSuccess, handleGpsInitialError, { enableHighAccuracy: false, timeout: 5000, maximumAge: 5 * 60 * 1000 } );
+    navigator.geolocation.getCurrentPosition( handleGpsSuccess, handleGpsInitialError, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30 * 1000 } );
     state.gpsWatchId = navigator.geolocation.watchPosition( handleGpsSuccess, handleGpsWatchError, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 } );
 }
 function stopGpsWatch() {
