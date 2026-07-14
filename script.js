@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 자동백업·편집·기록 최적화 20260714-3 */
+/* 넘버원 김포B 공비 - 데이터점검·자동백업 감시 20260714-4 */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
 const GATE_IMAGES = Object.freeze({
@@ -10,7 +10,7 @@ const GATE_IMAGES = Object.freeze({
 });
 const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdValue: document.getElementById("addPwdValue"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminGpsWarning: document.getElementById("adminGpsWarning"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdValue: document.getElementById("addPwdValue"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null, gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastRenderSignature: "", toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, appUpdatePending: false, appUpdateTimer: null
@@ -1233,22 +1233,192 @@ function handleAdminAuthError(error) {
     if (!message.includes("관리자 인증")) return false;
     clearAdminSession();
     closeAdminModal();
-    window.alert(`${message} 관리자 버튼을 눌러 다시 인증해주세요.`); return true; } function closeAdminModal() { closeModal(elements.adminModal); } async function loadAdminDashboard(showLoading = true) { if (state.adminLoading) return; state.adminLoading = true; if (showLoading) { elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = "점검 정보를 불러오는 중입니다..."; elements.adminContent.hidden = true; } try { const response = await requestApi("getAdminDashboard", { adminToken: requireAdminToken() }); const dashboard = response?.data && typeof response.data === "object" ? response.data : response; state.adminDashboard = normalizeAdminDashboard(dashboard); renderAdminDashboard(); } catch (error) { console.error("관리자 점검 불러오기 실패:", error); if (handleAdminAuthError(error)) return; elements.adminContent.hidden = true; elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = `점검 정보를 불러오지 못했습니다.\n${error.message}`; } finally { state.adminLoading = false; } } function normalizeAdminDashboard(data) { return { dataSheetName: cleanText(data?.dataSheetName), totalRows: Number(data?.totalRows) || 0, regionCount: Number(data?.regionCount) || 0, apartmentCount: Number(data?.apartmentCount) || 0, officeBuildingCount: Number(data?.officeBuildingCount) || 0, passwordRowCount: Number(data?.passwordRowCount) || 0, blankPasswordRowCount: Number(data?.blankPasswordRowCount) || 0, historyCount: Number(data?.historyCount) || 0, dataVersion: cleanText(data?.dataVersion), checkedAt: cleanText(data?.checkedAt), autoBackup: {
+    window.alert(`${message} 관리자 버튼을 눌러 다시 인증해주세요.`); return true; } function closeAdminModal() { closeModal(elements.adminModal); } async function loadAdminDashboard(showLoading = true) { if (state.adminLoading) return; state.adminLoading = true; if (showLoading) { elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = "점검 정보를 불러오는 중입니다..."; elements.adminContent.hidden = true; } try { const response = await requestApi("getAdminDashboard", { adminToken: requireAdminToken() }); const dashboard = response?.data && typeof response.data === "object" ? response.data : response; state.adminDashboard = normalizeAdminDashboard(dashboard); renderAdminDashboard(); } catch (error) { console.error("관리자 점검 불러오기 실패:", error); if (handleAdminAuthError(error)) return; elements.adminContent.hidden = true; elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = `점검 정보를 불러오지 못했습니다.\n${error.message}`; } finally { state.adminLoading = false; } } function normalizeAdminDashboard(data) {
+    const qualityCategories = Array.isArray(data?.dataQuality?.categories)
+        ? data.dataQuality.categories.map(normalizeDataQualityCategory).filter(item => item.label)
+        : [];
+    return {
+        dataSheetName: cleanText(data?.dataSheetName),
+        totalRows: Number(data?.totalRows) || 0,
+        regionCount: Number(data?.regionCount) || 0,
+        apartmentCount: Number(data?.apartmentCount) || 0,
+        officeBuildingCount: Number(data?.officeBuildingCount) || 0,
+        passwordRowCount: Number(data?.passwordRowCount) || 0,
+        blankPasswordRowCount: Number(data?.blankPasswordRowCount) || 0,
+        historyCount: Number(data?.historyCount) || 0,
+        dataVersion: cleanText(data?.dataVersion),
+        checkedAt: cleanText(data?.checkedAt),
+        dataQuality: {
+            checkedAt: cleanText(data?.dataQuality?.checkedAt),
+            checkedRows: Number(data?.dataQuality?.checkedRows) || 0,
+            totalIssues: Number(data?.dataQuality?.totalIssues) || 0,
+            healthy: data?.dataQuality?.healthy === true,
+            categories: qualityCategories
+        },
+        autoBackup: {
             enabled: data?.autoBackup?.enabled === true,
+            healthy: data?.autoBackup?.healthy !== false,
+            needsAttention: data?.autoBackup?.needsAttention === true,
+            status: cleanText(data?.autoBackup?.status),
             schedule: cleanText(data?.autoBackup?.schedule) || "매일 06시경",
             timezone: cleanText(data?.autoBackup?.timezone) || "Asia/Seoul",
-            message: cleanText(data?.autoBackup?.message)
-        }, backups: Array.isArray(data?.backups) ? data.backups.map(normalizeBackupInfo).filter(item => item.name) : [] }; } function normalizeBackupInfo(item) { return { name: cleanText(item?.name), createdAt: cleanText(item?.createdAt), rowCount: Number(item?.rowCount) || 0, kind: cleanText(item?.kind) || "수동 백업" }; } function renderAdminDashboard() { const dashboard = state.adminDashboard; if (!dashboard) return; const gpsTotal = state.indexes.gpsPlaces.length; const gpsMissingItems = state.indexes.gpsPlaces .filter(item => !findLocationEntryForPlace(item)) .map(item => item.displayName) .filter((value, index, array) => value && array.indexOf(value) === index) .sort(naturalCompare); const gpsMatched = Math.max(0, gpsTotal - gpsMissingItems.length); const pendingCount = state.pendingOperations.length; const latestBackup = dashboard.backups[0]?.createdAt || "없음"; const lastSync = state.lastDataCheckAt ? formatLocalDateTime(state.lastDataCheckAt) : "확인 전"; elements.adminStatus.style.display = "none"; elements.adminContent.hidden = false; elements.adminMetrics.replaceChildren(); const metrics = [ ["전체 데이터", `${dashboard.totalRows.toLocaleString()}건`, ""], ["지역", `${dashboard.regionCount.toLocaleString()}곳`, ""], ["아파트", `${dashboard.apartmentCount.toLocaleString()}곳`, ""], ["오피 건물", `${dashboard.officeBuildingCount.toLocaleString()}곳`, ""], ["비밀번호 등록 행", `${dashboard.passwordRowCount.toLocaleString()}건`, "good"], ["비밀번호 빈 행", `${dashboard.blankPasswordRowCount.toLocaleString()}건`, dashboard.blankPasswordRowCount ? "warn" : "good"], ["GPS 좌표 연결", `${gpsMatched.toLocaleString()} / ${gpsTotal.toLocaleString()}`, gpsMissingItems.length ? "warn" : "good"], ["저장 대기", `${pendingCount.toLocaleString()}건`, pendingCount ? "danger" : "good"], ["수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""], ["자동 백업", dashboard.autoBackup?.enabled ? "매일 06시" : "설정 필요", dashboard.autoBackup?.enabled ? "good" : "warn"], ["보관 백업", `${dashboard.backups.length.toLocaleString()}개`, dashboard.backups.length ? "good" : "warn"], ["마지막 백업", latestBackup, dashboard.backups.length ? "good" : "warn"], ["마지막 동기화", lastSync, ""] ]; for (const [label, value, tone] of metrics) elements.adminMetrics.appendChild(createAdminMetric(label, value, tone)); if (gpsMissingItems.length > 0) { const preview = gpsMissingItems.slice(0, 10).join(", "); const extra = gpsMissingItems.length > 10 ? ` 외 ${gpsMissingItems.length - 10}곳` : ""; elements.adminGpsWarning.hidden = false; elements.adminGpsWarning.textContent = `⚠ GPS 좌표 미연결 ${gpsMissingItems.length}곳\n${preview}${extra}`; } else { elements.adminGpsWarning.hidden = true; elements.adminGpsWarning.textContent = ""; } elements.createBackupBtn.disabled = state.backupCreating || Boolean(state.restoringBackupName); elements.createBackupBtn.textContent = state.backupCreating ? "백업 중..." : "지금 백업";
-    if (elements.autoBackupStatus) {
-        elements.autoBackupStatus.textContent = dashboard.autoBackup?.enabled
-            ? `✅ ${dashboard.autoBackup.schedule} · ${dashboard.autoBackup.timezone}`
-            : `⚠ ${dashboard.autoBackup?.message || "자동 백업 설정이 필요합니다."}`;
+            message: cleanText(data?.autoBackup?.message),
+            lastSuccessAt: cleanText(data?.autoBackup?.lastSuccessAt),
+            lastFailureAt: cleanText(data?.autoBackup?.lastFailureAt),
+            lastFailureMessage: cleanText(data?.autoBackup?.lastFailureMessage),
+            hoursSinceSuccess: Number.isFinite(Number(data?.autoBackup?.hoursSinceSuccess)) ? Number(data.autoBackup.hoursSinceSuccess) : null
+        },
+        backups: Array.isArray(data?.backups) ? data.backups.map(normalizeBackupInfo).filter(item => item.name) : []
+    };
+}
+function normalizeDataQualityCategory(item) {
+    return {
+        key: cleanText(item?.key),
+        label: cleanText(item?.label),
+        severity: cleanText(item?.severity) || "warning",
+        count: Number(item?.count) || 0,
+        items: Array.isArray(item?.items) ? item.items.map(cleanText).filter(Boolean) : [],
+        hiddenCount: Number(item?.hiddenCount) || 0
+    };
+}
+function normalizeBackupInfo(item) { return { name: cleanText(item?.name), createdAt: cleanText(item?.createdAt), rowCount: Number(item?.rowCount) || 0, kind: cleanText(item?.kind) || "수동 백업" }; } function renderAdminDashboard() {
+    const dashboard = state.adminDashboard;
+    if (!dashboard) return;
+    const gpsTotal = state.indexes.gpsPlaces.length;
+    const gpsMissingItems = state.indexes.gpsPlaces
+        .filter(item => !findLocationEntryForPlace(item))
+        .map(item => item.displayName)
+        .filter((value, index, array) => value && array.indexOf(value) === index)
+        .sort(naturalCompare);
+    const gpsMatched = Math.max(0, gpsTotal - gpsMissingItems.length);
+    const pendingCount = state.pendingOperations.length;
+    const latestBackup = dashboard.backups[0]?.createdAt || "없음";
+    const lastSync = state.lastDataCheckAt ? formatLocalDateTime(state.lastDataCheckAt) : "확인 전";
+    const totalDataIssues = dashboard.dataQuality.totalIssues + gpsMissingItems.length;
+
+    elements.adminStatus.style.display = "none";
+    elements.adminContent.hidden = false;
+    elements.adminMetrics.replaceChildren();
+    const metrics = [
+        ["전체 데이터", `${dashboard.totalRows.toLocaleString()}건`, ""],
+        ["지역", `${dashboard.regionCount.toLocaleString()}곳`, ""],
+        ["아파트", `${dashboard.apartmentCount.toLocaleString()}곳`, ""],
+        ["오피 건물", `${dashboard.officeBuildingCount.toLocaleString()}곳`, ""],
+        ["비밀번호 등록 행", `${dashboard.passwordRowCount.toLocaleString()}건`, "good"],
+        ["비밀번호 빈 행", `${dashboard.blankPasswordRowCount.toLocaleString()}건`, dashboard.blankPasswordRowCount ? "warn" : "good"],
+        ["데이터 오류", `${totalDataIssues.toLocaleString()}건`, totalDataIssues ? "danger" : "good"],
+        ["GPS 좌표 연결", `${gpsMatched.toLocaleString()} / ${gpsTotal.toLocaleString()}`, gpsMissingItems.length ? "warn" : "good"],
+        ["저장 대기", `${pendingCount.toLocaleString()}건`, pendingCount ? "danger" : "good"],
+        ["수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""],
+        ["자동 백업", getAutoBackupMetricText(dashboard.autoBackup), dashboard.autoBackup.needsAttention ? "danger" : "good"],
+        ["보관 백업", `${dashboard.backups.length.toLocaleString()}개`, dashboard.backups.length ? "good" : "warn"],
+        ["마지막 백업", latestBackup, dashboard.backups.length ? "good" : "warn"],
+        ["마지막 동기화", lastSync, ""]
+    ];
+    for (const [label, value, tone] of metrics) elements.adminMetrics.appendChild(createAdminMetric(label, value, tone));
+
+    if (gpsMissingItems.length > 0) {
+        const preview = gpsMissingItems.slice(0, 10).join(", ");
+        const extra = gpsMissingItems.length > 10 ? ` 외 ${gpsMissingItems.length - 10}곳` : "";
+        elements.adminGpsWarning.hidden = false;
+        elements.adminGpsWarning.textContent = `⚠ GPS 좌표 미연결 ${gpsMissingItems.length}곳\n${preview}${extra}`;
+    } else {
+        elements.adminGpsWarning.hidden = true;
+        elements.adminGpsWarning.textContent = "";
     }
+
+    renderDataQualityReport(dashboard.dataQuality, gpsMissingItems);
+    elements.createBackupBtn.disabled = state.backupCreating || Boolean(state.restoringBackupName);
+    elements.createBackupBtn.textContent = state.backupCreating ? "백업 중..." : "지금 백업";
+    renderAutoBackupHealth(dashboard.autoBackup);
     if (elements.setupAutoBackupBtn) {
         elements.setupAutoBackupBtn.disabled = state.autoBackupUpdating;
         elements.setupAutoBackupBtn.textContent = state.autoBackupUpdating ? "설정 중..." : "자동백업 재설정";
     }
-    renderBackupList(dashboard.backups, pendingCount); } function createAdminMetric(label, value, tone = "") { const wrapper = document.createElement("div"); wrapper.className = "admin-metric"; const labelElement = document.createElement("div"); labelElement.className = "admin-metric-label"; labelElement.textContent = label; const valueElement = document.createElement("div"); valueElement.className = `admin-metric-value${tone ? ` ${tone}` : ""}`; valueElement.textContent = value; wrapper.append(labelElement, valueElement); return wrapper; } function renderBackupList(backups, pendingCount) { elements.backupList.replaceChildren(); if (!backups.length) { const empty = document.createElement("div"); empty.className = "backup-empty"; empty.textContent = "아직 생성된 백업이 없습니다."; elements.backupList.appendChild(empty); return; } for (const backup of backups) { const item = document.createElement("div"); item.className = "backup-item"; const info = document.createElement("div"); info.className = "backup-info"; const name = document.createElement("div"); name.className = "backup-name"; name.textContent = backup.kind; name.title = backup.name; const meta = document.createElement("div"); meta.className = "backup-meta"; meta.textContent = `${backup.createdAt || backup.name} · ${backup.rowCount.toLocaleString()}행`; info.append(name, meta); const restoreButton = document.createElement("button"); restoreButton.type = "button"; restoreButton.className = "restore-backup-btn"; restoreButton.textContent = state.restoringBackupName === backup.name ? "복구 중..." : "복구"; restoreButton.disabled = Boolean(state.restoringBackupName) || state.backupCreating || pendingCount > 0; restoreButton.title = pendingCount > 0 ? "저장 대기 작업이 끝난 뒤 복구할 수 있습니다." : ""; restoreButton.addEventListener("click", () => restoreDataBackup(backup)); item.append(info, restoreButton); elements.backupList.appendChild(item); } } async function setupAutomaticBackup() {
+    renderBackupList(dashboard.backups, pendingCount);
+}
+function getAutoBackupMetricText(autoBackup) {
+    if (!autoBackup?.enabled) return "설정 필요";
+    if (autoBackup.needsAttention) return "이상 확인";
+    if (autoBackup.status === "waiting") return "첫 실행 대기";
+    return "정상";
+}
+function renderAutoBackupHealth(autoBackup) {
+    if (elements.autoBackupStatus) {
+        const icon = autoBackup?.needsAttention ? "⚠" : autoBackup?.status === "waiting" ? "🕒" : "✅";
+        const lastSuccess = autoBackup?.lastSuccessAt ? ` · 최근 성공 ${autoBackup.lastSuccessAt}` : "";
+        elements.autoBackupStatus.textContent = `${icon} ${autoBackup?.message || autoBackup?.schedule || "자동 백업 상태 확인 중"}${lastSuccess}`;
+    }
+    if (!elements.autoBackupWarning) return;
+    if (autoBackup?.needsAttention) {
+        const details = [autoBackup.message];
+        if (autoBackup.lastFailureAt) details.push(`마지막 실패: ${autoBackup.lastFailureAt}`);
+        if (autoBackup.lastFailureMessage && !autoBackup.message.includes(autoBackup.lastFailureMessage)) details.push(autoBackup.lastFailureMessage);
+        elements.autoBackupWarning.hidden = false;
+        elements.autoBackupWarning.textContent = `⚠ 자동백업 확인 필요\n${details.filter(Boolean).join("\n")}`;
+    } else {
+        elements.autoBackupWarning.hidden = true;
+        elements.autoBackupWarning.textContent = "";
+    }
+}
+function renderDataQualityReport(dataQuality, gpsMissingItems) {
+    if (!elements.adminDataQualityList || !elements.adminDataQualityStatus) return;
+    const categories = Array.isArray(dataQuality?.categories) ? dataQuality.categories.filter(item => item.count > 0) : [];
+    if (gpsMissingItems.length > 0) {
+        categories.push({
+            key: "gpsMissing",
+            label: "GPS 좌표 미연결",
+            severity: "warning",
+            count: gpsMissingItems.length,
+            items: gpsMissingItems.slice(0, 20),
+            hiddenCount: Math.max(0, gpsMissingItems.length - 20)
+        });
+    }
+    const totalIssues = categories.reduce((sum, item) => sum + item.count, 0);
+    elements.adminDataQualityStatus.className = `admin-data-quality-status ${totalIssues ? "danger" : "good"}`;
+    elements.adminDataQualityStatus.textContent = totalIssues ? `${totalIssues.toLocaleString()}건 확인` : "이상 없음";
+    elements.adminDataQualityList.replaceChildren();
+    if (!categories.length) {
+        const empty = document.createElement("div");
+        empty.className = "admin-quality-empty";
+        empty.textContent = "✅ 현재 확인된 데이터 오류가 없습니다.";
+        elements.adminDataQualityList.appendChild(empty);
+        return;
+    }
+    for (const category of categories) {
+        const item = document.createElement("div");
+        item.className = "admin-quality-item";
+        item.dataset.severity = category.severity;
+        const summary = document.createElement("div");
+        summary.className = "admin-quality-summary";
+        const label = document.createElement("div");
+        label.className = "admin-quality-label";
+        label.textContent = category.label;
+        const count = document.createElement("div");
+        count.className = "admin-quality-count";
+        count.textContent = `${category.count.toLocaleString()}건`;
+        summary.append(label, count);
+        item.appendChild(summary);
+        if (category.items.length > 0) {
+            const details = document.createElement("ul");
+            details.className = "admin-quality-details";
+            for (const detailText of category.items) {
+                const detail = document.createElement("li");
+                detail.textContent = detailText;
+                details.appendChild(detail);
+            }
+            if (category.hiddenCount > 0) {
+                const more = document.createElement("li");
+                more.className = "admin-quality-more";
+                more.textContent = `외 ${category.hiddenCount.toLocaleString()}건`;
+                details.appendChild(more);
+            }
+            item.appendChild(details);
+        }
+        elements.adminDataQualityList.appendChild(item);
+    }
+}
+function createAdminMetric(label, value, tone = "") { const wrapper = document.createElement("div"); wrapper.className = "admin-metric"; const labelElement = document.createElement("div"); labelElement.className = "admin-metric-label"; labelElement.textContent = label; const valueElement = document.createElement("div"); valueElement.className = `admin-metric-value${tone ? ` ${tone}` : ""}`; valueElement.textContent = value; wrapper.append(labelElement, valueElement); return wrapper; } function renderBackupList(backups, pendingCount) { elements.backupList.replaceChildren(); if (!backups.length) { const empty = document.createElement("div"); empty.className = "backup-empty"; empty.textContent = "아직 생성된 백업이 없습니다."; elements.backupList.appendChild(empty); return; } for (const backup of backups) { const item = document.createElement("div"); item.className = "backup-item"; const info = document.createElement("div"); info.className = "backup-info"; const name = document.createElement("div"); name.className = "backup-name"; name.textContent = backup.kind; name.title = backup.name; const meta = document.createElement("div"); meta.className = "backup-meta"; meta.textContent = `${backup.createdAt || backup.name} · ${backup.rowCount.toLocaleString()}행`; info.append(name, meta); const restoreButton = document.createElement("button"); restoreButton.type = "button"; restoreButton.className = "restore-backup-btn"; restoreButton.textContent = state.restoringBackupName === backup.name ? "복구 중..." : "복구"; restoreButton.disabled = Boolean(state.restoringBackupName) || state.backupCreating || pendingCount > 0; restoreButton.title = pendingCount > 0 ? "저장 대기 작업이 끝난 뒤 복구할 수 있습니다." : ""; restoreButton.addEventListener("click", () => restoreDataBackup(backup)); item.append(info, restoreButton); elements.backupList.appendChild(item); } } async function setupAutomaticBackup() {
     if (state.autoBackupUpdating) return;
     state.autoBackupUpdating = true;
     if (state.adminDashboard) renderAdminDashboard();

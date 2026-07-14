@@ -175,3 +175,24 @@ button { touch-action:manipulation; }
 .setup-auto-backup-btn { flex:0 0 auto; padding:7px 9px; border:1px solid var(--primary); border-radius:9px; background:rgba(59,130,246,.08); color:var(--primary); font-size:.75rem; font-weight:850; cursor:pointer; }
 .setup-auto-backup-btn:disabled { opacity:.55; cursor:default; }
 .setup-auto-backup-btn:active { transform:scale(.97); }
+
+
+/* 관리자 데이터 오류 점검 · 자동백업 이상 경고 */
+.admin-data-quality-status { flex:0 0 auto; padding:5px 8px; border-radius:999px; background:rgba(59,130,246,.10); color:var(--primary); font-size:.72rem; font-weight:900; }
+.admin-data-quality-status.good { background:rgba(34,197,94,.12); color:var(--success); }
+.admin-data-quality-status.warn { background:rgba(245,158,11,.12); color:#d97706; }
+.admin-data-quality-status.danger { background:rgba(239,68,68,.12); color:var(--danger); }
+.admin-data-quality-list { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.admin-quality-empty { padding:13px 10px; border:1px solid rgba(34,197,94,.28); border-radius:11px; background:rgba(34,197,94,.07); color:var(--success); font-size:.82rem; font-weight:850; line-height:1.4; text-align:center; }
+.admin-quality-item { overflow:hidden; border:1px solid var(--border); border-radius:11px; background:var(--card-bg); }
+.admin-quality-item[data-severity="danger"] { border-color:rgba(239,68,68,.38); }
+.admin-quality-item[data-severity="warning"] { border-color:rgba(245,158,11,.38); }
+.admin-quality-summary { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 10px; }
+.admin-quality-label { min-width:0; color:var(--text-main); font-size:.8rem; font-weight:850; line-height:1.3; }
+.admin-quality-count { flex:0 0 auto; color:var(--danger); font-size:.78rem; font-weight:900; }
+.admin-quality-item[data-severity="warning"] .admin-quality-count { color:#d97706; }
+.admin-quality-details { margin:0; padding:0 10px 9px 27px; color:var(--text-sub); font-size:.7rem; font-weight:700; line-height:1.45; word-break:break-word; }
+.admin-quality-details li + li { margin-top:3px; }
+.admin-quality-more { list-style:none; margin-left:-17px; color:var(--text-main); font-weight:850; }
+.admin-backup-warning { margin:8px 0 2px; padding:9px 10px; border:1px solid rgba(239,68,68,.42); border-radius:10px; background:rgba(239,68,68,.08); color:var(--danger); font-size:.76rem; font-weight:850; line-height:1.45; white-space:pre-line; }
+.admin-backup-warning[hidden] { display:none!important; }
