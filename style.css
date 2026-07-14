@@ -156,3 +156,21 @@ button { touch-action:manipulation; }
 .gate-image-close-btn { width:38px; height:38px; padding:0; border-radius:50%; font-size:1.65rem; line-height:1; }
 .gate-image-stage { position:relative; flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none; user-select:none; background:#0b1020; }
 .gate-image { display:block; max-width:100%; max-height:100%; object-fit:contain; transform:translate3d(0,0,0) scale(1); transform-origin:center center; will-change:transform; user-select:none; -webkit-user-drag:none; }
+
+/* ========================= 비밀번호 수정·삭제 팝업 ========================= */
+.password-editor-modal-content { width:min(92vw,410px); max-width:410px; }
+.password-editor-guide { margin:0 0 10px; color:var(--text-sub); font-size:.82rem; font-weight:750; text-align:center; }
+.password-select-buttons { max-height:190px; overflow-y:auto; padding-right:2px; }
+.password-select-btn { border-color:var(--border); background:var(--card-bg); color:var(--text-main); }
+.password-select-btn.selected { border-color:var(--primary); background:rgba(59,130,246,.12); color:var(--primary); box-shadow:0 0 0 2px rgba(59,130,246,.12); }
+.password-edit-panel { margin-top:13px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--step-bg); }
+.password-edit-panel[hidden] { display:none!important; }
+.password-edit-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:12px; }
+.btn-danger { background:var(--danger); color:#fff; }
+
+/* ========================= 관리자 자동백업 ========================= */
+.admin-auto-backup-row { display:flex; align-items:center; justify-content:space-between; gap:9px; margin:10px 0 2px; padding:9px; border:1px solid var(--border); border-radius:10px; background:var(--card-bg); }
+.admin-auto-backup-status { min-width:0; color:var(--text-main); font-size:.78rem; font-weight:800; line-height:1.35; }
+.setup-auto-backup-btn { flex:0 0 auto; padding:7px 9px; border:1px solid var(--primary); border-radius:9px; background:rgba(59,130,246,.08); color:var(--primary); font-size:.75rem; font-weight:850; cursor:pointer; }
+.setup-auto-backup-btn:disabled { opacity:.55; cursor:default; }
+.setup-auto-backup-btn:active { transform:scale(.97); }

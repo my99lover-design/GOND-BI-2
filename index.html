@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260714-1">
+    <link rel="stylesheet" href="style.css?v=20260714-3">
 </head>
 <body>
 <div class="container">
@@ -60,12 +60,21 @@
 </div>
 
 <div id="deletePwdModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deletePwdModalTitle">
-    <div class="modal-content">
-        <h3 id="deletePwdModalTitle">🗑 삭제할 비밀번호 선택</h3>
+    <div class="modal-content password-editor-modal-content">
+        <h3 id="deletePwdModalTitle">✏️ 비밀번호 수정·삭제</h3>
         <input type="hidden" id="deletePwdRowId">
+        <input type="hidden" id="selectedPwdOriginal">
         <div id="deletePwdInfo" class="modal-info"></div>
-        <div id="deletePwdButtons" class="delete-pwd-buttons"></div>
-        <div class="modal-buttons"><button class="modal-btn btn-cancel" type="button" onclick="closeDeletePwdModal()">취소</button></div>
+        <div class="password-editor-guide">수정하거나 삭제할 비밀번호를 선택하세요.</div>
+        <div id="deletePwdButtons" class="delete-pwd-buttons password-select-buttons"></div>
+        <div id="passwordEditPanel" class="password-edit-panel" hidden>
+            <div class="form-group"><label for="editPwdValue">선택한 비밀번호</label><input type="text" id="editPwdValue" autocomplete="off" placeholder="비밀번호 수정"></div>
+            <div class="password-edit-actions">
+                <button id="updateSelectedPwdBtn" class="modal-btn btn-submit" type="button" onclick="submitUpdatePassword()">수정 저장</button>
+                <button id="deleteSelectedPwdBtn" class="modal-btn btn-danger" type="button" onclick="confirmDeleteSelectedPassword()">삭제</button>
+            </div>
+        </div>
+        <div class="modal-buttons"><button class="modal-btn btn-cancel" type="button" onclick="closeDeletePwdModal()">닫기</button></div>
     </div>
 </div>
 
@@ -119,7 +128,11 @@
                     <div>💾 백업·복구</div>
                     <button id="createBackupBtn" class="create-backup-btn" type="button">지금 백업</button>
                 </div>
-                <div class="admin-help">최근 백업 10개를 보관합니다. 복구 전에는 현재 데이터가 자동으로 한 번 더 백업됩니다.</div>
+                <div class="admin-help">매일 새벽 6시경 자동 백업하며 최근 백업 5개만 보관합니다. 복구 전에는 현재 데이터가 자동으로 한 번 더 백업됩니다.</div>
+                <div class="admin-auto-backup-row">
+                    <div id="autoBackupStatus" class="admin-auto-backup-status">자동 백업 상태 확인 중</div>
+                    <button id="setupAutoBackupBtn" class="setup-auto-backup-btn" type="button">자동백업 재설정</button>
+                </div>
                 <div id="backupList" class="backup-list"></div>
             </section>
         </div>
@@ -145,6 +158,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260714-1"></script>
+<script src="script.js?v=20260714-3"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 시트 직접 수정 자동 갱신 20260713-1 */
+/* 넘버원 김포B 공비 - 자동백업·편집·기록 최적화 20260714-3 */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
 const GATE_IMAGES = Object.freeze({
@@ -8,12 +8,12 @@ const GATE_IMAGES = Object.freeze({
     "럭스B": { src: "./gate-images/럭스B.webp", label: "럭스B" },
     "루체뷰1": { src: "./gate-images/루체뷰1.webp", label: "루체뷰1" }
 });
-const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, HISTORY_LIMIT: 100, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
+const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdValue: document.getElementById("addPwdValue"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminGpsWarning: document.getElementById("adminGpsWarning"), createBackupBtn: document.getElementById("createBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdValue: document.getElementById("addPwdValue"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminGpsWarning: document.getElementById("adminGpsWarning"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
-    records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null, gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastRenderSignature: "", toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", appUpdatePending: false, appUpdateTimer: null
+    records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null, gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastRenderSignature: "", toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, appUpdatePending: false, appUpdateTimer: null
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
@@ -75,7 +75,24 @@ async function handleInstallApp() {
     else updateInstallButtonVisibility();
 }
 /* ========================= 데이터 로딩 ========================= */
-function initializeFreshnessChecks() { window.addEventListener("online", () => { refreshRecordsFromServer(false).catch(() => {}); loadLocations().catch(() => {}); }); document.addEventListener("visibilitychange", () => { if (document.hidden) { flushRecordsCache(); return; } if (Date.now() - state.lastDataCheckAt >= APP_CONFIG.DATA_CHECK_INTERVAL) { refreshRecordsFromServer(false).catch(() => {}); } }); }
+function initializeFreshnessChecks() {
+    window.addEventListener("online", () => {
+        refreshRecordsFromServer(false).catch(() => {});
+        loadLocations().catch(() => {});
+    });
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            flushRecordsCache();
+            return;
+        }
+        if (Date.now() - state.lastDataCheckAt >= APP_CONFIG.DATA_CHECK_INTERVAL) {
+            refreshRecordsFromServer(false).catch(() => {});
+        }
+        if (!isLocationCacheFresh()) {
+            loadLocations().catch(() => {});
+        }
+    });
+}
 function createEmptyIndexes() {
     return {
         regions: [], apartmentsByRegion: new Map(), recordsByApartment: new Map(), dongsByApartment: new Map(), recordsByApartmentDong: new Map(), rowById: new Map(), gpsPlaces: []
@@ -166,6 +183,9 @@ async function refreshRecordsFromServer(force = false) {
 }
 async function loadRecordsFromServer() { return refreshRecordsFromServer(true); }
 function extractDataVersion(response) { if (!response || typeof response !== "object") return ""; return cleanText(response.version || response.dataVersion || response?.meta?.version); }
+function isLocationCacheFresh() {
+    return state.locationMap.size > 0 && state.locationCacheSavedAt > 0 && Date.now() - state.locationCacheSavedAt < APP_CONFIG.LOCATION_REFRESH_INTERVAL;
+}
 function loadCachedLocations() {
     try {
         const rawText = localStorage.getItem(APP_CONFIG.LOCATION_CACHE_KEY);
@@ -175,6 +195,7 @@ function loadCachedLocations() {
         state.locationMap = normalizeLocationData(rawLocations);
         if (state.locationMap.size === 0) return false;
         state.locationsRawText = rawText;
+        state.locationCacheSavedAt = Number.isFinite(savedTime) ? savedTime : 0;
         state.locationsLoaded = true;
         state.locationsError = false;
         if (savedTime && Date.now() - savedTime > APP_CONFIG.LOCATION_CACHE_MAX_AGE) {
@@ -185,13 +206,20 @@ function loadCachedLocations() {
         return true;
     } catch (error) {
         console.error("좌표 캐시 읽기 실패:", error);
+        state.locationCacheSavedAt = 0;
         localStorage.removeItem(APP_CONFIG.LOCATION_CACHE_KEY);
         localStorage.removeItem(APP_CONFIG.LOCATION_CACHE_TIME_KEY);
         return false;
     }
 }
-async function loadLocations() {
+async function loadLocations(force = false) {
     const hadCache = state.locationMap.size > 0;
+    if (!force && isLocationCacheFresh()) {
+        state.locationsLoaded = true;
+        state.locationsError = false;
+        renderGpsButtons();
+        return false;
+    }
     if (!hadCache) {
         state.locationsLoaded = false;
         state.locationsError = false;
@@ -207,18 +235,21 @@ async function loadLocations() {
         }
         const locationMap = normalizeLocationData(rawLocations);
         if (locationMap.size === 0) throw new Error("사용 가능한 GPS 좌표가 없습니다.");
+        const fetchedAt = Date.now();
         state.locationMap = locationMap;
         state.locationsRawText = rawText;
+        state.locationCacheSavedAt = fetchedAt;
         state.locationsLoaded = true;
         state.locationsError = false;
         try {
             localStorage.setItem(APP_CONFIG.LOCATION_CACHE_KEY, rawText);
-            localStorage.setItem(APP_CONFIG.LOCATION_CACHE_TIME_KEY, String(Date.now()));
+            localStorage.setItem(APP_CONFIG.LOCATION_CACHE_TIME_KEY, String(fetchedAt));
         } catch (cacheError) {
             console.warn("좌표 캐시 저장 실패:", cacheError);
         }
         invalidateGpsCache();
         console.info(`GPS 좌표 아파트 수: ${state.locationMap.size}`);
+        return true;
     } catch (error) {
         console.error("locations.json 불러오기 실패:", error);
         if (!hadCache) {
@@ -226,6 +257,7 @@ async function loadLocations() {
             state.locationsLoaded = true;
             state.locationsError = true;
         }
+        return false;
     } finally {
         renderGpsButtons();
     }
@@ -415,6 +447,7 @@ async function processPendingQueue() {
         updateLocalDataVersion(response);
         state.pendingOperations.shift();
         savePendingOperations();
+        clearChangeHistoryCache();
         state.syncProcessing = false;
         if (elements.historyModal?.style.display === "flex") loadChangeHistory(false).catch(() => {});
         if (state.pendingOperations.length > 0) schedulePendingSync(0);
@@ -452,17 +485,29 @@ function applyOperationToRecords(records, operation) {
         const newPassword = cleanText(payload.password);
         if (!newPassword) return;
         const passwords = splitPasswords(record.password);
-        const duplicateExists = passwords.some(password => normalizePasswordForCompare(password) === normalizePasswordForCompare(newPassword) );
+        const duplicateExists = passwords.some(password => normalizePasswordForCompare(password) === normalizePasswordForCompare(newPassword));
         if (!duplicateExists) passwords.push(newPassword);
-        record.password = passwords.join(" / ");
+        record.password = sortPasswords(passwords).join(" / ");
+        return;
+    }
+    if (operation.action === "updatePassword") {
+        const oldPassword = cleanText(payload.oldPassword);
+        const newPassword = cleanText(payload.newPassword);
+        if (!oldPassword || !newPassword) return;
+        const oldKey = normalizePasswordForCompare(oldPassword);
+        const updated = splitPasswords(record.password).map(password =>
+            normalizePasswordForCompare(password) === oldKey ? newPassword : password
+        );
+        record.password = sortPasswords(updated).join(" / ");
         return;
     }
     if (operation.action === "deletePassword") {
         const deletePasswordValue = cleanText(payload.password);
         if (!deletePasswordValue) return;
-        record.password = splitPasswords(record.password)
-            .filter(password => normalizePasswordForCompare(password) !== normalizePasswordForCompare(deletePasswordValue) )
-            .join(" / "); }
+        record.password = sortPasswords(splitPasswords(record.password)
+            .filter(password => normalizePasswordForCompare(password) !== normalizePasswordForCompare(deletePasswordValue)))
+            .join(" / ");
+    }
 }
 function findRecordByRowIdFromList(records, rowId) { const targetId = cleanText(rowId); return records.find(record => cleanText(record.rowId) === targetId) || null; }
 /* ========================= 화면 이동 ========================= */
@@ -675,7 +720,7 @@ function createPasswordCard(record) {
     passwordBox.className = "pwd-box";
     const passwordText = document.createElement("span");
     passwordText.className = "pwd-highlight";
-    const passwordList = splitPasswords(record.password);
+    const passwordList = sortPasswords(splitPasswords(record.password));
     passwordText.textContent = passwordList.length > 0 ? passwordList.join(" / ") : "등록된 비밀번호 없음";
     passwordBox.appendChild(passwordText);
     passwordRow.appendChild(passwordBox);
@@ -692,7 +737,7 @@ function createPasswordCard(record) {
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
         deleteButton.className = "line-action-btn delete-btn";
-        deleteButton.textContent = "🗑 삭제";
+        deleteButton.textContent = "✏️ 수정";
         deleteButton.addEventListener("click", () => openDeletePwdModal(record.rowId));
         footer.appendChild(deleteButton);
     }
@@ -888,8 +933,26 @@ async function requestApi(action, payload = {}) { if (!API_URL || API_URL.includ
     return result;
 }
 /* ========================= 수정기록 ========================= */
-function initializeHistoryButton() { if (elements.historyBtn) elements.historyBtn.addEventListener("click", openChangeHistoryModal); if (elements.historyRefreshBtn) elements.historyRefreshBtn.addEventListener("click", () => loadChangeHistory(true)); }
-function openChangeHistoryModal() { openModal(elements.historyModal); loadChangeHistory(true); }
+function initializeHistoryButton() {
+    if (elements.historyBtn) elements.historyBtn.addEventListener("click", openChangeHistoryModal);
+    if (elements.historyRefreshBtn) elements.historyRefreshBtn.addEventListener("click", () => {
+        clearChangeHistoryCache();
+        loadChangeHistory(true);
+    });
+}
+function openChangeHistoryModal() {
+    openModal(elements.historyModal);
+    const cachedHistory = loadCachedChangeHistory();
+    if (cachedHistory.length > 0) {
+        state.changeHistory = cachedHistory;
+        renderChangeHistory();
+        elements.historyStatus.style.display = "block";
+        elements.historyStatus.textContent = "최신 기록 확인 중...";
+        loadChangeHistory(false);
+        return;
+    }
+    loadChangeHistory(true);
+}
 function closeChangeHistoryModal() { closeModal(elements.historyModal); }
 async function loadChangeHistory(showLoading = true) {
     if (state.historyLoading) return;
@@ -903,15 +966,47 @@ async function loadChangeHistory(showLoading = true) {
         const response = await requestApi("getChangeHistory", { limit: APP_CONFIG.HISTORY_LIMIT });
         const history = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : [];
         state.changeHistory = history.map(normalizeHistoryItem).filter(item => item.historyId);
+        saveChangeHistoryCache(state.changeHistory);
         renderChangeHistory();
     } catch (error) {
         console.error("수정기록 불러오기 실패:", error);
-        elements.historyList.replaceChildren();
-        elements.historyStatus.style.display = "block";
-        elements.historyStatus.textContent = `수정기록을 불러오지 못했습니다.\n${error.message}`;
+        if (state.changeHistory.length > 0) {
+            renderChangeHistory();
+            showToast("수정기록 최신 확인 실패");
+        } else {
+            elements.historyList.replaceChildren();
+            elements.historyStatus.style.display = "block";
+            elements.historyStatus.textContent = `수정기록을 불러오지 못했습니다.\n${error.message}`;
+        }
     } finally {
         state.historyLoading = false;
     }
+}
+function loadCachedChangeHistory() {
+    try {
+        const savedAt = Number(localStorage.getItem(APP_CONFIG.HISTORY_CACHE_TIME_KEY));
+        if (!Number.isFinite(savedAt) || Date.now() - savedAt > APP_CONFIG.HISTORY_CACHE_MAX_AGE) return [];
+        const parsed = JSON.parse(localStorage.getItem(APP_CONFIG.HISTORY_CACHE_KEY) || "[]");
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map(normalizeHistoryItem).filter(item => item.historyId);
+    } catch (error) {
+        clearChangeHistoryCache();
+        return [];
+    }
+}
+function saveChangeHistoryCache(history) {
+    try {
+        localStorage.setItem(APP_CONFIG.HISTORY_CACHE_KEY, JSON.stringify(Array.isArray(history) ? history : []));
+        localStorage.setItem(APP_CONFIG.HISTORY_CACHE_TIME_KEY, String(Date.now()));
+    } catch (error) {
+        console.warn("수정기록 캐시 저장 실패:", error);
+    }
+}
+function clearChangeHistoryCache() {
+    try {
+        localStorage.removeItem(APP_CONFIG.HISTORY_CACHE_KEY);
+        localStorage.removeItem(APP_CONFIG.HISTORY_CACHE_TIME_KEY);
+    } catch (error) {}
 }
 function normalizeHistoryItem(item) {
     return {
@@ -991,6 +1086,7 @@ async function undoHistoryChange(historyId) {
     try {
         const response = await requestApi("undoChange", { historyId: targetId, operationId: createOperationId() });
         updateLocalDataVersion(response);
+        clearChangeHistoryCache();
         showToast("✅ 이전 값으로 되돌렸습니다.");
         await loadRecordsFromServer();
         await loadChangeHistory(false);
@@ -1014,6 +1110,7 @@ function initializeAdminButton() {
     }
     if (elements.adminRefreshBtn) elements.adminRefreshBtn.addEventListener("click", () => loadAdminDashboard(true));
     if (elements.createBackupBtn) elements.createBackupBtn.addEventListener("click", createDataBackup);
+    if (elements.setupAutoBackupBtn) elements.setupAutoBackupBtn.addEventListener("click", setupAutomaticBackup);
 }
 function openAdminModal() {
     if (state.adminAuthenticating) return;
@@ -1136,7 +1233,38 @@ function handleAdminAuthError(error) {
     if (!message.includes("관리자 인증")) return false;
     clearAdminSession();
     closeAdminModal();
-    window.alert(`${message} 관리자 버튼을 눌러 다시 인증해주세요.`); return true; } function closeAdminModal() { closeModal(elements.adminModal); } async function loadAdminDashboard(showLoading = true) { if (state.adminLoading) return; state.adminLoading = true; if (showLoading) { elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = "점검 정보를 불러오는 중입니다..."; elements.adminContent.hidden = true; } try { const response = await requestApi("getAdminDashboard", { adminToken: requireAdminToken() }); const dashboard = response?.data && typeof response.data === "object" ? response.data : response; state.adminDashboard = normalizeAdminDashboard(dashboard); renderAdminDashboard(); } catch (error) { console.error("관리자 점검 불러오기 실패:", error); if (handleAdminAuthError(error)) return; elements.adminContent.hidden = true; elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = `점검 정보를 불러오지 못했습니다.\n${error.message}`; } finally { state.adminLoading = false; } } function normalizeAdminDashboard(data) { return { dataSheetName: cleanText(data?.dataSheetName), totalRows: Number(data?.totalRows) || 0, regionCount: Number(data?.regionCount) || 0, apartmentCount: Number(data?.apartmentCount) || 0, officeBuildingCount: Number(data?.officeBuildingCount) || 0, passwordRowCount: Number(data?.passwordRowCount) || 0, blankPasswordRowCount: Number(data?.blankPasswordRowCount) || 0, historyCount: Number(data?.historyCount) || 0, dataVersion: cleanText(data?.dataVersion), checkedAt: cleanText(data?.checkedAt), backups: Array.isArray(data?.backups) ? data.backups.map(normalizeBackupInfo).filter(item => item.name) : [] }; } function normalizeBackupInfo(item) { return { name: cleanText(item?.name), createdAt: cleanText(item?.createdAt), rowCount: Number(item?.rowCount) || 0, kind: cleanText(item?.kind) || "수동 백업" }; } function renderAdminDashboard() { const dashboard = state.adminDashboard; if (!dashboard) return; const gpsTotal = state.indexes.gpsPlaces.length; const gpsMissingItems = state.indexes.gpsPlaces .filter(item => !findLocationEntryForPlace(item)) .map(item => item.displayName) .filter((value, index, array) => value && array.indexOf(value) === index) .sort(naturalCompare); const gpsMatched = Math.max(0, gpsTotal - gpsMissingItems.length); const pendingCount = state.pendingOperations.length; const latestBackup = dashboard.backups[0]?.createdAt || "없음"; const lastSync = state.lastDataCheckAt ? formatLocalDateTime(state.lastDataCheckAt) : "확인 전"; elements.adminStatus.style.display = "none"; elements.adminContent.hidden = false; elements.adminMetrics.replaceChildren(); const metrics = [ ["전체 데이터", `${dashboard.totalRows.toLocaleString()}건`, ""], ["지역", `${dashboard.regionCount.toLocaleString()}곳`, ""], ["아파트", `${dashboard.apartmentCount.toLocaleString()}곳`, ""], ["오피 건물", `${dashboard.officeBuildingCount.toLocaleString()}곳`, ""], ["비밀번호 등록 행", `${dashboard.passwordRowCount.toLocaleString()}건`, "good"], ["비밀번호 빈 행", `${dashboard.blankPasswordRowCount.toLocaleString()}건`, dashboard.blankPasswordRowCount ? "warn" : "good"], ["GPS 좌표 연결", `${gpsMatched.toLocaleString()} / ${gpsTotal.toLocaleString()}`, gpsMissingItems.length ? "warn" : "good"], ["저장 대기", `${pendingCount.toLocaleString()}건`, pendingCount ? "danger" : "good"], ["수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""], ["보관 백업", `${dashboard.backups.length.toLocaleString()}개`, dashboard.backups.length ? "good" : "warn"], ["마지막 백업", latestBackup, dashboard.backups.length ? "good" : "warn"], ["마지막 동기화", lastSync, ""] ]; for (const [label, value, tone] of metrics) elements.adminMetrics.appendChild(createAdminMetric(label, value, tone)); if (gpsMissingItems.length > 0) { const preview = gpsMissingItems.slice(0, 10).join(", "); const extra = gpsMissingItems.length > 10 ? ` 외 ${gpsMissingItems.length - 10}곳` : ""; elements.adminGpsWarning.hidden = false; elements.adminGpsWarning.textContent = `⚠ GPS 좌표 미연결 ${gpsMissingItems.length}곳\n${preview}${extra}`; } else { elements.adminGpsWarning.hidden = true; elements.adminGpsWarning.textContent = ""; } elements.createBackupBtn.disabled = state.backupCreating || Boolean(state.restoringBackupName); elements.createBackupBtn.textContent = state.backupCreating ? "백업 중..." : "지금 백업"; renderBackupList(dashboard.backups, pendingCount); } function createAdminMetric(label, value, tone = "") { const wrapper = document.createElement("div"); wrapper.className = "admin-metric"; const labelElement = document.createElement("div"); labelElement.className = "admin-metric-label"; labelElement.textContent = label; const valueElement = document.createElement("div"); valueElement.className = `admin-metric-value${tone ? ` ${tone}` : ""}`; valueElement.textContent = value; wrapper.append(labelElement, valueElement); return wrapper; } function renderBackupList(backups, pendingCount) { elements.backupList.replaceChildren(); if (!backups.length) { const empty = document.createElement("div"); empty.className = "backup-empty"; empty.textContent = "아직 생성된 백업이 없습니다."; elements.backupList.appendChild(empty); return; } for (const backup of backups) { const item = document.createElement("div"); item.className = "backup-item"; const info = document.createElement("div"); info.className = "backup-info"; const name = document.createElement("div"); name.className = "backup-name"; name.textContent = backup.kind; name.title = backup.name; const meta = document.createElement("div"); meta.className = "backup-meta"; meta.textContent = `${backup.createdAt || backup.name} · ${backup.rowCount.toLocaleString()}행`; info.append(name, meta); const restoreButton = document.createElement("button"); restoreButton.type = "button"; restoreButton.className = "restore-backup-btn"; restoreButton.textContent = state.restoringBackupName === backup.name ? "복구 중..." : "복구"; restoreButton.disabled = Boolean(state.restoringBackupName) || state.backupCreating || pendingCount > 0; restoreButton.title = pendingCount > 0 ? "저장 대기 작업이 끝난 뒤 복구할 수 있습니다." : ""; restoreButton.addEventListener("click", () => restoreDataBackup(backup)); item.append(info, restoreButton); elements.backupList.appendChild(item); } } async function createDataBackup() { if (state.backupCreating || state.restoringBackupName) return; state.backupCreating = true; renderAdminDashboard(); try { const response = await requestApi("createBackup", { operationId: createOperationId(), adminToken: requireAdminToken() }); showToast("✅ 백업을 생성했습니다."); await loadAdminDashboard(false); if (response?.backup?.name) console.info("생성된 백업:", response.backup.name); } catch (error) { console.error("백업 생성 실패:", error); if (!handleAdminAuthError(error)) window.alert(`백업 생성에 실패했습니다.\n${error.message}`); } finally { state.backupCreating = false; if (state.adminDashboard) renderAdminDashboard(); } } async function restoreDataBackup(backup) { if (!backup?.name || state.restoringBackupName || state.backupCreating) return; if (state.pendingOperations.length > 0) { window.alert("아직 저장 대기 중인 작업이 있습니다. 저장 완료 후 다시 복구해주세요."); return; } const confirmation = window.prompt( `${backup.createdAt || backup.name} 백업으로 전체 복구합니다.\n` + "현재 데이터는 복구 전에 자동 백업됩니다.\n\n계속하려면 '복구'를 입력하세요." ); if (cleanText(confirmation) !== "복구") { if (confirmation !== null) showToast("복구가 취소되었습니다."); return; } state.restoringBackupName = backup.name; renderAdminDashboard(); try { const response = await requestApi("restoreBackup", { backupName: backup.name, operationId: createOperationId(), adminToken: requireAdminToken() }); updateLocalDataVersion(response); showToast("✅ 백업 데이터로 복구했습니다."); await refreshRecordsFromServer(true); await loadAdminDashboard(false); } catch (error) { console.error("백업 복구 실패:", error); if (!handleAdminAuthError(error)) window.alert(`백업 복구에 실패했습니다.\n${error.message}`); } finally { state.restoringBackupName = ""; if (state.adminDashboard) renderAdminDashboard(); } } function formatLocalDateTime(value) { const date = value instanceof Date ? value : new Date(value); if (!Number.isFinite(date.getTime())) return "확인 전"; return new Intl.DateTimeFormat("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(date); }
+    window.alert(`${message} 관리자 버튼을 눌러 다시 인증해주세요.`); return true; } function closeAdminModal() { closeModal(elements.adminModal); } async function loadAdminDashboard(showLoading = true) { if (state.adminLoading) return; state.adminLoading = true; if (showLoading) { elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = "점검 정보를 불러오는 중입니다..."; elements.adminContent.hidden = true; } try { const response = await requestApi("getAdminDashboard", { adminToken: requireAdminToken() }); const dashboard = response?.data && typeof response.data === "object" ? response.data : response; state.adminDashboard = normalizeAdminDashboard(dashboard); renderAdminDashboard(); } catch (error) { console.error("관리자 점검 불러오기 실패:", error); if (handleAdminAuthError(error)) return; elements.adminContent.hidden = true; elements.adminStatus.style.display = "block"; elements.adminStatus.textContent = `점검 정보를 불러오지 못했습니다.\n${error.message}`; } finally { state.adminLoading = false; } } function normalizeAdminDashboard(data) { return { dataSheetName: cleanText(data?.dataSheetName), totalRows: Number(data?.totalRows) || 0, regionCount: Number(data?.regionCount) || 0, apartmentCount: Number(data?.apartmentCount) || 0, officeBuildingCount: Number(data?.officeBuildingCount) || 0, passwordRowCount: Number(data?.passwordRowCount) || 0, blankPasswordRowCount: Number(data?.blankPasswordRowCount) || 0, historyCount: Number(data?.historyCount) || 0, dataVersion: cleanText(data?.dataVersion), checkedAt: cleanText(data?.checkedAt), autoBackup: {
+            enabled: data?.autoBackup?.enabled === true,
+            schedule: cleanText(data?.autoBackup?.schedule) || "매일 06시경",
+            timezone: cleanText(data?.autoBackup?.timezone) || "Asia/Seoul",
+            message: cleanText(data?.autoBackup?.message)
+        }, backups: Array.isArray(data?.backups) ? data.backups.map(normalizeBackupInfo).filter(item => item.name) : [] }; } function normalizeBackupInfo(item) { return { name: cleanText(item?.name), createdAt: cleanText(item?.createdAt), rowCount: Number(item?.rowCount) || 0, kind: cleanText(item?.kind) || "수동 백업" }; } function renderAdminDashboard() { const dashboard = state.adminDashboard; if (!dashboard) return; const gpsTotal = state.indexes.gpsPlaces.length; const gpsMissingItems = state.indexes.gpsPlaces .filter(item => !findLocationEntryForPlace(item)) .map(item => item.displayName) .filter((value, index, array) => value && array.indexOf(value) === index) .sort(naturalCompare); const gpsMatched = Math.max(0, gpsTotal - gpsMissingItems.length); const pendingCount = state.pendingOperations.length; const latestBackup = dashboard.backups[0]?.createdAt || "없음"; const lastSync = state.lastDataCheckAt ? formatLocalDateTime(state.lastDataCheckAt) : "확인 전"; elements.adminStatus.style.display = "none"; elements.adminContent.hidden = false; elements.adminMetrics.replaceChildren(); const metrics = [ ["전체 데이터", `${dashboard.totalRows.toLocaleString()}건`, ""], ["지역", `${dashboard.regionCount.toLocaleString()}곳`, ""], ["아파트", `${dashboard.apartmentCount.toLocaleString()}곳`, ""], ["오피 건물", `${dashboard.officeBuildingCount.toLocaleString()}곳`, ""], ["비밀번호 등록 행", `${dashboard.passwordRowCount.toLocaleString()}건`, "good"], ["비밀번호 빈 행", `${dashboard.blankPasswordRowCount.toLocaleString()}건`, dashboard.blankPasswordRowCount ? "warn" : "good"], ["GPS 좌표 연결", `${gpsMatched.toLocaleString()} / ${gpsTotal.toLocaleString()}`, gpsMissingItems.length ? "warn" : "good"], ["저장 대기", `${pendingCount.toLocaleString()}건`, pendingCount ? "danger" : "good"], ["수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""], ["자동 백업", dashboard.autoBackup?.enabled ? "매일 06시" : "설정 필요", dashboard.autoBackup?.enabled ? "good" : "warn"], ["보관 백업", `${dashboard.backups.length.toLocaleString()}개`, dashboard.backups.length ? "good" : "warn"], ["마지막 백업", latestBackup, dashboard.backups.length ? "good" : "warn"], ["마지막 동기화", lastSync, ""] ]; for (const [label, value, tone] of metrics) elements.adminMetrics.appendChild(createAdminMetric(label, value, tone)); if (gpsMissingItems.length > 0) { const preview = gpsMissingItems.slice(0, 10).join(", "); const extra = gpsMissingItems.length > 10 ? ` 외 ${gpsMissingItems.length - 10}곳` : ""; elements.adminGpsWarning.hidden = false; elements.adminGpsWarning.textContent = `⚠ GPS 좌표 미연결 ${gpsMissingItems.length}곳\n${preview}${extra}`; } else { elements.adminGpsWarning.hidden = true; elements.adminGpsWarning.textContent = ""; } elements.createBackupBtn.disabled = state.backupCreating || Boolean(state.restoringBackupName); elements.createBackupBtn.textContent = state.backupCreating ? "백업 중..." : "지금 백업";
+    if (elements.autoBackupStatus) {
+        elements.autoBackupStatus.textContent = dashboard.autoBackup?.enabled
+            ? `✅ ${dashboard.autoBackup.schedule} · ${dashboard.autoBackup.timezone}`
+            : `⚠ ${dashboard.autoBackup?.message || "자동 백업 설정이 필요합니다."}`;
+    }
+    if (elements.setupAutoBackupBtn) {
+        elements.setupAutoBackupBtn.disabled = state.autoBackupUpdating;
+        elements.setupAutoBackupBtn.textContent = state.autoBackupUpdating ? "설정 중..." : "자동백업 재설정";
+    }
+    renderBackupList(dashboard.backups, pendingCount); } function createAdminMetric(label, value, tone = "") { const wrapper = document.createElement("div"); wrapper.className = "admin-metric"; const labelElement = document.createElement("div"); labelElement.className = "admin-metric-label"; labelElement.textContent = label; const valueElement = document.createElement("div"); valueElement.className = `admin-metric-value${tone ? ` ${tone}` : ""}`; valueElement.textContent = value; wrapper.append(labelElement, valueElement); return wrapper; } function renderBackupList(backups, pendingCount) { elements.backupList.replaceChildren(); if (!backups.length) { const empty = document.createElement("div"); empty.className = "backup-empty"; empty.textContent = "아직 생성된 백업이 없습니다."; elements.backupList.appendChild(empty); return; } for (const backup of backups) { const item = document.createElement("div"); item.className = "backup-item"; const info = document.createElement("div"); info.className = "backup-info"; const name = document.createElement("div"); name.className = "backup-name"; name.textContent = backup.kind; name.title = backup.name; const meta = document.createElement("div"); meta.className = "backup-meta"; meta.textContent = `${backup.createdAt || backup.name} · ${backup.rowCount.toLocaleString()}행`; info.append(name, meta); const restoreButton = document.createElement("button"); restoreButton.type = "button"; restoreButton.className = "restore-backup-btn"; restoreButton.textContent = state.restoringBackupName === backup.name ? "복구 중..." : "복구"; restoreButton.disabled = Boolean(state.restoringBackupName) || state.backupCreating || pendingCount > 0; restoreButton.title = pendingCount > 0 ? "저장 대기 작업이 끝난 뒤 복구할 수 있습니다." : ""; restoreButton.addEventListener("click", () => restoreDataBackup(backup)); item.append(info, restoreButton); elements.backupList.appendChild(item); } } async function setupAutomaticBackup() {
+    if (state.autoBackupUpdating) return;
+    state.autoBackupUpdating = true;
+    if (state.adminDashboard) renderAdminDashboard();
+    try {
+        await requestApi("setupAutoBackup", { adminToken: requireAdminToken() });
+        showToast("✅ 매일 06시 자동백업 설정 완료");
+        await loadAdminDashboard(false);
+    } catch (error) {
+        console.error("자동백업 설정 실패:", error);
+        if (!handleAdminAuthError(error)) window.alert(`자동백업 설정에 실패했습니다.\n${error.message}`);
+    } finally {
+        state.autoBackupUpdating = false;
+        if (state.adminDashboard) renderAdminDashboard();
+    }
+}
+async function createDataBackup() { if (state.backupCreating || state.restoringBackupName) return; state.backupCreating = true; renderAdminDashboard(); try { const response = await requestApi("createBackup", { operationId: createOperationId(), adminToken: requireAdminToken() }); showToast("✅ 백업을 생성했습니다."); await loadAdminDashboard(false); if (response?.backup?.name) console.info("생성된 백업:", response.backup.name); } catch (error) { console.error("백업 생성 실패:", error); if (!handleAdminAuthError(error)) window.alert(`백업 생성에 실패했습니다.\n${error.message}`); } finally { state.backupCreating = false; if (state.adminDashboard) renderAdminDashboard(); } } async function restoreDataBackup(backup) { if (!backup?.name || state.restoringBackupName || state.backupCreating) return; if (state.pendingOperations.length > 0) { window.alert("아직 저장 대기 중인 작업이 있습니다. 저장 완료 후 다시 복구해주세요."); return; } const confirmation = window.prompt( `${backup.createdAt || backup.name} 백업으로 전체 복구합니다.\n` + "현재 데이터는 복구 전에 자동 백업됩니다.\n\n계속하려면 '복구'를 입력하세요." ); if (cleanText(confirmation) !== "복구") { if (confirmation !== null) showToast("복구가 취소되었습니다."); return; } state.restoringBackupName = backup.name; renderAdminDashboard(); try { const response = await requestApi("restoreBackup", { backupName: backup.name, operationId: createOperationId(), adminToken: requireAdminToken() }); updateLocalDataVersion(response); showToast("✅ 백업 데이터로 복구했습니다."); await refreshRecordsFromServer(true); await loadAdminDashboard(false); } catch (error) { console.error("백업 복구 실패:", error); if (!handleAdminAuthError(error)) window.alert(`백업 복구에 실패했습니다.\n${error.message}`); } finally { state.restoringBackupName = ""; if (state.adminDashboard) renderAdminDashboard(); } } function formatLocalDateTime(value) { const date = value instanceof Date ? value : new Date(value); if (!Number.isFinite(date.getTime())) return "확인 전"; return new Intl.DateTimeFormat("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(date); }
 /* ========================= 공동비밀번호 수정 ========================= */
 function openCommonModal() {
     const apartmentRecords = getSelectedApartmentRecords();
@@ -1168,7 +1296,7 @@ function submitCommonPwdForm() {
     closeCommonModal();
     renderCurrentView();
 }
-/* ========================= 비밀번호 추가 ========================= */
+/* ========================= 비밀번호 추가·수정·삭제 ========================= */
 function openAddPwdModal(rowId) {
     const record = findRecordByRowId(rowId);
     if (!record) {
@@ -1186,76 +1314,113 @@ function closeAddPwdModal() { elements.addPwdRowId.value = ""; elements.addPwdIn
 function submitAddPwd() {
     const rowId = cleanText(elements.addPwdRowId.value);
     const newPassword = cleanText(elements.addPwdValue.value);
-    if (!rowId) {
-        showToast("추가할 행을 찾지 못했습니다.");
-        return;
-    }
+    if (!rowId) return showToast("추가할 행을 찾지 못했습니다.");
     if (!newPassword) {
         showToast("추가할 비밀번호를 입력해주세요.");
         elements.addPwdValue.focus();
         return;
     }
     const record = findRecordByRowId(rowId);
-    if (!record) {
-        showToast("해당 데이터를 찾지 못했습니다.");
-        return;
-    }
+    if (!record) return showToast("해당 데이터를 찾지 못했습니다.");
     const currentPasswords = splitPasswords(record.password);
-    const duplicateExists = currentPasswords.some(password => normalizePasswordForCompare(password) === normalizePasswordForCompare(newPassword) );
-    if (duplicateExists) {
-        showToast("이미 등록된 비밀번호입니다.");
-        return;
-    }
+    const duplicateExists = currentPasswords.some(password => normalizePasswordForCompare(password) === normalizePasswordForCompare(newPassword));
+    if (duplicateExists) return showToast("이미 등록된 비밀번호입니다.");
     enqueuePendingOperation("addPassword", { rowId, password: newPassword });
     currentPasswords.push(newPassword);
-    record.password = currentPasswords.join(" / ");
+    record.password = sortPasswords(currentPasswords).join(" / ");
     saveRecordsToCache(state.records);
     closeAddPwdModal();
     renderCurrentView();
 }
-/* ========================= 비밀번호 삭제 ========================= */
 function openDeletePwdModal(rowId) {
     const record = findRecordByRowId(rowId);
-    if (!record) {
-        showToast("해당 비밀번호 정보를 찾지 못했습니다.");
-        return;
-    }
-    const passwords = splitPasswords(record.password);
-    if (passwords.length === 0) {
-        showToast("삭제할 비밀번호가 없습니다.");
-        return;
-    }
+    if (!record) return showToast("해당 비밀번호 정보를 찾지 못했습니다.");
+    const passwords = sortPasswords(splitPasswords(record.password));
+    if (passwords.length === 0) return showToast("수정할 비밀번호가 없습니다.");
     elements.deletePwdRowId.value = record.rowId;
-    elements.deletePwdModalTitle.textContent = "🗑 삭제할 비밀번호 선택";
+    elements.deletePwdModalTitle.textContent = "✏️ 비밀번호 수정·삭제";
     elements.deletePwdInfo.textContent = createRecordInfoText(record);
     elements.deletePwdButtons.replaceChildren();
+    resetPasswordEditSelection();
     for (const password of passwords) {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "delete-pwd-btn";
+        button.className = "delete-pwd-btn password-select-btn";
         button.textContent = password;
-        button.addEventListener("click", () => confirmDeletePassword(record.rowId, password));
+        button.dataset.password = password;
+        button.addEventListener("click", () => selectPasswordForEdit(password));
         elements.deletePwdButtons.appendChild(button);
     }
     openModal(elements.deletePwdModal);
 }
-function closeDeletePwdModal() { elements.deletePwdRowId.value = ""; elements.deletePwdInfo.textContent = ""; elements.deletePwdButtons.replaceChildren(); closeModal(elements.deletePwdModal); }
-function confirmDeletePassword(rowId, password) {
+function selectPasswordForEdit(password) {
+    const selected = cleanText(password);
+    elements.selectedPwdOriginal.value = selected;
+    elements.editPwdValue.value = selected;
+    elements.passwordEditPanel.hidden = false;
+    for (const button of elements.deletePwdButtons.querySelectorAll(".password-select-btn")) {
+        button.classList.toggle("selected", button.dataset.password === selected);
+    }
+    window.setTimeout(() => { elements.editPwdValue.focus(); elements.editPwdValue.select(); }, 50);
+}
+function resetPasswordEditSelection() {
+    elements.selectedPwdOriginal.value = "";
+    elements.editPwdValue.value = "";
+    elements.passwordEditPanel.hidden = true;
+}
+function closeDeletePwdModal() {
+    elements.deletePwdRowId.value = "";
+    elements.deletePwdInfo.textContent = "";
+    elements.deletePwdButtons.replaceChildren();
+    resetPasswordEditSelection();
+    closeModal(elements.deletePwdModal);
+}
+function submitUpdatePassword() {
+    const rowId = cleanText(elements.deletePwdRowId.value);
+    const oldPassword = cleanText(elements.selectedPwdOriginal.value);
+    const newPassword = cleanText(elements.editPwdValue.value);
     const record = findRecordByRowId(rowId);
-    if (!record) {
-        showToast("해당 데이터를 찾지 못했습니다.");
+    if (!record || !oldPassword) return showToast("수정할 비밀번호를 선택해주세요.");
+    if (!newPassword) {
+        showToast("수정할 비밀번호를 입력해주세요.");
+        elements.editPwdValue.focus();
         return;
     }
+    if (normalizePasswordForCompare(oldPassword) === normalizePasswordForCompare(newPassword)) return showToast("변경된 내용이 없습니다.");
+    const duplicateExists = splitPasswords(record.password).some(password =>
+        normalizePasswordForCompare(password) !== normalizePasswordForCompare(oldPassword) &&
+        normalizePasswordForCompare(password) === normalizePasswordForCompare(newPassword)
+    );
+    if (duplicateExists) return showToast("이미 등록된 비밀번호입니다.");
+    enqueuePendingOperation("updatePassword", { rowId, oldPassword, newPassword });
+    record.password = sortPasswords(splitPasswords(record.password).map(password =>
+        normalizePasswordForCompare(password) === normalizePasswordForCompare(oldPassword) ? newPassword : password
+    )).join(" / ");
+    saveRecordsToCache(state.records);
+    closeDeletePwdModal();
+    renderCurrentView();
+}
+function confirmDeleteSelectedPassword() {
+    const rowId = cleanText(elements.deletePwdRowId.value);
+    const password = cleanText(elements.selectedPwdOriginal.value);
+    const record = findRecordByRowId(rowId);
+    if (!record || !password) return showToast("삭제할 비밀번호를 선택해주세요.");
     if (!window.confirm(`"${password}" 비밀번호를 삭제할까요?`)) return;
     enqueuePendingOperation("deletePassword", { rowId, password });
-    record.password = splitPasswords(record.password)
-        .filter(item => normalizePasswordForCompare(item) !== normalizePasswordForCompare(password)) .join(" / "); saveRecordsToCache(state.records);
+    record.password = sortPasswords(splitPasswords(record.password)
+        .filter(item => normalizePasswordForCompare(item) !== normalizePasswordForCompare(password)))
+        .join(" / ");
+    saveRecordsToCache(state.records);
     closeDeletePwdModal();
     renderCurrentView();
 }
 function findRecordByRowId(rowId) { return state.indexes.rowById.get(cleanText(rowId)) || null; }
-function createRecordInfoText(record) { return [ record.region, record.apartment, formatDongLabel(normalizeDongValue(record.dong)), formatLineLabel(record.line) ].filter(Boolean).join(" · "); }
+function createRecordInfoText(record) { return [record.region, record.apartment, formatDongLabel(normalizeDongValue(record.dong)), formatLineLabel(record.line)].filter(Boolean).join(" · "); }
 function normalizePasswordForCompare(value) { return cleanText(value).replace(/\s+/gu, "").toLowerCase(); }
+function sortPasswords(values) {
+    return [...new Set((Array.isArray(values) ? values : []).map(cleanText).filter(Boolean))]
+        .sort((left, right) => left.localeCompare(right, "ko", { numeric: true, sensitivity: "base" }));
+}
 /* ========================= GPS ========================= */
 function initializeGpsEvents() { document.addEventListener("visibilitychange", () => { if (!document.hidden) restartGpsWatch(); }); window.addEventListener("pageshow", restartGpsWatch); }
 function syncGpsWatch() { if (state.gpsWatchId === null) startGps(); }
@@ -1488,6 +1653,7 @@ function initializeModalEvents() {
     document.addEventListener("keydown", event => { if (event.key === "Escape") closeTopModal(); });
     elements.formCommonPwdValue.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); submitCommonPwdForm(); } });
     elements.addPwdValue.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); submitAddPwd(); } });
+    if (elements.editPwdValue) elements.editPwdValue.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); submitUpdatePassword(); } });
 }
 function openModal(modal) { if (!modal) return; modal.style.display = "flex"; document.body.style.overflow = "hidden"; }
 function closeModal(modal) { if (!modal) return; modal.style.display = "none"; const anyModalOpen = [ elements.commonEditorModal, elements.addPwdModal, elements.deletePwdModal, elements.historyModal, elements.adminPinModal, elements.adminModal ].some(item => item.style.display === "flex"); if (!anyModalOpen) document.body.style.overflow = ""; }
@@ -1510,5 +1676,17 @@ function tryApplyAppUpdate() {
 }
 /* ========================= PWA 서비스워커 ========================= */
 if ("serviceWorker" in navigator) {
-    window.addEventListener("load", async () => { try { const registration = await navigator.serviceWorker.register( "./service-worker.js", { updateViaCache: "none" } ); await registration.update(); } catch (error) { console.error("서비스워커 등록 실패:", error); } });
+    let hadServiceWorkerController = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (hadServiceWorkerController) scheduleAppUpdateReload();
+        hadServiceWorkerController = true;
+    });
+    window.addEventListener("load", async () => {
+        try {
+            const registration = await navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" });
+            await registration.update();
+        } catch (error) {
+            console.error("서비스워커 등록 실패:", error);
+        }
+    });
 }
