@@ -160,13 +160,14 @@ button { touch-action:manipulation; }
 /* ========================= 비밀번호 수정·삭제 팝업 ========================= */
 .password-editor-modal-content { width:min(92vw,410px); max-width:410px; }
 .password-editor-guide { margin:0 0 10px; color:var(--text-sub); font-size:.82rem; font-weight:750; text-align:center; }
-.password-select-buttons { max-height:190px; overflow-y:auto; padding-right:2px; }
-.password-select-btn { border-color:var(--border); background:var(--card-bg); color:var(--text-main); }
+.password-select-buttons { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; max-height:190px; overflow-y:auto; padding:2px; }
+.password-select-buttons .password-select-btn { width:100%; min-width:0; min-height:48px; padding:9px 4px; border-color:var(--border); background:var(--card-bg); color:var(--text-main); font-size:.84rem; line-height:1.2; overflow-wrap:anywhere; word-break:break-word; }
 .password-select-btn.selected { border-color:var(--primary); background:rgba(59,130,246,.12); color:var(--primary); box-shadow:0 0 0 2px rgba(59,130,246,.12); }
 .password-edit-panel { margin-top:13px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--step-bg); }
 .password-edit-panel[hidden] { display:none!important; }
 .password-edit-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:12px; }
 .btn-danger { background:var(--danger); color:#fff; }
+@media (max-width:330px) { .password-select-buttons { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
 /* ========================= 관리자 자동백업 ========================= */
 .admin-auto-backup-row { display:flex; align-items:center; justify-content:space-between; gap:9px; margin:10px 0 2px; padding:9px; border:1px solid var(--border); border-radius:10px; background:var(--card-bg); }
