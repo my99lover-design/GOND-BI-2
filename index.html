@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260714-4">
+    <link rel="stylesheet" href="style.css?v=20260714-5">
 </head>
 <body>
 <div class="container">
@@ -125,6 +125,14 @@
             </section>
             <section class="admin-section">
                 <div class="admin-section-head">
+                    <div>🔎 데이터 오류 점검</div>
+                    <div id="adminDataQualityStatus" class="admin-data-quality-status">확인 중</div>
+                </div>
+                <div class="admin-help">동·라인 중복, 중복 비밀번호, 필수값 누락, 구분기호와 숫자 정렬 이상, GPS 좌표 미연결을 점검합니다.</div>
+                <div id="adminDataQualityList" class="admin-data-quality-list"></div>
+            </section>
+            <section class="admin-section">
+                <div class="admin-section-head">
                     <div>💾 백업·복구</div>
                     <button id="createBackupBtn" class="create-backup-btn" type="button">지금 백업</button>
                 </div>
@@ -133,6 +141,7 @@
                     <div id="autoBackupStatus" class="admin-auto-backup-status">자동 백업 상태 확인 중</div>
                     <button id="setupAutoBackupBtn" class="setup-auto-backup-btn" type="button">자동백업 재설정</button>
                 </div>
+                <div id="autoBackupWarning" class="admin-backup-warning" hidden></div>
                 <div id="backupList" class="backup-list"></div>
             </section>
         </div>
@@ -158,6 +167,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260714-3"></script>
+<script src="script.js?v=20260714-4"></script>
 </body>
 </html>
