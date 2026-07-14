@@ -1,21 +1,30 @@
-const CACHE_NAME = "gimpo-b-pwa-runtime-v4";
+const CACHE_NAME = "gimpo-b-pwa-runtime-v5";
 
 const APP_SHELL = [
     "./",
     "./index.html",
-    "./style.css?v=20260713-2",
-    "./script.js?v=20260713-2",
+    "./style.css?v=20260714-1",
+    "./script.js?v=20260714-1",
     "./manifest.json",
     "./icons/icon-180.png",
     "./icons/icon-192.png",
     "./icons/icon-512.png"
 ];
 
+const GATE_IMAGES = [
+    "./gate-images/썬앤빌.webp",
+    "./gate-images/럭스A.webp",
+    "./gate-images/럭스B.webp",
+    "./gate-images/루체뷰1.webp"
+];
+
+const PRECACHE_URLS = [...APP_SHELL, ...GATE_IMAGES];
+
 self.addEventListener("install", event => {
     event.waitUntil((async () => {
         const cache = await caches.open(CACHE_NAME);
 
-        await Promise.all(APP_SHELL.map(async url => {
+        await Promise.all(PRECACHE_URLS.map(async url => {
             try {
                 const response = await fetch(new Request(url, { cache: "reload" }));
                 if (response && response.ok) {
@@ -65,8 +74,29 @@ self.addEventListener("fetch", event => {
         return;
     }
 
+    if (url.pathname.includes("/gate-images/")) {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
     event.respondWith(networkFirst(request));
 });
+
+async function cacheFirst(request) {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+
+    try {
+        const response = await fetch(request);
+        if (response && response.ok) {
+            await cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        return Response.error();
+    }
+}
 
 async function networkFirst(request, fallbackUrl = "") {
     const cache = await caches.open(CACHE_NAME);
