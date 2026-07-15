@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260714-5">
+    <link rel="stylesheet" href="style.css?v=20260714-7">
 </head>
 <body>
 <div class="container">
@@ -50,11 +50,21 @@
 </div>
 
 <div id="addPwdModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addPwdModalTitle">
-    <div class="modal-content">
+    <div class="modal-content add-password-modal-content">
         <h3 id="addPwdModalTitle">➕ 비밀번호 추가</h3>
         <input type="hidden" id="addPwdRowId">
         <div id="addPwdInfo" class="modal-info"></div>
-        <div class="form-group"><label for="addPwdValue">새 비밀번호</label><input type="text" id="addPwdValue" autocomplete="off" placeholder="추가할 비밀번호 입력"></div>
+        <div id="addPwdFormatStatus" class="add-pwd-format-status"></div>
+        <div id="addPwdSmartFields" hidden>
+            <div class="add-pwd-smart-grid">
+                <div class="form-group"><label for="addPwdRoomValue">호수</label><input type="text" id="addPwdRoomValue" inputmode="numeric" autocomplete="off" placeholder="예: 203"></div>
+                <div class="form-group"><label for="addPwdCodeValue">비밀번호</label><input type="text" id="addPwdCodeValue" inputmode="numeric" autocomplete="off" placeholder="예: 9999"></div>
+            </div>
+            <div id="addPwdFormatSample" class="add-pwd-format-sample"></div>
+            <div id="addPwdPreview" class="add-pwd-preview">호수와 비밀번호를 입력하면 결과가 표시됩니다.</div>
+        </div>
+        <div id="addPwdDirectGroup" class="form-group"><label for="addPwdValue">전체 비밀번호 형식</label><input type="text" id="addPwdValue" autocomplete="off" placeholder="예: 101#0000 또는 홈 101 0000 홈"></div>
+        <button id="addPwdModeToggle" class="add-pwd-mode-toggle" type="button" hidden></button>
         <div class="modal-buttons"><button class="modal-btn btn-submit" type="button" onclick="submitAddPwd()">추가</button><button class="modal-btn btn-cancel" type="button" onclick="closeAddPwdModal()">취소</button></div>
     </div>
 </div>
@@ -128,7 +138,12 @@
                     <div>🔎 데이터 오류 점검</div>
                     <div id="adminDataQualityStatus" class="admin-data-quality-status">확인 중</div>
                 </div>
-                <div class="admin-help">동·라인 중복, 중복 비밀번호, 필수값 누락, 구분기호와 숫자 정렬 이상, GPS 좌표 미연결을 점검합니다.</div>
+                <div class="admin-help">동·라인 중복, 중복 비밀번호, 필수값 누락, 구분기호와 우선순위·호수 정렬 이상, GPS 좌표 미연결을 점검합니다.</div>
+                <div class="admin-cleanup-actions">
+                    <button id="sortPasswordsBtn" class="admin-cleanup-btn" type="button">쉬운 번호 우선 정렬</button>
+                    <button id="deduplicatePasswordsBtn" class="admin-cleanup-btn danger" type="button">중복 제거</button>
+                </div>
+                <div class="admin-cleanup-help">정상 구분기호로 저장된 비밀번호만 처리합니다. 구분기호·앞뒤 공백·동·라인 값은 변경하지 않으며 실행 전 자동 백업됩니다.</div>
                 <div id="adminDataQualityList" class="admin-data-quality-list"></div>
             </section>
             <section class="admin-section">
@@ -167,6 +182,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260714-4"></script>
+<script src="script.js?v=20260714-7"></script>
 </body>
 </html>
