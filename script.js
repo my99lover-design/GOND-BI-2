@@ -1466,7 +1466,7 @@ async function runPasswordCleanup(mode) {
         : Number(state.adminDashboard.dataQuality.cleanup?.duplicateCount) || 0;
     const title = isSort ? "쉬운 번호 우선·호수 정렬" : "중복 비밀번호 제거";
     const detail = isSort
-        ? "쉬운 비밀번호를 앞에 모으고, 쉬운 그룹과 일반 그룹을 각각 호수순으로 정렬합니다. 중복 개수는 유지합니다."
+        ? "반복·연속·역순·대칭·쌍 반복·호수 동일·3자리 이하·지정 쉬운 번호를 앞에 모으고, 쉬운 그룹과 일반 그룹을 각각 호수순으로 정렬합니다. 중복 개수는 유지합니다."
         : "처음 저장된 값은 유지하고 같은 비밀번호만 제거합니다. 순서는 변경하지 않습니다.";
     const targetText = count > 0
         ? `점검에서 확인된 대상 ${count.toLocaleString()}개 행을 처리합니다.`
