@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 자가복구형 관리자 진단 최종판 20260715-10 */
+/* 넘버원 김포B 공비 - 최종 정합성 보정판 20260715-11 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -1200,7 +1200,10 @@ async function requestApi(action, payload = {}, requestOptions = {}) { if (!API_
         throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
     }
     if (result && typeof result === "object" && result.success === false) {
-        throw new Error(result.message || result.error || "서버 작업에 실패했습니다.");
+        const businessError = new Error(result.message || result.error || "서버 작업에 실패했습니다.");
+        businessError.apiBusinessError = true;
+        businessError.apiAction = action;
+        throw businessError;
     }
     return result;
 }
@@ -1670,7 +1673,7 @@ function renderAdminStatistics(dashboard, gpsInfo) {
     renderAdminStatsRows(elements.adminTopApartments, stats.topApartments.map((item, index) => ({ title: `${index + 1}. ${item.apartment}`, subtitle: item.region, value: `${item.count.toLocaleString()}회` })), "수정기록 없음");
     const appCache = navigator.serviceWorker?.controller ? "활성" : "확인 중";
     renderAdminStatsRows(elements.adminAppInfoStats, [
-        { title: "앱 파일 버전", value: "20260715-8" },
+        { title: "앱 파일 버전", value: FINAL_BUILD_INFO.fileVersion },
         { title: "서비스워커", value: appCache },
         { title: "데이터 버전", value: dashboard.dataVersion || "확인 전" },
         { title: "데이터 시트", value: dashboard.dataSheetName || "확인 전" },
@@ -3001,7 +3004,9 @@ requestApi = function requestApiLongterm(action, payload = {}) {
         })
         .catch(error => {
             const normalizedError = error?.name === "AbortError" ? new Error("서버 응답 시간이 초과되었습니다.") : error;
-            if (!normalizedError?.staleResponse) logLocalError("network", normalizedError, { action });
+            if (!normalizedError?.staleResponse && shouldRecordApiTransportError(normalizedError)) {
+                logLocalError("network", normalizedError, { action });
+            }
             throw normalizedError;
         })
         .finally(() => {
@@ -3138,15 +3143,19 @@ async function runDailyDataIntegrityValidation(force = false) {
             }
             logLocalError("data-integrity", new Error("서버와 로컬 데이터 불일치 감지"), { server: serverInfo, local: localInfo });
             await refreshRecordsFromServer(true);
+            const verifyResponse = await requestApi("getDataIntegrity");
+            const recoveryServerInfo = verifyResponse?.data && typeof verifyResponse.data === "object" ? verifyResponse.data : verifyResponse;
+            if (recoveryServerInfo?.stable === false) throw new Error("복구 확인 중 서버 데이터가 다시 변경되어 검사를 잠시 연기합니다.");
             const recoveredInfo = calculateLocalDataIntegrity(state.records);
-            const recovered = Number(serverInfo?.rowCount) === recoveredInfo.rowCount && cleanText(serverInfo?.checksum) === recoveredInfo.checksum;
+            const recovered = Number(recoveryServerInfo?.rowCount) === recoveredInfo.rowCount && cleanText(recoveryServerInfo?.checksum) === recoveredInfo.checksum;
             if (recovered) {
-                saveDataIntegrityResult("recovered", serverInfo, recoveredInfo, "데이터 불일치를 감지해 전체 데이터를 자동 복구했습니다.");
+                updateLocalDataVersion(recoveryServerInfo);
+                saveDataIntegrityResult("recovered", recoveryServerInfo, recoveredInfo, "데이터 불일치를 감지해 전체 데이터를 자동 복구했습니다.");
                 showToast("✅ 데이터 불일치를 자동 복구했습니다.");
                 return { success: true, status: "recovered" };
             }
-            saveDataIntegrityResult("failed", serverInfo, recoveredInfo, "전체 재동기화 후에도 무결성 확인이 필요합니다.", false);
-            logLocalError("data-integrity-recovery", new Error("자동 복구 후 무결성 불일치"), { server: serverInfo, local: recoveredInfo });
+            saveDataIntegrityResult("failed", recoveryServerInfo, recoveredInfo, "전체 재동기화 후에도 무결성 확인이 필요합니다.", false);
+            logLocalError("data-integrity-recovery", new Error("자동 복구 후 무결성 불일치"), { server: recoveryServerInfo, local: recoveredInfo });
             if (!force) scheduleDailyDataIntegrityValidation(LONGTERM_CONFIG.DATA_INTEGRITY_RETRY_DELAY);
             return { success: false, status: "failed" };
         } catch (error) {
@@ -3539,10 +3548,18 @@ async function executeDiagnosticRepair(actionKey) {
             clearResolvedTransientNetworkErrors();
             return result.status === "recovered" ? "데이터 불일치를 자동 복구했습니다." : "데이터 무결성이 정상입니다.";
         }
-        case "restart-gps":
+        case "restart-gps": {
+            const previousSuccessAt = longtermState.lastGpsSuccessAt;
             requestManualGpsRefresh();
             await waitForDiagnosticCondition(() => state.gpsWatchId !== null, 3000, "GPS 감시를 다시 등록하지 못했습니다.");
-            return "GPS 감시를 1개로 다시 시작했습니다.";
+            await waitForDiagnosticCondition(() => {
+                const locationAt = Number(state.currentLocation?.timestamp) || 0;
+                const accuracy = Number(state.currentLocation?.accuracy);
+                const receivedNewLocation = longtermState.lastGpsSuccessAt > previousSuccessAt || locationAt > Date.now() - 20000;
+                return receivedNewLocation && (!Number.isFinite(accuracy) || accuracy <= APP_CONFIG.GPS_HIGH_ACCURACY_TARGET);
+            }, APP_CONFIG.GPS_HIGH_TIMEOUT + 2000, "GPS 감시는 등록됐지만 정확도 60m 이내의 새 위치를 받지 못했습니다.");
+            return "GPS 감시를 다시 시작하고 정상 위치 수신을 확인했습니다.";
+        }
         case "retry-pending":
             return retryPendingOperationsFromDiagnostics();
         case "full-sync":
@@ -3649,14 +3666,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v22",
+    app: "gimpo-b-app-v23",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260715-10", "./script.js?v=20260715-10", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260715-11", "./script.js?v=20260715-11", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -3813,11 +3830,8 @@ async function collectDiagnostics() {
 
 function initializeSafeMode() {
     try {
-        const boot = JSON.parse(sessionStorage.getItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY) || "{}");
-        const count = Number(boot.count) || 0;
-        longtermState.safeMode = count >= 3 || localStorage.getItem(LONGTERM_CONFIG.SAFE_MODE_KEY) === "1";
-        sessionStorage.setItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY, JSON.stringify({ count: count + 1, at: Date.now() }));
-        window.setTimeout(() => sessionStorage.setItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY, JSON.stringify({ count: 0, at: Date.now() })), 8000);
+        longtermState.safeMode = localStorage.getItem(LONGTERM_CONFIG.SAFE_MODE_KEY) === "1";
+        sessionStorage.setItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY, JSON.stringify({ count: 0, at: Date.now() }));
         if (longtermState.safeMode) {
             state.savedViewState = null;
             localStorage.removeItem(APP_CONFIG.VIEW_STATE_KEY);
@@ -3836,3 +3850,368 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeBackupCompareUi();
     initializeDiagnosticsUi();
 });
+
+
+/* ========================= 최종 정합성 보정 v23 ========================= */
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260715-11", serviceWorkerVersion: "v23" });
+const FINAL_DIAGNOSTIC_CONFIG = Object.freeze({
+    GPS_FRESH_MS: 3 * 60 * 1000,
+    GPS_STALE_MS: 10 * 60 * 1000,
+    SYNC_FRESH_MS: 10 * 60 * 1000,
+    PENDING_RETRY_WAIT_MS: 35 * 1000,
+    BOOT_ERROR_WINDOW_MS: 10 * 1000,
+    BOOT_ERROR_STATE_KEY: "gimpoB_boot_error_state_v2"
+});
+
+longtermState.lastGpsError = longtermState.lastGpsError || null;
+longtermState.lastGpsSuccessAt = Number(longtermState.lastGpsSuccessAt) || 0;
+longtermState.adminDashboardPromise = null;
+longtermState.historyPromise = null;
+longtermState.backupCompareGeneration = Number(longtermState.backupCompareGeneration) || 0;
+longtermState.backupComparingName = "";
+
+function shouldRecordApiTransportError(error) {
+    if (!error || error.apiBusinessError || error.staleResponse) return false;
+    const message = cleanText(error.message || error).toLowerCase();
+    if (!message) return false;
+    return error instanceof TypeError ||
+        error.name === "AbortError" ||
+        isTransientNetworkErrorMessage(message) ||
+        message.includes("서버 응답 오류") ||
+        message.includes("서버 응답이 비어") ||
+        message.includes("올바르지 않은 응답");
+}
+
+/* 실제 위치 수신과 오류 상태를 진단에 사용합니다. */
+const originalHandleGpsSuccessV23 = handleGpsSuccess;
+handleGpsSuccess = function handleGpsSuccessV23(position, context = {}) {
+    const validGeneration = context.generation === state.gpsRequestGeneration;
+    const validCoords = Number.isFinite(Number(position?.coords?.latitude)) && Number.isFinite(Number(position?.coords?.longitude));
+    originalHandleGpsSuccessV23(position, context);
+    if (validGeneration && validCoords) {
+        longtermState.lastGpsSuccessAt = Number(position?.timestamp) || Date.now();
+        longtermState.lastGpsError = null;
+    }
+};
+const originalHandleGpsInitialErrorV23 = handleGpsInitialError;
+handleGpsInitialError = function handleGpsInitialErrorV23(error, generation) {
+    if (generation === state.gpsRequestGeneration) longtermState.lastGpsError = { at: Date.now(), code: Number(error?.code) || 0, message: cleanText(error?.message) || "GPS 위치 수신 실패" };
+    return originalHandleGpsInitialErrorV23(error, generation);
+};
+const originalHandleGpsWatchErrorV23 = handleGpsWatchError;
+handleGpsWatchError = function handleGpsWatchErrorV23(error, generation) {
+    if (generation === state.gpsRequestGeneration) longtermState.lastGpsError = { at: Date.now(), code: Number(error?.code) || 0, message: cleanText(error?.message) || "GPS 감시 실패" };
+    return originalHandleGpsWatchErrorV23(error, generation);
+};
+
+async function getGeolocationPermissionStateV23() {
+    try {
+        if (!navigator.permissions?.query) return "unknown";
+        const status = await navigator.permissions.query({ name: "geolocation" });
+        return cleanText(status?.state) || "unknown";
+    } catch (error) {
+        return "unknown";
+    }
+}
+
+async function getGpsDiagnosticItemV23() {
+    const watchRegistered = state.gpsWatchId !== null;
+    const permission = await getGeolocationPermissionStateV23();
+    const location = state.currentLocation;
+    const timestamp = Number(location?.timestamp) || longtermState.lastGpsSuccessAt || 0;
+    const age = timestamp ? Date.now() - timestamp : Number.POSITIVE_INFINITY;
+    const accuracy = Number(location?.accuracy);
+    const accuracyText = Number.isFinite(accuracy) ? `오차 ${Math.round(accuracy)}m` : "정확도 확인 불가";
+    const ageText = timestamp ? formatRelativeAge(timestamp) : "정상 위치 없음";
+
+    if (permission === "denied" || Number(longtermState.lastGpsError?.code) === 1) {
+        return { label: "GPS 감시", status: "권한 필요", level: "warning", detail: "위치 권한이 차단되어 자동 복구할 수 없습니다. 휴대폰 또는 브라우저 설정에서 위치 권한을 허용해주세요.", actions: [] };
+    }
+    if (!watchRegistered) return diagnosticItem("GPS 감시", "재시작 필요", "warning", "고정밀 위치 감시가 등록되지 않았습니다.", "restart-gps", "GPS 재시작", "재시작중…");
+    if (!location || !Number.isFinite(timestamp)) return diagnosticItem("GPS 감시", "위치 미수신", "warning", "감시는 1개지만 정상 좌표를 아직 받지 못했습니다.", "restart-gps", "GPS 재시작", "재시작중…");
+    if (Number.isFinite(accuracy) && accuracy > APP_CONFIG.GPS_HIGH_ACCURACY_TARGET) return diagnosticItem("GPS 감시", "정확도 확인", "warning", `${ageText} · ${accuracyText}`, "restart-gps", "GPS 재시작", "재시작중…");
+    if (age > FINAL_DIAGNOSTIC_CONFIG.GPS_STALE_MS) return diagnosticItem("GPS 감시", "갱신 지연", "warning", `${ageText} · ${accuracyText}`, "restart-gps", "GPS 재시작", "재시작중…");
+    if (age > FINAL_DIAGNOSTIC_CONFIG.GPS_FRESH_MS) return diagnosticItem("GPS 감시", "최근 위치 유지", "warning", `${ageText} · ${accuracyText}`, "restart-gps", "GPS 재시작", "재시작중…");
+    return { label: "GPS 감시", status: "정상", level: "good", detail: `감시 1개 · ${ageText} · ${accuracyText}`, actions: [] };
+}
+
+function formatRelativeAge(timestamp) {
+    const seconds = Math.max(0, Math.round((Date.now() - Number(timestamp)) / 1000));
+    if (seconds < 60) return `${seconds}초 전`;
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return `${minutes}분 전`;
+    return `${Math.round(minutes / 60)}시간 전`;
+}
+
+/* 관리자 서버 상태를 보존하면서 실제 최신값으로 다시 받습니다. */
+loadAdminDashboard = function loadAdminDashboardV23(showLoading = true) {
+    if (longtermState.adminDashboardPromise) return longtermState.adminDashboardPromise;
+    const hadDashboard = Boolean(state.adminDashboard);
+    const button = elements.adminRefreshBtn;
+    state.adminLoading = true;
+    if (button) { button.disabled = true; button.textContent = "불러오는 중…"; }
+    if (showLoading) {
+        elements.adminStatus.style.display = "block";
+        elements.adminStatus.textContent = hadDashboard ? "최신 점검 정보를 확인하는 중입니다..." : "점검 정보를 불러오는 중입니다...";
+        if (!hadDashboard) elements.adminContent.hidden = true;
+    }
+    const task = (async () => {
+        try {
+            const response = await requestApi("getAdminDashboard", { adminToken: requireAdminToken() });
+            const dashboard = response?.data && typeof response.data === "object" ? response.data : response;
+            state.adminDashboard = normalizeAdminDashboard(dashboard);
+            renderAdminDashboard();
+            return state.adminDashboard;
+        } catch (error) {
+            console.error("관리자 점검 불러오기 실패:", error);
+            if (handleAdminAuthError(error)) return null;
+            if (hadDashboard) {
+                elements.adminContent.hidden = false;
+                elements.adminStatus.style.display = "block";
+                elements.adminStatus.textContent = `최신 확인 실패 · 기존 점검 결과 표시 중\n${error.message}`;
+            } else {
+                elements.adminContent.hidden = true;
+                elements.adminStatus.style.display = "block";
+                elements.adminStatus.textContent = `점검 정보를 불러오지 못했습니다.\n${error.message}`;
+            }
+            return null;
+        } finally {
+            state.adminLoading = false;
+            longtermState.adminDashboardPromise = null;
+            if (button) { button.disabled = false; button.textContent = "새로고침"; }
+        }
+    })();
+    longtermState.adminDashboardPromise = task;
+    return task;
+};
+
+loadChangeHistory = function loadChangeHistoryV23(showLoading = true) {
+    if (longtermState.historyPromise) return longtermState.historyPromise;
+    const button = elements.historyRefreshBtn;
+    const hadHistory = state.changeHistory.length > 0;
+    state.historyLoading = true;
+    if (button) { button.disabled = true; button.textContent = "불러오는 중…"; }
+    if (showLoading) {
+        elements.historyStatus.style.display = "block";
+        elements.historyStatus.textContent = "수정기록을 불러오는 중입니다...";
+        if (!hadHistory) elements.historyList.replaceChildren();
+    }
+    const task = (async () => {
+        try {
+            const response = await requestApi("getChangeHistory", { limit: APP_CONFIG.HISTORY_LIMIT });
+            const history = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : [];
+            state.changeHistory = history.map(normalizeHistoryItem).filter(item => item.historyId);
+            saveChangeHistoryCache(state.changeHistory);
+            renderChangeHistory();
+            return state.changeHistory;
+        } catch (error) {
+            console.error("수정기록 불러오기 실패:", error);
+            if (state.changeHistory.length > 0) {
+                renderChangeHistory();
+                elements.historyStatus.style.display = "block";
+                elements.historyStatus.textContent = "최신 확인 실패 · 저장된 수정기록 표시 중";
+            } else {
+                elements.historyList.replaceChildren();
+                elements.historyStatus.style.display = "block";
+                elements.historyStatus.textContent = `수정기록을 불러오지 못했습니다.\n${error.message}`;
+            }
+            return state.changeHistory;
+        } finally {
+            state.historyLoading = false;
+            longtermState.historyPromise = null;
+            if (button) { button.disabled = false; button.textContent = "새로고침"; }
+        }
+    })();
+    longtermState.historyPromise = task;
+    return task;
+};
+
+/* 백업 비교는 마지막 선택만 유효하며 비교 완료 전까지 중복 실행하지 않습니다. */
+renderBackupList = function renderBackupListV23(backups, pendingCount) {
+    elements.backupList.replaceChildren();
+    if (!backups.length) {
+        const empty = document.createElement("div");
+        empty.className = "backup-empty";
+        empty.textContent = "아직 생성된 백업이 없습니다.";
+        elements.backupList.appendChild(empty);
+        return;
+    }
+    for (const backup of backups) {
+        const item = document.createElement("div"); item.className = "backup-item";
+        const info = document.createElement("div"); info.className = "backup-info";
+        const name = document.createElement("div"); name.className = "backup-name"; name.textContent = backup.kind; name.title = backup.name;
+        const meta = document.createElement("div"); meta.className = "backup-meta"; meta.textContent = `${backup.createdAt || backup.name} · ${backup.rowCount.toLocaleString()}행`;
+        info.append(name, meta);
+        const restoreButton = document.createElement("button"); restoreButton.type = "button"; restoreButton.className = "restore-backup-btn";
+        const comparing = longtermState.backupComparingName === backup.name;
+        const restoring = state.restoringBackupName === backup.name;
+        restoreButton.textContent = restoring ? "복구 중..." : comparing ? "비교중…" : "복구";
+        restoreButton.disabled = Boolean(state.restoringBackupName) || Boolean(longtermState.backupComparingName) || state.backupCreating || pendingCount > 0;
+        restoreButton.title = pendingCount > 0 ? "저장 대기 작업이 끝난 뒤 복구할 수 있습니다." : "";
+        restoreButton.addEventListener("click", () => restoreDataBackup(backup));
+        item.append(info, restoreButton); elements.backupList.appendChild(item);
+    }
+};
+
+restoreDataBackup = async function restoreDataBackupV23(backup) {
+    if (!backup?.name || state.restoringBackupName || state.backupCreating || longtermState.backupComparingName) return;
+    if (state.pendingOperations.length > 0) { window.alert("아직 저장 대기 중인 작업이 있습니다. 저장 완료 후 다시 복구해주세요."); return; }
+    const generation = ++longtermState.backupCompareGeneration;
+    longtermState.backupComparingName = backup.name;
+    longtermState.backupToRestore = backup;
+    if (state.adminDashboard) renderAdminDashboard();
+    openModal(document.getElementById("backupCompareModal"));
+    renderBackupCompareLoading();
+    try {
+        const response = await requestApi("compareBackup", { backupName: backup.name, adminToken: requireAdminToken() });
+        if (generation !== longtermState.backupCompareGeneration || longtermState.backupToRestore?.name !== backup.name) return;
+        renderBackupComparison(response?.data || response);
+    } catch (error) {
+        if (generation !== longtermState.backupCompareGeneration) return;
+        document.getElementById("backupCompareStatus").textContent = `비교 실패: ${error.message}`;
+        document.getElementById("backupCompareRestoreBtn").disabled = true;
+    } finally {
+        if (generation === longtermState.backupCompareGeneration) {
+            longtermState.backupComparingName = "";
+            if (state.adminDashboard) renderAdminDashboard();
+        }
+    }
+};
+
+closeBackupCompareModal = function closeBackupCompareModalV23() {
+    longtermState.backupCompareGeneration += 1;
+    longtermState.backupComparingName = "";
+    longtermState.backupToRestore = null;
+    closeModal(document.getElementById("backupCompareModal"));
+    if (state.adminDashboard) renderAdminDashboard();
+};
+
+/* 다시 점검은 서버 관리자 상태 + 서버 무결성 + 기기 상태를 모두 새로 확인합니다. */
+refreshAdminDiagnostics = async function refreshAdminDiagnosticsV23() {
+    if (longtermState.diagnosticsRefreshing || longtermState.diagnosticRepairing) return;
+    const button = document.getElementById("adminDiagnosticsRefreshBtn");
+    longtermState.diagnosticsRefreshing = true;
+    if (button) { button.disabled = true; button.textContent = "점검중…"; }
+    setDiagnosticActionButtonsDisabled(true);
+    try {
+        try { await loadAdminDashboard(false); } catch (error) { if (!state.adminDashboard) throw error; }
+        const integrity = await runDailyDataIntegrityValidation(true);
+        if (integrity?.success) clearResolvedTransientNetworkErrors();
+        await renderAdminDiagnostics(true);
+        if (!integrity?.success && integrity?.reason === "offline") showToast("인터넷 연결 후 다시 점검해주세요.");
+        else if (!integrity?.success && integrity?.reason === "busy") showToast("저장 작업이 끝난 뒤 다시 점검해주세요.");
+        else if (integrity?.success) showToast("✅ 최신 상태로 다시 점검했습니다.");
+    } catch (error) {
+        logLocalError("diagnostics", error);
+        window.alert(`다시 점검에 실패했습니다.\n${error.message}`);
+    } finally {
+        longtermState.diagnosticsRefreshing = false;
+        if (button) { button.disabled = false; button.textContent = "다시 점검"; }
+        setDiagnosticActionButtonsDisabled(false);
+    }
+};
+
+/* 저장 대기 재전송은 실제 완료·충돌·다음 재시도 확정까지 기다립니다. */
+retryPendingOperationsFromDiagnostics = async function retryPendingOperationsFromDiagnosticsV23() {
+    if (!state.pendingOperations.length) return "저장 대기 작업이 없습니다.";
+    const conflicts = state.pendingOperations.filter(item => item?.conflict);
+    if (conflicts.length > 0) {
+        window.alert(`충돌 작업 ${conflicts.length}건은 자동으로 덮어쓸 수 없습니다.\n서버의 최신 데이터를 확인한 뒤 해당 비밀번호를 다시 입력해주세요.`);
+        return "충돌 작업의 해결 방법을 표시했습니다.";
+    }
+    if (navigator.onLine === false) throw new Error("인터넷 연결이 필요합니다.");
+    const targetIds = new Set(state.pendingOperations.map(item => item.id));
+    for (const operation of state.pendingOperations) operation.nextAttemptAt = 0;
+    savePendingOperations();
+    wakePendingSync();
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < FINAL_DIAGNOSTIC_CONFIG.PENDING_RETRY_WAIT_MS) {
+        const remaining = state.pendingOperations.filter(item => targetIds.has(item.id));
+        if (remaining.length === 0 && !state.syncProcessing) return "저장 대기 작업을 모두 전송했습니다.";
+        const conflict = remaining.find(item => item?.conflict);
+        if (conflict) throw new Error(cleanText(conflict.conflictMessage) || "다른 수정과 충돌했습니다.");
+        await new Promise(resolve => window.setTimeout(resolve, 250));
+    }
+    const remaining = state.pendingOperations.filter(item => targetIds.has(item.id));
+    if (remaining.length) {
+        const nextAt = Math.min(...remaining.map(item => Number(item.nextAttemptAt) || Number.MAX_SAFE_INTEGER));
+        const nextText = Number.isFinite(nextAt) && nextAt < Number.MAX_SAFE_INTEGER ? formatLocalDateTime(nextAt) : "자동 재시도 예정";
+        throw new Error(`아직 ${remaining.length}건이 전송되지 않았습니다. 다음 재시도: ${nextText}`);
+    }
+    return "저장 대기 작업을 모두 전송했습니다.";
+};
+
+function getRecentSyncDiagnosticItemV23() {
+    const syncedAt = Number(state.lastSuccessfulSyncAt) || 0;
+    if (!syncedAt) return diagnosticItem("최근 동기화", "확인 전", "warning", "서버 데이터 동기화 성공 기록이 없습니다.", "full-sync", "지금 전체 동기화", "동기화중…");
+    const age = Date.now() - syncedAt;
+    if (navigator.onLine === false) return { label: "최근 동기화", status: "오프라인", level: "good", detail: `마지막 동기화 ${formatLocalDateTime(syncedAt)} · 저장 데이터 사용 중`, actions: [] };
+    if (state.dataSyncState === "error" || age > FINAL_DIAGNOSTIC_CONFIG.SYNC_FRESH_MS) return diagnosticItem("최근 동기화", "확인 필요", "warning", `${formatRelativeAge(syncedAt)} · ${formatLocalDateTime(syncedAt)}`, "full-sync", "지금 전체 동기화", "동기화중…");
+    return { label: "최근 동기화", status: "정상", level: "good", detail: `${formatRelativeAge(syncedAt)} · ${formatLocalDateTime(syncedAt)}`, actions: [] };
+}
+
+async function cacheContainsExact(cacheName, urls) {
+    if (!("caches" in window)) return false;
+    const cache = await caches.open(cacheName);
+    for (const url of urls) {
+        const absoluteUrl = new URL(url, window.location.href).href;
+        const match = await cache.match(new Request(absoluteUrl), { ignoreSearch: false });
+        if (!match) return false;
+    }
+    return true;
+}
+
+getServiceWorkerHealth = async function getServiceWorkerHealthV23() {
+    if (!("serviceWorker" in navigator)) return { label: "서비스워커", status: "미지원", level: "warning", detail: "현재 브라우저가 오프라인 앱 기능을 지원하지 않습니다.", actions: [] };
+    try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        const controller = navigator.serviceWorker.controller;
+        const active = registration?.active;
+        const expectedScript = active?.scriptURL?.includes("service-worker.js");
+        if (!controller || !active || !expectedScript) return diagnosticItem("서비스워커", "복구 필요", "warning", "현재 페이지를 제어하는 활성 서비스워커를 확인하지 못했습니다.", "repair-service-worker", "앱 캐시 복구", "복구중…");
+        const appExact = await cacheContainsExact(DIAGNOSTIC_CACHE_NAMES.app, DIAGNOSTIC_APP_SHELL);
+        const imagesExact = await cacheContainsExact(DIAGNOSTIC_CACHE_NAMES.images, DIAGNOSTIC_GATE_IMAGES);
+        const dataExact = await cacheContainsExact(DIAGNOSTIC_CACHE_NAMES.data, ["./locations.json"]);
+        const waitingText = registration.waiting ? " · 새 버전 대기 중" : "";
+        const detail = `${FINAL_BUILD_INFO.serviceWorkerVersion} 제어 중 · 앱 ${appExact ? "정상" : "누락"} · 이미지 ${imagesExact ? "정상" : "누락"} · 좌표 ${dataExact ? "정상" : "누락"}${waitingText}`;
+        return appExact && imagesExact && dataExact
+            ? { label: "서비스워커", status: registration.waiting ? "업데이트 대기" : "정상", level: registration.waiting ? "warning" : "good", detail, actions: registration.waiting ? [{ key: "repair-service-worker", label: "앱 캐시 확인", busyLabel: "확인중…" }] : [] }
+            : diagnosticItem("서비스워커", "캐시 복구 필요", "warning", detail, "repair-service-worker", "앱 캐시 복구", "복구중…");
+    } catch (error) {
+        return diagnosticItem("서비스워커", "오류", "error", cleanText(error.message) || "서비스워커 상태를 읽지 못했습니다.", "repair-service-worker", "앱 캐시 복구", "복구중…");
+    }
+};
+
+/* 기존 진단 수집 결과에서 GPS·동기화 항목을 실제 상태 기반 결과로 교체합니다. */
+const originalCollectDiagnosticsV23 = collectDiagnostics;
+collectDiagnostics = async function collectDiagnosticsV23() {
+    const diagnostics = await originalCollectDiagnosticsV23();
+    const gpsItem = await getGpsDiagnosticItemV23();
+    const syncItem = getRecentSyncDiagnosticItemV23();
+    return diagnostics.map(item => item.label === "GPS 감시" ? gpsItem : item.label === "최근 동기화" ? syncItem : item);
+};
+
+/* 빠른 재실행이 아니라 실제 초기화 오류가 반복될 때만 안전모드 후보로 기록합니다. */
+(function initializeRobustBootFailureTrackingV23() {
+    try {
+        sessionStorage.setItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY, JSON.stringify({ count: 0, at: Date.now() }));
+        if (localStorage.getItem(LONGTERM_CONFIG.SAFE_MODE_KEY) !== "1") longtermState.safeMode = false;
+    } catch (error) {}
+    const bootStartedAt = Date.now();
+    const recordFailure = value => {
+        if (Date.now() - bootStartedAt > FINAL_DIAGNOSTIC_CONFIG.BOOT_ERROR_WINDOW_MS) return;
+        const message = cleanText(value?.message || value) || "초기화 오류";
+        try {
+            const previous = JSON.parse(localStorage.getItem(FINAL_DIAGNOSTIC_CONFIG.BOOT_ERROR_STATE_KEY) || "{}");
+            const same = cleanText(previous.message) === message && Date.now() - Number(previous.at) < 10 * 60 * 1000;
+            const next = { message, count: same ? (Number(previous.count) || 0) + 1 : 1, at: Date.now() };
+            localStorage.setItem(FINAL_DIAGNOSTIC_CONFIG.BOOT_ERROR_STATE_KEY, JSON.stringify(next));
+            if (next.count >= 3) localStorage.setItem(LONGTERM_CONFIG.SAFE_MODE_KEY, "1");
+        } catch (error) {}
+    };
+    window.addEventListener("error", event => recordFailure(event.error || event.message));
+    window.addEventListener("unhandledrejection", event => recordFailure(event.reason));
+    window.setTimeout(() => {
+        try { localStorage.removeItem(FINAL_DIAGNOSTIC_CONFIG.BOOT_ERROR_STATE_KEY); } catch (error) {}
+    }, FINAL_DIAGNOSTIC_CONFIG.BOOT_ERROR_WINDOW_MS + 1000);
+})();
