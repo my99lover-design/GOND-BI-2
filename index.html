@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260715-6">
+    <link rel="stylesheet" href="style.css?v=20260715-8">
 </head>
 <body>
 <div class="container">
@@ -143,6 +143,11 @@
         </div>
         <div id="adminStatus" class="admin-status">점검 정보를 불러오는 중입니다...</div>
         <div id="adminContent" class="admin-content" hidden>
+            <div class="admin-view-tabs" role="tablist" aria-label="관리자 보기 선택">
+                <button id="adminCurrentTab" class="admin-view-tab active" type="button" role="tab" aria-selected="true" data-admin-view="current">현재상태</button>
+                <button id="adminStatsTab" class="admin-view-tab" type="button" role="tab" aria-selected="false" data-admin-view="stats">통계</button>
+            </div>
+            <div id="adminCurrentPanel" class="admin-view-panel" role="tabpanel">
             <section class="admin-section">
                 <div class="admin-section-title">📊 현재 상태</div>
                 <div id="adminMetrics" class="admin-metrics"></div>
@@ -191,6 +196,33 @@
                 <div id="autoBackupWarning" class="admin-backup-warning" hidden></div>
                 <div id="backupList" class="backup-list"></div>
             </section>
+            </div>
+            <div id="adminStatsPanel" class="admin-view-panel" role="tabpanel" hidden>
+                <section class="admin-section">
+                    <div class="admin-section-head">
+                        <div>📈 데이터 통계</div>
+                        <div id="adminStatsCheckedAt" class="admin-data-quality-status">확인 중</div>
+                    </div>
+                    <div class="admin-help">현재 구글시트 데이터와 수정기록을 기준으로 계산합니다. GPS·게이트 현황은 현재 기기의 연결 데이터를 함께 반영합니다.</div>
+                    <div id="adminStatsMetrics" class="admin-metrics admin-stats-metrics"></div>
+                </section>
+                <section class="admin-section">
+                    <div class="admin-section-title">🗺 지역별 현황</div>
+                    <div id="adminRegionStats" class="admin-stats-list"></div>
+                </section>
+                <section class="admin-section">
+                    <div class="admin-section-title">📝 수정 활동</div>
+                    <div id="adminChangeTypeStats" class="admin-stats-list"></div>
+                </section>
+                <section class="admin-section">
+                    <div class="admin-section-title">🔥 자주 수정된 아파트</div>
+                    <div id="adminTopApartments" class="admin-stats-list"></div>
+                </section>
+                <section class="admin-section">
+                    <div class="admin-section-title">ℹ 앱 정보</div>
+                    <div id="adminAppInfoStats" class="admin-stats-list"></div>
+                </section>
+            </div>
         </div>
     </div>
 </div>
@@ -227,6 +259,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260715-6"></script>
+<script src="script.js?v=20260715-8"></script>
 </body>
 </html>

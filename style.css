@@ -280,3 +280,18 @@ button { touch-action:manipulation; }
 .backup-compare-example { padding:10px; border-radius:10px; background:var(--card-bg, rgba(127,127,127,.08)); font-size:.86rem; word-break:break-word; }
 .pending-operation-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 7px; border-radius:999px; font-size:.72rem; font-weight:800; background:#f2a900; color:#111; }
 @media (max-width:360px) { .backup-compare-summary { grid-template-columns:1fr; } }
+
+
+/* ========================= 관리자 현재상태·통계 탭 ========================= */
+.admin-view-tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; position:sticky; top:0; z-index:4; margin:0 0 10px; padding:5px; border:1px solid var(--border); border-radius:12px; background:var(--card-bg); }
+.admin-view-tab { min-height:38px; border:0; border-radius:9px; background:transparent; color:var(--text-sub); font-size:.82rem; font-weight:900; cursor:pointer; }
+.admin-view-tab.active { background:var(--primary); color:#fff; box-shadow:0 2px 7px rgba(0,0,0,.14); }
+.admin-view-panel[hidden] { display:none!important; }
+.admin-stats-metrics { margin-top:10px; }
+.admin-stats-list { display:grid; gap:7px; margin-top:9px; }
+.admin-stats-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; padding:10px 11px; border:1px solid var(--border); border-radius:11px; background:var(--card-bg); }
+.admin-stats-row-title { color:var(--text-main); font-size:.79rem; font-weight:900; }
+.admin-stats-row-sub { margin-top:2px; color:var(--text-sub); font-size:.66rem; font-weight:700; }
+.admin-stats-row-value { color:var(--primary); font-size:.75rem; font-weight:900; text-align:right; white-space:nowrap; }
+.admin-stats-empty { padding:14px 10px; border:1px dashed var(--border); border-radius:11px; color:var(--text-sub); font-size:.75rem; font-weight:750; text-align:center; }
+@media (max-width:360px) { .admin-stats-row { grid-template-columns:1fr; gap:4px; } .admin-stats-row-value { text-align:left; white-space:normal; } }
