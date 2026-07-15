@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260715-3">
+    <link rel="stylesheet" href="style.css?v=20260715-4">
 </head>
 <body>
 <div class="container">
@@ -46,7 +46,10 @@
     <section id="stepContainer" class="step-container"><div id="buttonGrid" class="btn-grid">데이터를 불러오는 중... ⏳</div></section>
     <section id="cardList" class="card-list"></section>
     <div class="admin-bottom-actions">
-        <button id="adminBtn" class="admin-btn" type="button">🔒 관리자만</button>
+        <button id="adminBtn" class="admin-btn" type="button">
+            <span class="admin-btn-label">🔒 관리자만</span>
+            <span id="adminPerformanceAlertBadge" class="admin-performance-alert-badge" hidden></span>
+        </button>
         <button id="historyBtn" class="history-btn history-btn-bottom" type="button">🕘 수정기록</button>
     </div>
 </div>
@@ -200,6 +203,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260715-3"></script>
+<script src="script.js?v=20260715-4"></script>
 </body>
 </html>
