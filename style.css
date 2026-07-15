@@ -312,3 +312,25 @@ button { touch-action:manipulation; }
 }
 
 .admin-performance-trend { margin-top:4px; color:var(--text-sub); font-size:.72rem; font-weight:750; line-height:1.35; }
+
+
+/* ========================= v25 전체 UI 정합성 ========================= */
+.touch-target { min-width:44px; min-height:44px; }
+button.is-processing { position:relative; cursor:wait!important; opacity:.82; }
+button.is-processing::after { content:""; display:inline-block; width:.75em; height:.75em; margin-left:.45em; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; vertical-align:-.08em; animation:v25-spin .8s linear infinite; }
+@keyframes v25-spin { to { transform:rotate(360deg); } }
+.status-good { border-color:rgba(34,197,94,.35)!important; background:rgba(34,197,94,.09)!important; color:#15803d!important; }
+.status-warning,.status-stale { border-color:rgba(245,158,11,.4)!important; background:rgba(245,158,11,.10)!important; color:#b45309!important; }
+.status-danger { border-color:rgba(239,68,68,.4)!important; background:rgba(239,68,68,.10)!important; color:#b91c1c!important; }
+.status-progress { border-color:rgba(59,130,246,.38)!important; background:rgba(59,130,246,.10)!important; color:#1d4ed8!important; }
+.status-neutral { border-color:var(--border)!important; background:var(--step-bg)!important; color:var(--text-sub)!important; }
+[data-theme="dark"] .status-good { color:#86efac!important; }
+[data-theme="dark"] .status-warning,[data-theme="dark"] .status-stale { color:#fbbf24!important; }
+[data-theme="dark"] .status-danger { color:#fca5a5!important; }
+[data-theme="dark"] .status-progress { color:#93c5fd!important; }
+[data-empty-reason="loading"]::before { content:"⏳ "; }
+[data-empty-reason="error"]::before { content:"⚠️ "; }
+[data-empty-reason="empty"]::before { content:"ℹ️ "; }
+.modal-content input:focus-visible,.modal-content button:focus-visible,button:focus-visible { outline:3px solid color-mix(in srgb,var(--primary) 60%,transparent); outline-offset:2px; }
+.modal-buttons { position:sticky; bottom:-23px; z-index:2; padding:10px 0 0; background:linear-gradient(to bottom,transparent,var(--card-bg) 28%); }
+@media (max-width:390px) { .modal-buttons { bottom:-14px; } }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v24";
+const CACHE_VERSION = "v25";
 const APP_CACHE = `gimpo-b-app-${CACHE_VERSION}`;
 const IMAGE_CACHE = `gimpo-b-images-v4`;
 const DATA_CACHE = `gimpo-b-data-v5`;
@@ -8,8 +8,8 @@ const NAVIGATION_TIMEOUT_MS = 2000;
 const APP_SHELL = [
     "./",
     "./index.html",
-    "./style.css?v=20260715-12",
-    "./script.js?v=20260715-12",
+    "./style.css?v=20260715-13",
+    "./script.js?v=20260715-13",
     "./manifest.json",
     "./icons/icon-180.png",
     "./icons/icon-192.png",
