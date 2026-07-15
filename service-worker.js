@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v21";
+const CACHE_VERSION = "v22";
 const APP_CACHE = `gimpo-b-app-${CACHE_VERSION}`;
 const IMAGE_CACHE = `gimpo-b-images-v4`;
 const DATA_CACHE = `gimpo-b-data-v5`;
@@ -8,8 +8,8 @@ const NAVIGATION_TIMEOUT_MS = 2000;
 const APP_SHELL = [
     "./",
     "./index.html",
-    "./style.css?v=20260715-9",
-    "./script.js?v=20260715-9",
+    "./style.css?v=20260715-10",
+    "./script.js?v=20260715-10",
     "./manifest.json",
     "./icons/icon-180.png",
     "./icons/icon-192.png",
@@ -56,6 +56,25 @@ self.addEventListener("message", event => {
             const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
             const status = await getCacheStatus();
             for (const client of clients) client.postMessage({ type: "CACHE_STATUS", status });
+        })());
+    }
+    if (event.data?.type === "REPAIR_CACHES") {
+        event.waitUntil((async () => {
+            try {
+                const appCache = await caches.open(APP_CACHE);
+                for (const url of APP_SHELL) {
+                    const response = await fetch(new Request(url, { cache: "reload" }));
+                    if (!response?.ok) throw new Error(`핵심 파일 캐시 실패: ${url}`);
+                    await appCache.put(url, response.clone());
+                }
+                const imageCache = await caches.open(IMAGE_CACHE);
+                await Promise.all(GATE_IMAGES.map(url => cacheOptional(imageCache, url)));
+                const dataCache = await caches.open(DATA_CACHE);
+                await Promise.all(DATA_FILES.map(url => cacheOptional(dataCache, url)));
+                event.source?.postMessage({ type: "CACHE_REPAIR_RESULT", success: true, status: await getCacheStatus() });
+            } catch (error) {
+                event.source?.postMessage({ type: "CACHE_REPAIR_RESULT", success: false, message: error?.message || "캐시 복구 실패" });
+            }
         })());
     }
 });

@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 최종 진단 상태 표시 보정판 20260715-9 */
+/* 넘버원 김포B 공비 - 자가복구형 관리자 진단 최종판 20260715-10 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -2793,7 +2793,8 @@ const longtermState = {
     dataIntegrityPromise: null,
     safeMode: false,
     diagnosticsLastAt: 0,
-    diagnosticsRefreshing: false
+    diagnosticsRefreshing: false,
+    diagnosticRepairing: ""
 };
 
 function fnv1aHash(text) {
@@ -3405,13 +3406,14 @@ function initializeDiagnosticsUi() {
 }
 
 async function refreshAdminDiagnostics() {
-    if (longtermState.diagnosticsRefreshing) return;
+    if (longtermState.diagnosticsRefreshing || longtermState.diagnosticRepairing) return;
     const button = document.getElementById("adminDiagnosticsRefreshBtn");
     longtermState.diagnosticsRefreshing = true;
     if (button) {
         button.disabled = true;
         button.textContent = "점검중…";
     }
+    setDiagnosticActionButtonsDisabled(true);
     try {
         const integrity = await runDailyDataIntegrityValidation(true);
         if (integrity?.success) clearResolvedTransientNetworkErrors();
@@ -3424,6 +3426,7 @@ async function refreshAdminDiagnostics() {
             button.disabled = false;
             button.textContent = "다시 점검";
         }
+        setDiagnosticActionButtonsDisabled(false);
     }
 }
 
@@ -3451,17 +3454,37 @@ async function renderAdminDiagnostics(force = false) {
             const row = document.createElement("div");
             row.className = "admin-diagnostic-row";
             row.dataset.level = item.level;
+
             const left = document.createElement("div");
             const label = document.createElement("div");
             label.className = "label";
             label.textContent = item.label;
             const detail = document.createElement("div");
             detail.className = "detail";
-            detail.textContent = item.detail;
+            detail.textContent = item.level === "good" ? item.detail : `원인: ${item.detail}`;
             left.append(label, detail);
+
             const right = document.createElement("div");
-            right.className = "status";
-            right.textContent = item.status;
+            right.className = "admin-diagnostic-actions";
+            const statusElement = document.createElement("div");
+            statusElement.className = "status";
+            statusElement.textContent = item.status;
+            right.appendChild(statusElement);
+
+            for (const action of Array.isArray(item.actions) ? item.actions : []) {
+                const actionButton = document.createElement("button");
+                actionButton.type = "button";
+                actionButton.className = `admin-diagnostic-action-btn${action.danger ? " danger" : ""}`;
+                actionButton.dataset.action = action.key;
+                actionButton.dataset.defaultLabel = action.label;
+                actionButton.dataset.busyLabel = action.busyLabel || "처리중…";
+                const repairing = longtermState.diagnosticRepairing === action.key;
+                actionButton.textContent = repairing ? actionButton.dataset.busyLabel : action.label;
+                actionButton.disabled = Boolean(longtermState.diagnosticRepairing) || longtermState.diagnosticsRefreshing;
+                actionButton.addEventListener("click", () => runDiagnosticRepair(action.key));
+                right.appendChild(actionButton);
+            }
+
             row.append(left, right);
             list.appendChild(row);
         }
@@ -3474,45 +3497,316 @@ async function renderAdminDiagnostics(force = false) {
     }
 }
 
+function setDiagnosticActionButtonsDisabled(disabled) {
+    document.querySelectorAll(".admin-diagnostic-action-btn").forEach(button => {
+        const active = longtermState.diagnosticRepairing === button.dataset.action;
+        button.disabled = disabled || Boolean(longtermState.diagnosticRepairing);
+        button.textContent = active ? button.dataset.busyLabel || "처리중…" : button.dataset.defaultLabel || button.textContent;
+    });
+}
+
+async function runDiagnosticRepair(actionKey) {
+    const key = cleanText(actionKey);
+    if (!key || longtermState.diagnosticRepairing || longtermState.diagnosticsRefreshing) return;
+    longtermState.diagnosticRepairing = key;
+    setDiagnosticActionButtonsDisabled(true);
+    try {
+        const message = await executeDiagnosticRepair(key);
+        if (message) showToast(`✅ ${message}`);
+    } catch (error) {
+        logLocalError("diagnostic-repair", error, { action: key });
+        window.alert(`자동 조치에 실패했습니다.\n${error.message}`);
+    } finally {
+        longtermState.diagnosticRepairing = "";
+        await renderAdminDiagnostics(true);
+    }
+}
+
+async function executeDiagnosticRepair(actionKey) {
+    switch (actionKey) {
+        case "repair-data-cache":
+            await repairDataCacheFromServer();
+            return "데이터 캐시를 복구했습니다.";
+        case "rebuild-index":
+            rebuildDataIndexes();
+            if (!verifyIndexIntegrity(true)) throw new Error("인덱스를 다시 만들었지만 무결성 확인에 실패했습니다.");
+            renderCurrentView();
+            renderGpsButtons();
+            return "탐색 인덱스를 재생성했습니다.";
+        case "repair-integrity": {
+            const result = await runDailyDataIntegrityValidation(true);
+            if (!result?.success) throw new Error(getIntegrityFailureMessage(result));
+            clearResolvedTransientNetworkErrors();
+            return result.status === "recovered" ? "데이터 불일치를 자동 복구했습니다." : "데이터 무결성이 정상입니다.";
+        }
+        case "restart-gps":
+            requestManualGpsRefresh();
+            await waitForDiagnosticCondition(() => state.gpsWatchId !== null, 3000, "GPS 감시를 다시 등록하지 못했습니다.");
+            return "GPS 감시를 1개로 다시 시작했습니다.";
+        case "retry-pending":
+            return retryPendingOperationsFromDiagnostics();
+        case "full-sync":
+            await forceDiagnosticFullSync();
+            return "서버 데이터로 전체 동기화했습니다.";
+        case "clear-errors":
+            localStorage.removeItem(LONGTERM_CONFIG.ERROR_LOG_KEY);
+            return "로컬 오류 기록을 지웠습니다.";
+        case "exit-safe-mode":
+            await recoverFromSafeMode();
+            return "정상모드로 복구했습니다.";
+        case "repair-service-worker":
+            await repairServiceWorkerCaches();
+            return "앱 파일 캐시를 복구했습니다.";
+        case "cleanup-storage":
+            await cleanupDiagnosticStorage();
+            return "불필요한 캐시와 기록을 정리했습니다.";
+        case "setup-auto-backup":
+            await setupAutomaticBackup();
+            return "자동백업 설정을 다시 확인했습니다.";
+        default:
+            throw new Error("지원하지 않는 진단 조치입니다.");
+    }
+}
+
+function getIntegrityFailureMessage(result) {
+    if (result?.reason === "offline") return "인터넷 연결이 없어 무결성 검사를 실행할 수 없습니다.";
+    if (result?.reason === "busy") return "저장 작업이 진행 중이라 무결성 검사를 실행할 수 없습니다.";
+    return cleanText(result?.error?.message) || "데이터 무결성을 자동 복구하지 못했습니다.";
+}
+
+function waitForDiagnosticCondition(predicate, timeout = 5000, failureMessage = "작업 완료를 확인하지 못했습니다.") {
+    return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+        const check = () => {
+            let completed = false;
+            try { completed = Boolean(predicate()); } catch (error) {}
+            if (completed) {
+                resolve(true);
+                return;
+            }
+            if (Date.now() - startedAt >= timeout) {
+                reject(new Error(failureMessage));
+                return;
+            }
+            window.setTimeout(check, 120);
+        };
+        check();
+    });
+}
+
+async function forceDiagnosticFullSync() {
+    if (navigator.onLine === false) throw new Error("인터넷 연결이 필요합니다.");
+    if (state.pendingOperations.length > 0 || state.syncProcessing) throw new Error("저장 대기 작업을 먼저 처리해주세요.");
+    if (state.networkLoading) await waitForDiagnosticCondition(() => !state.networkLoading, LONGTERM_CONFIG.REQUEST_TIMEOUT + 1000, "진행 중인 데이터 요청이 끝나지 않았습니다.");
+    await refreshRecordsFromServer(true);
+    if (state.dataSyncState !== "current" || !state.records.length) throw new Error("서버 전체 데이터를 받지 못했습니다.");
+    saveRecordsToCache(state.records);
+    flushRecordsCache();
+}
+
+async function repairDataCacheFromServer() {
+    await forceDiagnosticFullSync();
+    const envelope = readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY);
+    if (!envelope || envelope.rowCount !== state.records.length) throw new Error("새 데이터 캐시 검증에 실패했습니다.");
+    rebuildDataIndexes();
+    if (!verifyIndexIntegrity(true)) throw new Error("캐시는 복구했지만 탐색 인덱스 확인에 실패했습니다.");
+}
+
+async function retryPendingOperationsFromDiagnostics() {
+    if (!state.pendingOperations.length) return "저장 대기 작업이 없습니다.";
+    const conflicts = state.pendingOperations.filter(item => item?.conflict);
+    if (conflicts.length > 0) {
+        window.alert(
+            `충돌 작업 ${conflicts.length}건은 자동으로 덮어쓸 수 없습니다.\n` +
+            "서버의 최신 데이터를 확인한 뒤 해당 비밀번호를 다시 입력해주세요.\n" +
+            "충돌 작업은 데이터 보호를 위해 자동 삭제하지 않습니다."
+        );
+        return "충돌 작업의 해결 방법을 표시했습니다.";
+    }
+    if (navigator.onLine === false) throw new Error("인터넷 연결이 필요합니다.");
+    for (const operation of state.pendingOperations) operation.nextAttemptAt = 0;
+    savePendingOperations();
+    wakePendingSync();
+    return "저장 대기 작업 재전송을 시작했습니다.";
+}
+
+async function recoverFromSafeMode() {
+    let envelope = readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY);
+    if (!envelope && navigator.onLine !== false) {
+        await repairDataCacheFromServer();
+        envelope = readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY);
+    }
+    if (!envelope) throw new Error("정상 데이터 캐시를 확인하지 못했습니다.");
+    rebuildDataIndexes();
+    if (!verifyIndexIntegrity(true)) throw new Error("탐색 인덱스가 정상적이지 않습니다.");
+    if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration?.active && !navigator.serviceWorker.controller) throw new Error("활성 서비스워커가 없습니다.");
+    }
+    longtermState.safeMode = false;
+    localStorage.removeItem(LONGTERM_CONFIG.SAFE_MODE_KEY);
+    sessionStorage.setItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY, JSON.stringify({ count: 0, at: Date.now() }));
+}
+
+const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
+    app: "gimpo-b-app-v22",
+    images: "gimpo-b-images-v4",
+    data: "gimpo-b-data-v5",
+    runtime: "gimpo-b-runtime-v3"
+});
+
+const DIAGNOSTIC_APP_SHELL = Object.freeze([
+    "./", "./index.html", "./style.css?v=20260715-10", "./script.js?v=20260715-10", "./manifest.json",
+    "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
+]);
+const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
+    "./gate-images/썬앤빌.webp", "./gate-images/럭스A.webp", "./gate-images/럭스B.webp", "./gate-images/루체뷰1.webp"
+]);
+
+async function repairServiceWorkerCaches() {
+    if (!("serviceWorker" in navigator) || !("caches" in window)) throw new Error("이 브라우저는 앱 캐시 복구를 지원하지 않습니다.");
+    if (navigator.onLine === false) throw new Error("앱 파일 캐시 복구에는 인터넷 연결이 필요합니다.");
+    let registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) registration = await navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" });
+    await registration.update();
+
+    const appCache = await caches.open(DIAGNOSTIC_CACHE_NAMES.app);
+    for (const url of DIAGNOSTIC_APP_SHELL) {
+        const response = await fetch(new Request(url, { cache: "reload" }));
+        if (!response?.ok) throw new Error(`앱 파일을 다시 받지 못했습니다: ${url}`);
+        await appCache.put(url, response.clone());
+    }
+    const imageCache = await caches.open(DIAGNOSTIC_CACHE_NAMES.images);
+    for (const url of DIAGNOSTIC_GATE_IMAGES) {
+        try {
+            const response = await fetch(new Request(url, { cache: "reload" }));
+            if (response?.ok) await imageCache.put(url, response.clone());
+        } catch (error) {}
+    }
+    const dataCache = await caches.open(DIAGNOSTIC_CACHE_NAMES.data);
+    try {
+        const response = await fetch(new Request("./locations.json", { cache: "reload" }));
+        if (response?.ok) await dataCache.put("./locations.json", response.clone());
+    } catch (error) {}
+    await deleteStaleManagedCaches();
+    const status = await getServiceWorkerHealth();
+    if (status.level !== "good") throw new Error(status.detail || "앱 캐시 복구 상태를 확인하지 못했습니다.");
+}
+
+async function deleteStaleManagedCaches() {
+    if (!("caches" in window)) return;
+    const keep = new Set(Object.values(DIAGNOSTIC_CACHE_NAMES));
+    const prefixes = ["gimpo-b-app-", "gimpo-b-images-", "gimpo-b-data-", "gimpo-b-runtime-", "gimpo-b-pwa-"];
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => prefixes.some(prefix => key.startsWith(prefix)) && !keep.has(key)).map(key => caches.delete(key)));
+}
+
+async function cleanupDiagnosticStorage() {
+    pruneNonessentialStorage();
+    localStorage.removeItem(LONGTERM_CONFIG.CACHE_TEMP_KEY);
+    localStorage.removeItem(APP_CONFIG.CACHE_KEY);
+    await deleteStaleManagedCaches();
+}
+
+async function getServiceWorkerHealth() {
+    if (!("serviceWorker" in navigator)) {
+        return { label: "서비스워커", status: "미지원", level: "warning", detail: "현재 브라우저가 오프라인 앱 기능을 지원하지 않습니다.", actions: [] };
+    }
+    try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        const active = navigator.serviceWorker.controller || registration?.active;
+        if (!active) {
+            return diagnosticItem("서비스워커", "확인 필요", "warning", "활성 서비스워커가 없어 앱 파일 캐시를 제어하지 못합니다.", "repair-service-worker", "앱 캐시 복구", "복구중…");
+        }
+        const cacheCounts = {};
+        if ("caches" in window) {
+            for (const [type, name] of Object.entries(DIAGNOSTIC_CACHE_NAMES)) {
+                const cache = await caches.open(name);
+                cacheCounts[type] = (await cache.keys()).length;
+            }
+        }
+        const healthy = cacheCounts.app >= DIAGNOSTIC_APP_SHELL.length && cacheCounts.images >= DIAGNOSTIC_GATE_IMAGES.length && cacheCounts.data >= 1;
+        const detail = `앱 ${cacheCounts.app || 0}/${DIAGNOSTIC_APP_SHELL.length} · 이미지 ${cacheCounts.images || 0}/${DIAGNOSTIC_GATE_IMAGES.length} · 좌표 ${cacheCounts.data || 0}/1`;
+        return healthy
+            ? { label: "서비스워커", status: "정상", level: "good", detail, actions: [] }
+            : diagnosticItem("서비스워커", "캐시 복구 필요", "warning", detail, "repair-service-worker", "앱 캐시 복구", "복구중…");
+    } catch (error) {
+        return diagnosticItem("서비스워커", "오류", "error", cleanText(error.message) || "서비스워커 상태를 읽지 못했습니다.", "repair-service-worker", "앱 캐시 복구", "복구중…");
+    }
+}
+
+function diagnosticItem(label, status, level, detail, actionKey = "", actionLabel = "", busyLabel = "처리중…", danger = false) {
+    return {
+        label, status, level, detail,
+        actions: actionKey ? [{ key: actionKey, label: actionLabel, busyLabel, danger }] : []
+    };
+}
+
 async function collectDiagnostics() {
     const envelope = readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY);
     const indexValid = verifyIndexIntegrity(true);
     const errorLogs = loadLocalErrorLogs();
     const gpsWatchCount = state.gpsWatchId === null ? 0 : 1;
     const pendingCount = state.pendingOperations.length;
+    const pendingConflictCount = state.pendingOperations.filter(item => item?.conflict).length;
     const integrityResult = loadDataIntegrityResult();
     const integrityStatus = integrityResult?.status === "recovered" ? "자동 복구" : integrityResult?.status === "ok" ? "정상" : integrityResult?.status === "failed" ? "확인 필요" : "검사 전";
-    const integrityLevel = integrityResult?.status === "failed" ? "warning" : "good";
+    const integrityLevel = integrityResult?.status === "failed" ? "warning" : integrityResult ? "good" : "warning";
     const activeErrorLogs = errorLogs.filter(item =>
         Date.now() - Number(item?.at) < 60 * 60 * 1000 &&
         !isTransientNetworkErrorMessage(item?.message)
     );
+
     const diagnostics = [
-        { label: "데이터 캐시", status: envelope ? "정상" : "복구 필요", level: envelope ? "good" : "warning", detail: envelope ? `${envelope.rowCount.toLocaleString()}행 · 체크섬 정상` : "다음 온라인 동기화에서 자동 복구됩니다." },
-        { label: "탐색 인덱스", status: indexValid ? "정상" : "재생성 필요", level: indexValid ? "good" : "error", detail: `${state.indexes.rowById.size.toLocaleString()}행 연결` },
-        { label: "데이터 무결성", status: integrityStatus, level: integrityLevel, detail: integrityResult ? `${formatLocalDateTime(integrityResult.checkedAt)} · ${integrityResult.message}` : "하루 한 번 서버 원본과 자동 비교합니다." },
-        { label: "GPS 감시", status: gpsWatchCount === 1 ? "정상" : "확인", level: gpsWatchCount === 1 ? "good" : "warning", detail: `${gpsWatchCount}개 등록 · 중복 감시 없음` },
-        { label: "저장 대기열", status: pendingCount ? `${pendingCount}건` : "정상", level: pendingCount ? "warning" : "good", detail: pendingCount ? "온라인 복귀 시 순서대로 자동 전송됩니다." : "전송 대기 작업이 없습니다." },
-        { label: "최근 동기화", status: state.lastSuccessfulSyncAt ? "정상" : "확인 전", level: state.lastSuccessfulSyncAt ? "good" : "warning", detail: state.lastSuccessfulSyncAt ? formatLocalDateTime(state.lastSuccessfulSyncAt) : "서버 동기화 기록이 없습니다." },
-        { label: "로컬 오류 기록", status: activeErrorLogs.length ? `주의 ${activeErrorLogs.length}건` : errorLogs.length ? `기록 ${errorLogs.length}건` : "정상", level: activeErrorLogs.length ? "warning" : "good", detail: errorLogs[0] ? `${activeErrorLogs.length ? "확인 필요" : "과거 진단 기록"} · ${formatLocalDateTime(errorLogs[0].at)} · ${errorLogs[0].type} · ${errorLogs[0].message}` : "최근 오류가 없습니다." },
-        { label: "안전모드", status: longtermState.safeMode ? "사용 중" : "정상", level: longtermState.safeMode ? "warning" : "good", detail: longtermState.safeMode ? "복원 기능을 줄여 최소 기능으로 실행 중입니다." : "일반 모드로 실행 중입니다." }
+        envelope
+            ? { label: "데이터 캐시", status: "정상", level: "good", detail: `${envelope.rowCount.toLocaleString()}행 · 체크섬 정상`, actions: [] }
+            : diagnosticItem("데이터 캐시", "복구 필요", "warning", "검증 가능한 주 데이터 캐시가 없습니다.", "repair-data-cache", "데이터 자동 복구", "복구중…"),
+        indexValid
+            ? { label: "탐색 인덱스", status: "정상", level: "good", detail: `${state.indexes.rowById.size.toLocaleString()}행 연결`, actions: [] }
+            : diagnosticItem("탐색 인덱스", "재생성 필요", "error", `원본 ${state.records.length.toLocaleString()}행과 인덱스 연결이 일치하지 않습니다.`, "rebuild-index", "인덱스 재생성", "재생성중…"),
+        integrityLevel === "good"
+            ? { label: "데이터 무결성", status: integrityStatus, level: "good", detail: `${formatLocalDateTime(integrityResult.checkedAt)} · ${integrityResult.message}`, actions: [] }
+            : diagnosticItem("데이터 무결성", integrityStatus, integrityLevel, integrityResult ? `${formatLocalDateTime(integrityResult.checkedAt)} · ${integrityResult.message}` : "서버 원본과 로컬 데이터 비교 기록이 없습니다.", "repair-integrity", integrityResult?.status === "failed" ? "전체 자동 복구" : "지금 검사", "검사중…"),
+        gpsWatchCount === 1
+            ? { label: "GPS 감시", status: "정상", level: "good", detail: "1개 등록 · 중복 감시 없음", actions: [] }
+            : diagnosticItem("GPS 감시", "재시작 필요", "warning", `${gpsWatchCount}개 등록되어 현재 위치 갱신을 보장할 수 없습니다.`, "restart-gps", "GPS 재시작", "재시작중…"),
+        pendingCount === 0
+            ? { label: "저장 대기열", status: "정상", level: "good", detail: "전송 대기 작업이 없습니다.", actions: [] }
+            : diagnosticItem("저장 대기열", pendingConflictCount ? `충돌 ${pendingConflictCount}건` : `${pendingCount}건`, pendingConflictCount ? "error" : "warning", pendingConflictCount ? "다른 수정과 충돌해 자동 전송이 중단된 작업이 있습니다." : "온라인 복귀 후 전송되지 않은 수정 작업이 있습니다.", "retry-pending", pendingConflictCount ? "충돌 해결 안내" : "다시 전송", pendingConflictCount ? "확인중…" : "전송중…"),
+        state.lastSuccessfulSyncAt
+            ? { label: "최근 동기화", status: "정상", level: "good", detail: formatLocalDateTime(state.lastSuccessfulSyncAt), actions: [] }
+            : diagnosticItem("최근 동기화", "확인 전", "warning", "현재 실행에서 서버 데이터 동기화 성공 기록이 없습니다.", "full-sync", "지금 전체 동기화", "동기화중…"),
+        activeErrorLogs.length === 0
+            ? { label: "로컬 오류 기록", status: errorLogs.length ? `과거 기록 ${errorLogs.length}건` : "정상", level: "good", detail: errorLogs[0] ? `${formatLocalDateTime(errorLogs[0].at)} · ${errorLogs[0].type} · ${errorLogs[0].message}` : "최근 오류가 없습니다.", actions: errorLogs.length ? [{ key: "clear-errors", label: "기록 지우기", busyLabel: "삭제중…" }] : [] }
+            : diagnosticItem("로컬 오류 기록", `주의 ${activeErrorLogs.length}건`, "warning", `${formatLocalDateTime(activeErrorLogs[0].at)} · ${activeErrorLogs[0].type} · ${activeErrorLogs[0].message}`, "clear-errors", "오류 기록 지우기", "삭제중…", true),
+        longtermState.safeMode
+            ? diagnosticItem("안전모드", "사용 중", "warning", "반복 실행 오류가 감지되어 일부 복원 기능이 제한됐습니다.", "exit-safe-mode", "정상모드 복구", "복구중…")
+            : { label: "안전모드", status: "정상", level: "good", detail: "일반 모드로 실행 중입니다.", actions: [] }
     ];
-    if ("serviceWorker" in navigator) {
-        try {
-            const registration = await navigator.serviceWorker.getRegistration();
-            diagnostics.push({ label: "서비스워커", status: registration?.active ? "정상" : "확인", level: registration?.active ? "good" : "warning", detail: registration?.active?.scriptURL || "활성 서비스워커 없음" });
-        } catch (error) {
-            diagnostics.push({ label: "서비스워커", status: "오류", level: "error", detail: error.message });
-        }
-    }
+
+    diagnostics.push(await getServiceWorkerHealth());
+
     if (navigator.storage?.estimate) {
         try {
             const estimate = await navigator.storage.estimate();
             const usage = Number(estimate.usage) || 0;
             const quota = Number(estimate.quota) || 0;
             const ratio = quota ? usage / quota : 0;
-            diagnostics.push({ label: "기기 저장공간", status: ratio > 0.85 ? "부족" : "정상", level: ratio > 0.85 ? "warning" : "good", detail: quota ? `${(usage / 1024 / 1024).toFixed(1)}MB / ${(quota / 1024 / 1024).toFixed(0)}MB` : "용량 확인 불가" });
+            const detail = quota ? `${(usage / 1024 / 1024).toFixed(1)}MB / ${(quota / 1024 / 1024).toFixed(0)}MB` : "용량 확인 불가";
+            diagnostics.push(ratio > 0.85
+                ? diagnosticItem("기기 저장공간", "부족", "warning", detail, "cleanup-storage", "불필요 캐시 정리", "정리중…")
+                : { label: "기기 저장공간", status: "정상", level: "good", detail, actions: [] });
         } catch (error) {}
+    }
+
+    const autoBackup = state.adminDashboard?.autoBackup;
+    if (autoBackup) {
+        const healthy = autoBackup.enabled && !autoBackup.needsAttention;
+        const status = !autoBackup.enabled ? "설정 필요" : autoBackup.needsAttention ? "확인 필요" : autoBackup.status === "waiting" ? "첫 실행 대기" : "정상";
+        const detail = [autoBackup.message, autoBackup.lastSuccessAt ? `최근 성공 ${autoBackup.lastSuccessAt}` : "", autoBackup.lastFailureMessage].filter(Boolean).join(" · ");
+        diagnostics.push(healthy
+            ? { label: "자동백업", status, level: "good", detail: detail || autoBackup.schedule, actions: [] }
+            : diagnosticItem("자동백업", status, "warning", detail || "자동백업 트리거 또는 실행 상태를 확인해야 합니다.", "setup-auto-backup", "자동백업 재설정", "설정중…"));
     }
     return diagnostics;
 }

@@ -295,3 +295,15 @@ button { touch-action:manipulation; }
 .admin-stats-row-value { color:var(--primary); font-size:.75rem; font-weight:900; text-align:right; white-space:nowrap; }
 .admin-stats-empty { padding:14px 10px; border:1px dashed var(--border); border-radius:11px; color:var(--text-sub); font-size:.75rem; font-weight:750; text-align:center; }
 @media (max-width:360px) { .admin-stats-row { grid-template-columns:1fr; gap:4px; } .admin-stats-row-value { text-align:left; white-space:normal; } }
+
+
+/* 자가복구형 관리자 진단 */
+.admin-diagnostic-actions { display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:104px; }
+.admin-diagnostic-action-btn { min-height:30px; padding:5px 8px; border:1px solid rgba(59,130,246,.42); border-radius:8px; background:rgba(59,130,246,.09); color:var(--primary); font-size:.72rem; font-weight:900; white-space:nowrap; cursor:pointer; }
+.admin-diagnostic-action-btn.danger { border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.08); color:var(--danger); }
+.admin-diagnostic-action-btn:disabled { opacity:.48; cursor:default; }
+.admin-diagnostic-action-btn:not(:disabled):active { transform:scale(.97); }
+@media (max-width:420px) {
+    .admin-diagnostic-row { grid-template-columns:minmax(0,1fr); }
+    .admin-diagnostic-actions { width:100%; flex-direction:row; justify-content:space-between; align-items:center; }
+}
