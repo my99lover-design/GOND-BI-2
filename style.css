@@ -20,6 +20,8 @@ button { touch-action:manipulation; }
 .install-app-btn[hidden] { display:none!important; }
 .nav-buttons-container { display:none; grid-template-columns:1fr 1fr; gap:8px; width:100%; margin:8px 0 12px; }
 .nav-btn { width:100%; padding:11px 4px; border:1.5px solid var(--border); border-radius:13px; background:var(--card-bg); color:var(--text-main); font-size:1rem; font-weight:750; text-align:center; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,.05); }
+.view-context-bar { position:sticky; top:max(0px,env(safe-area-inset-top)); z-index:120; width:100%; margin:0 0 10px; padding:9px 12px; overflow:hidden; border:1px solid var(--border); border-radius:12px; background:var(--card-bg); background:color-mix(in srgb,var(--card-bg) 94%,transparent); color:var(--text-main); font-size:.94rem; font-weight:900; line-height:1.25; text-align:center; text-overflow:ellipsis; white-space:nowrap; box-shadow:0 3px 10px rgba(0,0,0,.08); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.view-context-bar[hidden] { display:none!important; }
 .gps-section { display:none; width:100%; margin-bottom:18px; }
 .gps-header-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; }
 .gps-title { color:var(--text-sub); font-size:1rem; font-weight:800; }

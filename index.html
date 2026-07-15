@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260715-4">
+    <link rel="stylesheet" href="style.css?v=20260715-5">
 </head>
 <body>
 <div class="container">
@@ -26,6 +26,8 @@
         <button id="backBtn" class="nav-btn" type="button" onclick="goBack()">⬅️ 뒤로가기</button>
         <button id="homeBtn" class="nav-btn" type="button" onclick="resetSteps()">🏠 홈으로</button>
     </nav>
+
+    <div id="viewContextBar" class="view-context-bar" hidden></div>
 
     <section id="gpsSection" class="gps-section">
         <div class="gps-header-row">
@@ -203,6 +205,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260715-4"></script>
+<script src="script.js?v=20260715-5"></script>
 </body>
 </html>

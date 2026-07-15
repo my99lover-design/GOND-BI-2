@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - GPS 복귀·탐색·렌더링·성능 알림 최적화 20260715-4 */
+/* 넘버원 김포B 공비 - 화면 복원·핵심 정보 고정·부분 동기화 최적화 20260715-5 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -9,7 +9,7 @@ const GATE_IMAGES = Object.freeze({
     "럭스B": { src: "./gate-images/럭스B.webp", label: "럭스B" },
     "루체뷰1": { src: "./gate-images/루체뷰1.webp", label: "루체뷰1" }
 });
-const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
+const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const PERFORMANCE_RULES = Object.freeze({
     cacheLoad: { label: "캐시 데이터 로딩", good: 120, warning: 350 },
     indexBuild: { label: "탐색 인덱스 생성", good: 80, warning: 220 },
@@ -21,13 +21,13 @@ const PERFORMANCE_RULES = Object.freeze({
     dataSync: { label: "전체 데이터 동기화", good: 2500, warning: 6000 }
 });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
     gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
-    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false
+    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
@@ -38,6 +38,8 @@ async function initializeApp() {
     initializeAdminButton();
     initializeModalEvents();
     initializePerformanceTracking();
+    initializeViewStatePersistence();
+    state.savedViewState = loadSavedViewState();
     renderLoading("데이터를 불러오는 중입니다...");
 
     const cacheStartedAt = performance.now();
@@ -46,7 +48,7 @@ async function initializeApp() {
     if (cachedRecords.length > 0) {
         setRecords(cachedRecords);
         state.loading = false;
-        resetSteps(false);
+        resolveInitialView();
         const cacheTime = Number(localStorage.getItem(APP_CONFIG.CACHE_TIME_KEY)) || 0;
         state.lastSuccessfulSyncAt = cacheTime;
         updateDataSyncStatus(navigator.onLine === false ? "offline" : "cached", cacheTime);
@@ -245,14 +247,20 @@ async function refreshRecordsFromServer(force = false) {
         if (normalizedRecords.length === 0) throw new Error("사용 가능한 지역·아파트 데이터가 없습니다.");
         normalizedRecords = applyPendingOperationsToRecords(normalizedRecords);
         const serverVersion = extractDataVersion(response);
+        const preservedScrollY = window.scrollY || 0;
         setRecords(normalizedRecords);
         state.dataVersion = serverVersion || state.dataVersion;
         state.lastDataCheckAt = Date.now();
         state.lastSuccessfulSyncAt = state.lastDataCheckAt;
         state.loading = false;
         saveRecordsToCache(state.records);
-        validateCurrentSelection();
-        renderCurrentView();
+        if (!state.initialViewResolved) {
+            resolveInitialView();
+        } else {
+            validateCurrentSelection();
+            state.pendingScrollRestore = preservedScrollY;
+            renderCurrentView();
+        }
         renderGpsButtons();
         recordPerformanceMetric("dataSync", performance.now() - syncStartedAt);
         updateDataSyncStatus("current", state.lastSuccessfulSyncAt);
@@ -530,6 +538,10 @@ async function processPendingQueue() {
     try {
         const response = await requestApi(operation.action, { ...operation.payload, operationId: operation.id });
         updateLocalDataVersion(response);
+        applyServerOperationResponse(operation, response);
+        state.lastDataCheckAt = Date.now();
+        state.lastSuccessfulSyncAt = state.lastDataCheckAt;
+        updateDataSyncStatus("current", state.lastSuccessfulSyncAt);
         state.pendingOperations.shift();
         savePendingOperations();
         clearChangeHistoryCache();
@@ -594,9 +606,110 @@ function applyOperationToRecords(records, operation) {
             .join(" / ");
     }
 }
+function applyServerOperationResponse(operation, response) {
+    if (!operation || !response || typeof response !== "object") return;
+    const payload = operation.payload || {};
+    if (operation.action === "updateCommonPassword") {
+        const region = cleanText(payload.region);
+        const apartment = cleanText(payload.apartment);
+        const commonPassword = Object.prototype.hasOwnProperty.call(response, "commonPassword") ? cleanText(response.commonPassword) : cleanText(payload.commonPassword);
+        for (const record of state.indexes.recordsByApartment.get(makeKey(region, apartment)) || []) record.commonPassword = commonPassword;
+        saveRecordsToCache(state.records);
+        if (state.view === "dongs" && state.selectedRegion === region && state.selectedApartment === apartment) renderCommonPassword();
+        return;
+    }
+    const rowId = cleanText(response.rowId || payload.rowId);
+    const record = findRecordByRowId(rowId);
+    if (!record) return;
+    if (Object.prototype.hasOwnProperty.call(response, "password")) record.password = cleanText(response.password);
+    saveRecordsToCache(state.records);
+    refreshPasswordCard(rowId);
+}
 function findRecordByRowIdFromList(records, rowId) { const targetId = cleanText(rowId); return records.find(record => cleanText(record.rowId) === targetId) || null; }
-/* ========================= 화면 이동 ========================= */
-function resetSteps(clearHistory = true) { if (clearHistory) state.history = []; state.selectedRegion = ""; state.selectedApartment = ""; state.selectedDong = ""; state.view = "regions"; renderCurrentView(); }
+/* ========================= 화면 이동·마지막 화면 복원 ========================= */
+function initializeViewStatePersistence() {
+    window.addEventListener("scroll", scheduleViewStateSave, { passive: true });
+    window.addEventListener("pagehide", flushViewState);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) flushViewState(); });
+}
+function loadSavedViewState() {
+    try {
+        const raw = localStorage.getItem(APP_CONFIG.VIEW_STATE_KEY);
+        if (!raw) return null;
+        const saved = JSON.parse(raw);
+        const savedAt = Number(saved?.savedAt) || 0;
+        if (!savedAt || Date.now() - savedAt > APP_CONFIG.VIEW_STATE_MAX_AGE) {
+            localStorage.removeItem(APP_CONFIG.VIEW_STATE_KEY);
+            return null;
+        }
+        return saved;
+    } catch (error) {
+        console.warn("마지막 화면 읽기 실패:", error);
+        localStorage.removeItem(APP_CONFIG.VIEW_STATE_KEY);
+        return null;
+    }
+}
+function resolveInitialView() {
+    if (state.initialViewResolved) return;
+    state.initialViewResolved = true;
+    const saved = state.savedViewState;
+    if (saved && typeof saved === "object") {
+        state.restoringSavedView = true;
+        state.selectedRegion = cleanText(saved.selectedRegion);
+        state.selectedApartment = cleanText(saved.selectedApartment);
+        state.selectedDong = cleanText(saved.selectedDong);
+        state.view = ["regions", "apartments", "dongs", "cards"].includes(saved.view) ? saved.view : "regions";
+        state.history = normalizeSavedViewHistory(saved.history);
+        validateCurrentSelection();
+        state.pendingScrollRestore = Math.max(0, Number(saved.scrollY) || 0);
+        renderCurrentView();
+        state.restoringSavedView = false;
+        return;
+    }
+    resetSteps(false);
+}
+function normalizeSavedViewHistory(history) {
+    if (!Array.isArray(history)) return [];
+    return history.slice(-20).map(item => ({
+        selectedRegion: cleanText(item?.selectedRegion),
+        selectedApartment: cleanText(item?.selectedApartment),
+        selectedDong: cleanText(item?.selectedDong),
+        view: ["regions", "apartments", "dongs", "cards"].includes(item?.view) ? item.view : "regions",
+        scrollY: Math.max(0, Number(item?.scrollY) || 0)
+    }));
+}
+function scheduleViewStateSave() {
+    if (!state.initialViewResolved || state.restoringSavedView) return;
+    clearTimeout(state.viewStateSaveTimer);
+    state.viewStateSaveTimer = window.setTimeout(flushViewState, APP_CONFIG.VIEW_STATE_SAVE_DELAY);
+}
+function flushViewState() {
+    clearTimeout(state.viewStateSaveTimer);
+    state.viewStateSaveTimer = null;
+    if (!state.initialViewResolved) return;
+    try {
+        localStorage.setItem(APP_CONFIG.VIEW_STATE_KEY, JSON.stringify({
+            savedAt: Date.now(),
+            selectedRegion: state.selectedRegion,
+            selectedApartment: state.selectedApartment,
+            selectedDong: state.selectedDong,
+            view: state.view,
+            scrollY: Math.max(0, Math.round(window.scrollY || 0)),
+            history: state.history.slice(-20)
+        }));
+    } catch (error) {
+        console.warn("마지막 화면 저장 실패:", error);
+    }
+}
+function resetSteps(clearHistory = true) {
+    if (clearHistory) state.history = [];
+    state.selectedRegion = "";
+    state.selectedApartment = "";
+    state.selectedDong = "";
+    state.view = "regions";
+    state.pendingScrollRestore = 0;
+    renderCurrentView();
+}
 function goBack() {
     const previousState = state.history.pop();
     if (!previousState) {
@@ -607,16 +720,27 @@ function goBack() {
     state.selectedApartment = previousState.selectedApartment || "";
     state.selectedDong = previousState.selectedDong || "";
     state.view = previousState.view || "regions";
+    state.pendingScrollRestore = Math.max(0, Number(previousState.scrollY) || 0);
     renderCurrentView();
 }
-function pushHistory() { state.history.push({ selectedRegion: state.selectedRegion, selectedApartment: state.selectedApartment, selectedDong: state.selectedDong, view: state.view }); if (state.history.length > 20) state.history.shift(); }
+function pushHistory() {
+    state.history.push({ selectedRegion: state.selectedRegion, selectedApartment: state.selectedApartment, selectedDong: state.selectedDong, view: state.view, scrollY: Math.max(0, Math.round(window.scrollY || 0)) });
+    if (state.history.length > 20) state.history.shift();
+}
 function validateCurrentSelection() {
-    if (!state.selectedRegion) return;
-    if (!state.indexes.apartmentsByRegion.has(state.selectedRegion)) {
-        resetSteps();
+    if (!state.selectedRegion || !state.indexes.apartmentsByRegion.has(state.selectedRegion)) {
+        state.selectedRegion = "";
+        state.selectedApartment = "";
+        state.selectedDong = "";
+        state.view = "regions";
+        state.history = [];
         return;
     }
-    if (!state.selectedApartment) return;
+    if (!state.selectedApartment) {
+        if (state.view !== "apartments") state.view = "apartments";
+        state.selectedDong = "";
+        return;
+    }
     const apartmentKey = makeKey(state.selectedRegion, state.selectedApartment);
     if (!state.indexes.recordsByApartment.has(apartmentKey)) {
         state.selectedApartment = "";
@@ -625,7 +749,11 @@ function validateCurrentSelection() {
         state.history = [];
         return;
     }
-    if (!state.selectedDong) return;
+    if (state.view === "dongs") return;
+    if (!state.selectedDong) {
+        state.view = "dongs";
+        return;
+    }
     const dongKey = makeKey(state.selectedRegion, state.selectedApartment, normalizeDongValue(state.selectedDong));
     if (!state.indexes.recordsByApartmentDong.has(dongKey)) {
         state.selectedDong = "";
@@ -662,6 +790,37 @@ function renderCurrentView() {
             renderRegionButtons();
             break;
     }
+    finalizeViewRender();
+}
+function finalizeViewRender() {
+    updateViewContextBar();
+    const requestedScroll = state.pendingScrollRestore;
+    state.pendingScrollRestore = null;
+    window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+            if (requestedScroll !== null && requestedScroll !== undefined) window.scrollTo(0, Math.max(0, Number(requestedScroll) || 0));
+            scheduleViewStateSave();
+        });
+    });
+}
+function updateViewContextBar() {
+    const target = elements.viewContextBar;
+    if (!target) return;
+    if (state.view === "regions") {
+        target.hidden = true;
+        target.textContent = "";
+        return;
+    }
+    let label = "";
+    if (state.view === "apartments") label = `지역 · ${state.selectedRegion}`;
+    else if (state.view === "dongs") label = `${state.selectedRegion} · ${state.selectedApartment}`;
+    else if (state.view === "cards") {
+        if (isOfficeApartmentCategory(state.selectedApartment)) label = [state.selectedRegion, state.selectedDong && state.selectedDong !== "전체" ? state.selectedDong : state.selectedApartment].filter(Boolean).join(" · ");
+        else label = [state.selectedApartment, state.selectedDong && state.selectedDong !== "전체" ? formatDongLabel(state.selectedDong) : "전체"].filter(Boolean).join(" · ");
+    }
+    target.textContent = label;
+    target.title = label;
+    target.hidden = !label;
 }
 function updateHeaderAndNavigation() {
     const isHome = state.view === "regions";
@@ -697,7 +856,7 @@ function renderRegionButtons() {
     }
     renderGpsButtons();
 }
-function selectRegion(region) { pushHistory(); state.selectedRegion = region; state.selectedApartment = ""; state.selectedDong = ""; state.view = "apartments"; renderCurrentView(); }
+function selectRegion(region) { pushHistory(); state.selectedRegion = region; state.selectedApartment = ""; state.selectedDong = ""; state.view = "apartments"; state.pendingScrollRestore = 0; renderCurrentView(); }
 function renderApartmentButtons() {
     const apartments = sortApartmentsWithOfficeLast( state.indexes.apartmentsByRegion.get(state.selectedRegion) || [] );
     if (apartments.length === 0) {
@@ -722,13 +881,14 @@ function sortApartmentsWithOfficeLast(values) {
     return [...normalApartments, ...officeApartments];
 }
 function compareApartments(a, b) { const isOfficeA = isOfficeApartmentCategory(a); const isOfficeB = isOfficeApartmentCategory(b); if (isOfficeA !== isOfficeB) return isOfficeA ? 1 : -1; return naturalCompare(normalizeApartmentValue(a), normalizeApartmentValue(b)); }
-function selectApartment(apartment) { pushHistory(); state.selectedApartment = apartment; state.selectedDong = ""; state.view = "dongs"; renderCurrentView(); }
+function selectApartment(apartment) { pushHistory(); state.selectedApartment = apartment; state.selectedDong = ""; state.view = "dongs"; state.pendingScrollRestore = 0; renderCurrentView(); }
 function renderDongButtons() {
     const apartmentKey = makeKey(state.selectedRegion, state.selectedApartment);
     const dongs = state.indexes.dongsByApartment.get(apartmentKey) || [];
     if (dongs.length === 0 || (dongs.length === 1 && dongs[0] === "전체")) {
         state.selectedDong = "전체";
         state.view = "cards";
+        if (state.pendingScrollRestore === null) state.pendingScrollRestore = 0;
         renderCurrentView();
         return;
     }
@@ -738,7 +898,7 @@ function renderDongButtons() {
         elements.buttonGrid.appendChild(button);
     }
 }
-function selectDong(dong) { pushHistory(); state.selectedDong = dong; state.view = "cards"; renderCurrentView(); }
+function selectDong(dong) { pushHistory(); state.selectedDong = dong; state.view = "cards"; state.pendingScrollRestore = 0; renderCurrentView(); }
 function normalizeDongValue(value) { return cleanText(value) || "전체"; }
 function formatDongLabel(dong) { const value = cleanText(dong); if (!value || value === "전체") return "전체"; if (/동$/u.test(value)) return value; if (/^\d+$/u.test(value)) return `${value}동`; return value; }
 function hideCommonPassword() { elements.commonPwdStandalone.replaceChildren(); elements.commonPwdStandalone.style.display = "none"; elements.commonPwdStandalone.hidden = true; }
@@ -830,15 +990,9 @@ function createPasswordCard(record) {
     return card;
 }
 function refreshPasswordCard(rowId) {
-    if (state.view !== "cards") {
-        renderCurrentView();
-        return;
-    }
+    if (state.view !== "cards") return;
     const record = findRecordByRowId(rowId);
-    if (!record) {
-        renderCurrentView();
-        return;
-    }
+    if (!record) return;
     const visibleApartment = record.region === state.selectedRegion && record.apartment === state.selectedApartment;
     const visibleDong = !state.selectedDong || state.selectedDong === "전체" || normalizeDongValue(record.dong) === normalizeDongValue(state.selectedDong);
     if (!visibleApartment || !visibleDong) return;
@@ -1776,7 +1930,7 @@ function submitCommonPwdForm() {
     }
     saveRecordsToCache(state.records);
     closeCommonModal();
-    renderCurrentView();
+    if (state.view === "dongs" && state.selectedRegion === region && state.selectedApartment === apartment) renderCommonPassword();
 }
 /* ========================= 비밀번호 추가·수정·삭제 ========================= */
 function openAddPwdModal(rowId) {
