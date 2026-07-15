@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 관리자 통계 + 최종 4대 최적화 통합판 20260715-8 */
+/* 넘버원 김포B 공비 - 최종 진단 상태 표시 보정판 20260715-9 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -1628,7 +1628,7 @@ function normalizeBackupInfo(item) { return { name: cleanText(item?.name), creat
     renderDataQualityReport(dashboard.dataQuality, gpsMissingItems);
     renderPasswordCleanupActions(dashboard.dataQuality.cleanup, pendingCount);
     elements.createBackupBtn.disabled = state.backupCreating || Boolean(state.restoringBackupName) || Boolean(state.passwordCleanupMode);
-    elements.createBackupBtn.textContent = state.backupCreating ? "백업 중..." : "지금 백업";
+    elements.createBackupBtn.textContent = state.backupCreating ? "백업중…" : "지금 백업";
     renderAutoBackupHealth(dashboard.autoBackup);
     if (elements.setupAutoBackupBtn) {
         elements.setupAutoBackupBtn.disabled = state.autoBackupUpdating;
@@ -1780,7 +1780,7 @@ function renderPasswordCleanupActions(cleanup, pendingCount) {
     if (elements.sortPasswordsBtn) {
         elements.sortPasswordsBtn.disabled = busy;
         elements.sortPasswordsBtn.textContent = state.passwordCleanupMode === "sort"
-            ? "정렬 중..."
+            ? "정렬중…"
             : sortableCount > 0
                 ? `쉬운 번호 우선 정렬 (${sortableCount.toLocaleString()})`
                 : "쉬운 번호 우선 정렬";
@@ -1791,7 +1791,7 @@ function renderPasswordCleanupActions(cleanup, pendingCount) {
     if (elements.deduplicatePasswordsBtn) {
         elements.deduplicatePasswordsBtn.disabled = busy;
         elements.deduplicatePasswordsBtn.textContent = state.passwordCleanupMode === "deduplicate"
-            ? "제거 중..."
+            ? "제거중…"
             : duplicateCount > 0
                 ? `중복 제거 (${duplicateCount.toLocaleString()})`
                 : "중복 제거";
@@ -2757,7 +2757,7 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-/* ========================= 최종 장기운영 + 관리자 통계 + 4대 최적화 20260715-8 ========================= */
+/* ========================= 최종 장기운영 + 관리자 통계 + 진단 보정 20260715-9 ========================= */
 const LONGTERM_CONFIG = Object.freeze({
     CACHE_ENVELOPE_KEY: "gimpoB_records_envelope_v1",
     CACHE_BACKUP_KEY: "gimpoB_records_envelope_backup_v1",
@@ -2765,6 +2765,7 @@ const LONGTERM_CONFIG = Object.freeze({
     CACHE_SCHEMA_VERSION: 1,
     ERROR_LOG_KEY: "gimpoB_error_log_v1",
     ERROR_LOG_LIMIT: 20,
+    ERROR_DEDUPE_MS: 5 * 60 * 1000,
     SAFE_MODE_KEY: "gimpoB_safe_mode_v1",
     BOOT_FAILURE_KEY: "gimpoB_boot_failure_v1",
     REQUEST_TIMEOUT: 20000,
@@ -2789,8 +2790,10 @@ const longtermState = {
     lastIntegrityAt: 0,
     dataIntegrityTimer: null,
     dataIntegrityRunning: false,
+    dataIntegrityPromise: null,
     safeMode: false,
-    diagnosticsLastAt: 0
+    diagnosticsLastAt: 0,
+    diagnosticsRefreshing: false
 };
 
 function fnv1aHash(text) {
@@ -2912,19 +2915,51 @@ flushRecordsCache = function flushRecordsCacheLongterm() {
 
 function logLocalError(type, error, context = {}) {
     try {
+        const now = Date.now();
+        const normalizedType = cleanText(type) || "unknown";
+        const message = cleanText(error?.message || error) || "알 수 없는 오류";
+        const action = cleanText(context?.action);
+        const logs = loadLocalErrorLogs();
+        const duplicate = logs.some(item =>
+            now - Number(item?.at) < LONGTERM_CONFIG.ERROR_DEDUPE_MS &&
+            cleanText(item?.type) === normalizedType &&
+            cleanText(item?.message) === message &&
+            cleanText(item?.context?.action) === action
+        );
+        if (duplicate) return;
         const item = {
-            at: Date.now(),
-            type: cleanText(type) || "unknown",
-            message: cleanText(error?.message || error) || "알 수 없는 오류",
+            at: now,
+            type: normalizedType,
+            message,
             view: cleanText(state?.view),
             online: navigator.onLine !== false,
             dataVersion: cleanText(state?.dataVersion),
             context
         };
-        const logs = loadLocalErrorLogs();
         logs.unshift(item);
         localStorage.setItem(LONGTERM_CONFIG.ERROR_LOG_KEY, JSON.stringify(logs.slice(0, LONGTERM_CONFIG.ERROR_LOG_LIMIT)));
     } catch (storageError) {}
+}
+
+function isTransientNetworkErrorMessage(value) {
+    const message = cleanText(value).toLowerCase();
+    return message.includes("failed to fetch") ||
+        message.includes("networkerror") ||
+        message.includes("load failed") ||
+        message.includes("서버 응답 시간이 초과") ||
+        message.includes("the internet connection appears to be offline");
+}
+
+function clearResolvedTransientNetworkErrors() {
+    try {
+        const logs = loadLocalErrorLogs();
+        const remaining = logs.filter(item => {
+            const type = cleanText(item?.type);
+            return !(type === "network" || type === "data-integrity-check") || !isTransientNetworkErrorMessage(item?.message);
+        });
+        if (remaining.length === logs.length) return;
+        localStorage.setItem(LONGTERM_CONFIG.ERROR_LOG_KEY, JSON.stringify(remaining.slice(0, LONGTERM_CONFIG.ERROR_LOG_LIMIT)));
+    } catch (error) {}
 }
 
 function loadLocalErrorLogs() {
@@ -3070,47 +3105,61 @@ function scheduleDailyDataIntegrityValidation(delay = 0) {
     longtermState.dataIntegrityTimer = window.setTimeout(runDailyDataIntegrityValidation, Math.max(0, Number(delay) || 0));
 }
 
-async function runDailyDataIntegrityValidation() {
+async function runDailyDataIntegrityValidation(force = false) {
     longtermState.dataIntegrityTimer = null;
     const lastCheckedAt = Number(localStorage.getItem(LONGTERM_CONFIG.DATA_INTEGRITY_TIME_KEY)) || 0;
-    if (Date.now() - lastCheckedAt < LONGTERM_CONFIG.DATA_INTEGRITY_INTERVAL || longtermState.dataIntegrityRunning) return;
-    if (navigator.onLine === false || state.networkLoading || state.syncProcessing || state.pendingOperations.length > 0 || !state.records.length) {
-        scheduleDailyDataIntegrityValidation(LONGTERM_CONFIG.DATA_INTEGRITY_RETRY_DELAY);
-        return;
+    if (!force && Date.now() - lastCheckedAt < LONGTERM_CONFIG.DATA_INTEGRITY_INTERVAL) {
+        return { success: true, skipped: true, reason: "recent" };
     }
+    if (longtermState.dataIntegrityRunning) {
+        return longtermState.dataIntegrityPromise || { success: false, skipped: true, reason: "running" };
+    }
+    if (navigator.onLine === false || state.networkLoading || state.syncProcessing || state.pendingOperations.length > 0 || !state.records.length) {
+        if (!force) scheduleDailyDataIntegrityValidation(LONGTERM_CONFIG.DATA_INTEGRITY_RETRY_DELAY);
+        return { success: false, skipped: true, reason: navigator.onLine === false ? "offline" : "busy" };
+    }
+
     longtermState.dataIntegrityRunning = true;
-    try {
-        flushRecordsCache();
-        const response = await requestApi("getDataIntegrity");
-        const serverInfo = response?.data && typeof response.data === "object" ? response.data : response;
-        if (serverInfo?.stable === false) throw new Error("서버 데이터가 변경 중이어서 무결성 검사를 잠시 연기합니다.");
-        const localInfo = calculateLocalDataIntegrity(state.records);
-        const matches = Number(serverInfo?.rowCount) === localInfo.rowCount && cleanText(serverInfo?.checksum) === localInfo.checksum;
-        if (matches) {
-            const previousVersion = state.dataVersion;
-            updateLocalDataVersion(serverInfo);
-            if (state.dataVersion && state.dataVersion !== previousVersion) saveRecordsToCache(state.records);
-            saveDataIntegrityResult("ok", serverInfo, localInfo, "서버 원본과 로컬 데이터가 일치합니다.");
-            return;
-        }
-        logLocalError("data-integrity", new Error("서버와 로컬 데이터 불일치 감지"), { server: serverInfo, local: localInfo });
-        await refreshRecordsFromServer(true);
-        const recoveredInfo = calculateLocalDataIntegrity(state.records);
-        const recovered = Number(serverInfo?.rowCount) === recoveredInfo.rowCount && cleanText(serverInfo?.checksum) === recoveredInfo.checksum;
-        if (recovered) {
-            saveDataIntegrityResult("recovered", serverInfo, recoveredInfo, "데이터 불일치를 감지해 전체 데이터를 자동 복구했습니다.");
-            showToast("✅ 데이터 불일치를 자동 복구했습니다.");
-        } else {
+    const task = (async () => {
+        try {
+            flushRecordsCache();
+            const response = await requestApi("getDataIntegrity");
+            const serverInfo = response?.data && typeof response.data === "object" ? response.data : response;
+            if (serverInfo?.stable === false) throw new Error("서버 데이터가 변경 중이어서 무결성 검사를 잠시 연기합니다.");
+            const localInfo = calculateLocalDataIntegrity(state.records);
+            const matches = Number(serverInfo?.rowCount) === localInfo.rowCount && cleanText(serverInfo?.checksum) === localInfo.checksum;
+            if (matches) {
+                const previousVersion = state.dataVersion;
+                updateLocalDataVersion(serverInfo);
+                if (state.dataVersion && state.dataVersion !== previousVersion) saveRecordsToCache(state.records);
+                saveDataIntegrityResult("ok", serverInfo, localInfo, "서버 원본과 로컬 데이터가 일치합니다.");
+                return { success: true, status: "ok" };
+            }
+            logLocalError("data-integrity", new Error("서버와 로컬 데이터 불일치 감지"), { server: serverInfo, local: localInfo });
+            await refreshRecordsFromServer(true);
+            const recoveredInfo = calculateLocalDataIntegrity(state.records);
+            const recovered = Number(serverInfo?.rowCount) === recoveredInfo.rowCount && cleanText(serverInfo?.checksum) === recoveredInfo.checksum;
+            if (recovered) {
+                saveDataIntegrityResult("recovered", serverInfo, recoveredInfo, "데이터 불일치를 감지해 전체 데이터를 자동 복구했습니다.");
+                showToast("✅ 데이터 불일치를 자동 복구했습니다.");
+                return { success: true, status: "recovered" };
+            }
             saveDataIntegrityResult("failed", serverInfo, recoveredInfo, "전체 재동기화 후에도 무결성 확인이 필요합니다.", false);
             logLocalError("data-integrity-recovery", new Error("자동 복구 후 무결성 불일치"), { server: serverInfo, local: recoveredInfo });
-            scheduleDailyDataIntegrityValidation(LONGTERM_CONFIG.DATA_INTEGRITY_RETRY_DELAY);
+            if (!force) scheduleDailyDataIntegrityValidation(LONGTERM_CONFIG.DATA_INTEGRITY_RETRY_DELAY);
+            return { success: false, status: "failed" };
+        } catch (error) {
+            /* 네트워크 계층에서 이미 기록한 일시적 통신 오류는 여기서 중복 기록하지 않습니다. */
+            if (!isTransientNetworkErrorMessage(error?.message || error)) logLocalError("data-integrity-check", error);
+            if (!force) scheduleDailyDataIntegrityValidation(LONGTERM_CONFIG.DATA_INTEGRITY_RETRY_DELAY);
+            return { success: false, status: "error", error };
+        } finally {
+            longtermState.dataIntegrityRunning = false;
+            longtermState.dataIntegrityPromise = null;
         }
-    } catch (error) {
-        logLocalError("data-integrity-check", error);
-        scheduleDailyDataIntegrityValidation(LONGTERM_CONFIG.DATA_INTEGRITY_RETRY_DELAY);
-    } finally {
-        longtermState.dataIntegrityRunning = false;
-    }
+    })();
+    longtermState.dataIntegrityPromise = task;
+    return task;
 }
 
 function calculateLocalDataIntegrity(records) {
@@ -3352,7 +3401,30 @@ async function confirmComparedBackupRestore() {
 }
 
 function initializeDiagnosticsUi() {
-    document.getElementById("adminDiagnosticsRefreshBtn")?.addEventListener("click", () => renderAdminDiagnostics(true));
+    document.getElementById("adminDiagnosticsRefreshBtn")?.addEventListener("click", refreshAdminDiagnostics);
+}
+
+async function refreshAdminDiagnostics() {
+    if (longtermState.diagnosticsRefreshing) return;
+    const button = document.getElementById("adminDiagnosticsRefreshBtn");
+    longtermState.diagnosticsRefreshing = true;
+    if (button) {
+        button.disabled = true;
+        button.textContent = "점검중…";
+    }
+    try {
+        const integrity = await runDailyDataIntegrityValidation(true);
+        if (integrity?.success) clearResolvedTransientNetworkErrors();
+        await renderAdminDiagnostics(true);
+        if (!integrity?.success && integrity?.reason === "offline") showToast("인터넷 연결 후 다시 점검해주세요.");
+        else if (!integrity?.success && integrity?.reason === "busy") showToast("저장 작업이 끝난 뒤 다시 점검해주세요.");
+    } finally {
+        longtermState.diagnosticsRefreshing = false;
+        if (button) {
+            button.disabled = false;
+            button.textContent = "다시 점검";
+        }
+    }
 }
 
 const originalRenderAdminDashboardLongterm = renderAdminDashboard;
@@ -3367,33 +3439,39 @@ async function renderAdminDiagnostics(force = false) {
     if (!status || !list) return;
     if (!force && Date.now() - longtermState.diagnosticsLastAt < 3000 && list.childElementCount) return;
     longtermState.diagnosticsLastAt = Date.now();
-    status.textContent = "점검 중";
-    const diagnostics = await collectDiagnostics();
-    list.replaceChildren();
-    let warningCount = 0;
-    let errorCount = 0;
-    for (const item of diagnostics) {
-        if (item.level === "warning") warningCount += 1;
-        if (item.level === "error") errorCount += 1;
-        const row = document.createElement("div");
-        row.className = "admin-diagnostic-row";
-        row.dataset.level = item.level;
-        const left = document.createElement("div");
-        const label = document.createElement("div");
-        label.className = "label";
-        label.textContent = item.label;
-        const detail = document.createElement("div");
-        detail.className = "detail";
-        detail.textContent = item.detail;
-        left.append(label, detail);
-        const right = document.createElement("div");
-        right.className = "status";
-        right.textContent = item.status;
-        row.append(left, right);
-        list.appendChild(row);
+    status.textContent = "점검중…";
+    try {
+        const diagnostics = await collectDiagnostics();
+        list.replaceChildren();
+        let warningCount = 0;
+        let errorCount = 0;
+        for (const item of diagnostics) {
+            if (item.level === "warning") warningCount += 1;
+            if (item.level === "error") errorCount += 1;
+            const row = document.createElement("div");
+            row.className = "admin-diagnostic-row";
+            row.dataset.level = item.level;
+            const left = document.createElement("div");
+            const label = document.createElement("div");
+            label.className = "label";
+            label.textContent = item.label;
+            const detail = document.createElement("div");
+            detail.className = "detail";
+            detail.textContent = item.detail;
+            left.append(label, detail);
+            const right = document.createElement("div");
+            right.className = "status";
+            right.textContent = item.status;
+            row.append(left, right);
+            list.appendChild(row);
+        }
+        status.textContent = errorCount ? `오류 ${errorCount} · 주의 ${warningCount}` : warningCount ? `주의 ${warningCount}` : "전체 정상";
+        status.dataset.status = errorCount ? "danger" : warningCount ? "warning" : "good";
+    } catch (error) {
+        status.textContent = "점검 실패";
+        status.dataset.status = "danger";
+        logLocalError("diagnostics", error);
     }
-    status.textContent = errorCount ? `오류 ${errorCount} · 주의 ${warningCount}` : warningCount ? `주의 ${warningCount}` : "전체 정상";
-    status.dataset.status = errorCount ? "danger" : warningCount ? "warning" : "good";
 }
 
 async function collectDiagnostics() {
@@ -3405,6 +3483,10 @@ async function collectDiagnostics() {
     const integrityResult = loadDataIntegrityResult();
     const integrityStatus = integrityResult?.status === "recovered" ? "자동 복구" : integrityResult?.status === "ok" ? "정상" : integrityResult?.status === "failed" ? "확인 필요" : "검사 전";
     const integrityLevel = integrityResult?.status === "failed" ? "warning" : "good";
+    const activeErrorLogs = errorLogs.filter(item =>
+        Date.now() - Number(item?.at) < 60 * 60 * 1000 &&
+        !isTransientNetworkErrorMessage(item?.message)
+    );
     const diagnostics = [
         { label: "데이터 캐시", status: envelope ? "정상" : "복구 필요", level: envelope ? "good" : "warning", detail: envelope ? `${envelope.rowCount.toLocaleString()}행 · 체크섬 정상` : "다음 온라인 동기화에서 자동 복구됩니다." },
         { label: "탐색 인덱스", status: indexValid ? "정상" : "재생성 필요", level: indexValid ? "good" : "error", detail: `${state.indexes.rowById.size.toLocaleString()}행 연결` },
@@ -3412,7 +3494,7 @@ async function collectDiagnostics() {
         { label: "GPS 감시", status: gpsWatchCount === 1 ? "정상" : "확인", level: gpsWatchCount === 1 ? "good" : "warning", detail: `${gpsWatchCount}개 등록 · 중복 감시 없음` },
         { label: "저장 대기열", status: pendingCount ? `${pendingCount}건` : "정상", level: pendingCount ? "warning" : "good", detail: pendingCount ? "온라인 복귀 시 순서대로 자동 전송됩니다." : "전송 대기 작업이 없습니다." },
         { label: "최근 동기화", status: state.lastSuccessfulSyncAt ? "정상" : "확인 전", level: state.lastSuccessfulSyncAt ? "good" : "warning", detail: state.lastSuccessfulSyncAt ? formatLocalDateTime(state.lastSuccessfulSyncAt) : "서버 동기화 기록이 없습니다." },
-        { label: "로컬 오류 기록", status: errorLogs.length ? `${errorLogs.length}건` : "정상", level: errorLogs.some(item => Date.now() - Number(item.at) < 60 * 60 * 1000) ? "warning" : "good", detail: errorLogs[0] ? `${formatLocalDateTime(errorLogs[0].at)} · ${errorLogs[0].type} · ${errorLogs[0].message}` : "최근 오류가 없습니다." },
+        { label: "로컬 오류 기록", status: activeErrorLogs.length ? `주의 ${activeErrorLogs.length}건` : errorLogs.length ? `기록 ${errorLogs.length}건` : "정상", level: activeErrorLogs.length ? "warning" : "good", detail: errorLogs[0] ? `${activeErrorLogs.length ? "확인 필요" : "과거 진단 기록"} · ${formatLocalDateTime(errorLogs[0].at)} · ${errorLogs[0].type} · ${errorLogs[0].message}` : "최근 오류가 없습니다." },
         { label: "안전모드", status: longtermState.safeMode ? "사용 중" : "정상", level: longtermState.safeMode ? "warning" : "good", detail: longtermState.safeMode ? "복원 기능을 줄여 최소 기능으로 실행 중입니다." : "일반 모드로 실행 중입니다." }
     ];
     if ("serviceWorker" in navigator) {
