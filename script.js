@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 최종 정합성 보정판 20260715-11 */
+/* 넘버원 김포B 공비 - 최종 정합성 보정판 20260715-12 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -11,14 +11,14 @@ const GATE_IMAGES = Object.freeze({
 });
 const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const PERFORMANCE_RULES = Object.freeze({
-    cacheLoad: { label: "캐시 데이터 로딩", good: 120, warning: 350 },
-    indexBuild: { label: "탐색 인덱스 생성", good: 80, warning: 220 },
-    firstScreen: { label: "첫 화면 표시", good: 500, warning: 1200 },
-    cachedGps: { label: "저장 GPS 표시", good: 80, warning: 250 },
-    firstGps: { label: "첫 기기 위치 수신", good: 2500, warning: 6000 },
-    highAccuracyGps: { label: "고정밀 위치 수신", good: 6000, warning: 12000 },
-    versionCheck: { label: "데이터 버전 확인", good: 1200, warning: 3000 },
-    dataSync: { label: "전체 데이터 동기화", good: 2500, warning: 6000 }
+    cacheLoad: { label: "캐시 데이터 로딩", category: "기기 처리", good: 250, warning: 600 },
+    indexBuild: { label: "탐색 인덱스 생성", category: "기기 처리", good: 200, warning: 500 },
+    firstScreen: { label: "첫 화면 표시", category: "기기 처리", good: 800, warning: 1800 },
+    cachedGps: { label: "저장 GPS 표시", category: "GPS", good: 200, warning: 500 },
+    firstGps: { label: "첫 기기 위치 수신", category: "GPS", good: 4000, warning: 8000 },
+    highAccuracyGps: { label: "고정밀 위치 수신", category: "GPS", good: 8000, warning: 15000 },
+    versionCheck: { label: "데이터 버전 확인", category: "서버 통신", good: 2500, warning: 5000 },
+    dataSync: { label: "전체 데이터 동기화", category: "서버 통신", good: 5000, warning: 10000 }
 });
 const elements = {
     headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
@@ -27,7 +27,7 @@ const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
     gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
-    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false
+    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
@@ -203,7 +203,10 @@ function rebuildDataIndexes() {
     state.indexes = indexes;
     state.dataGeneration += 1;
     rebuildGpsCandidateIndex();
-    recordPerformanceMetric("indexBuild", performance.now() - startedAt);
+    if (!state.initialIndexPerformanceRecorded) {
+        state.initialIndexPerformanceRecorded = true;
+        recordPerformanceMetric("indexBuild", performance.now() - startedAt);
+    }
 }
 function rebuildGpsCandidateIndex() {
     if (!state.indexes || !Array.isArray(state.indexes.gpsPlaces)) return;
@@ -1896,82 +1899,124 @@ function formatPerformanceDuration(value) {
 function formatPerformanceRange(rule) {
     return `정상 ≤ ${formatPerformanceDuration(rule.good)} · 주의 ≤ ${formatPerformanceDuration(rule.warning)} · 느림 > ${formatPerformanceDuration(rule.warning)}`;
 }
-function getPerformanceAverage(key) {
-    const values = state.performanceHistory.map(item => Number(item?.metrics?.[key])).filter(Number.isFinite);
-    if (!values.length) return { average: null, count: 0 };
-    return { average: values.reduce((sum, value) => sum + value, 0) / values.length, count: values.length };
+function getPerformanceValues(key) {
+    return (Array.isArray(state.performanceHistory) ? state.performanceHistory : [])
+        .map(item => Number(item?.metrics?.[key]))
+        .filter(Number.isFinite)
+        .slice(0, APP_CONFIG.PERFORMANCE_HISTORY_LIMIT);
 }
-function getLatestPerformanceMetricsForAlert() {
-    if (Object.keys(state.performanceMetrics).length > 0) return state.performanceMetrics;
-    const latestHistory = Array.isArray(state.performanceHistory) ? state.performanceHistory[0] : null;
-    return latestHistory && latestHistory.metrics && typeof latestHistory.metrics === "object" ? latestHistory.metrics : {};
+function getPerformanceStatistics(key, rule) {
+    const values = getPerformanceValues(key);
+    if (!values.length) {
+        return { values: [], latest: null, average: null, median: null, count: 0, latestTone: "pending", medianTone: "pending", consecutiveWarnings: 0, hasDanger: false, homeTone: "good" };
+    }
+    const sorted = values.slice().sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const tones = values.map(value => getPerformanceTone(value, rule));
+    let consecutiveWarnings = 0;
+    for (const tone of tones) {
+        if (tone !== "warn") break;
+        consecutiveWarnings += 1;
+    }
+    const hasDanger = tones.includes("danger");
+    const homeTone = hasDanger ? "danger" : consecutiveWarnings >= 3 ? "warn" : "good";
+    return {
+        values,
+        latest: values[0],
+        average,
+        median,
+        count: values.length,
+        latestTone: tones[0],
+        medianTone: getPerformanceTone(median, rule),
+        consecutiveWarnings,
+        hasDanger,
+        homeTone
+    };
 }
 function updateAdminPerformanceAlertBadge() {
     const badge = elements.adminPerformanceAlertBadge;
     if (!badge) return;
-    const metrics = getLatestPerformanceMetricsForAlert();
     let warningCount = 0;
     let dangerCount = 0;
+    let measuredCount = 0;
     const details = [];
     for (const [key, rule] of Object.entries(PERFORMANCE_RULES)) {
-        const value = Number(metrics[key]);
-        if (!Number.isFinite(value)) continue;
-        const tone = getPerformanceTone(value, rule);
-        if (tone === "warn") {
-            warningCount += 1;
-            details.push(`${rule.label}: 주의 ${formatPerformanceDuration(value)}`);
-        } else if (tone === "danger") {
+        const stats = getPerformanceStatistics(key, rule);
+        if (!stats.count) continue;
+        measuredCount += 1;
+        if (stats.homeTone === "danger") {
             dangerCount += 1;
-            details.push(`${rule.label}: 느림 ${formatPerformanceDuration(value)}`);
+            details.push(`${rule.label}: 느림 기록 ${stats.values.filter(value => getPerformanceTone(value, rule) === "danger").length}회 · 중앙값 ${formatPerformanceDuration(stats.median)}`);
+        } else if (stats.homeTone === "warn") {
+            warningCount += 1;
+            details.push(`${rule.label}: 연속 주의 ${stats.consecutiveWarnings}회 · 중앙값 ${formatPerformanceDuration(stats.median)}`);
         }
     }
-    const abnormalCount = warningCount + dangerCount;
-    if (!abnormalCount) {
-        badge.hidden = true;
-        badge.textContent = "";
-        badge.className = "admin-performance-alert-badge";
-        badge.removeAttribute("title");
-        return;
-    }
     badge.hidden = false;
-    badge.className = `admin-performance-alert-badge ${dangerCount ? "danger" : "warning"}`;
-    badge.textContent = dangerCount ? `느림 ${dangerCount}${warningCount ? ` · 주의 ${warningCount}` : ""}` : `주의 ${warningCount}`;
-    badge.title = details.join("\n");
+    if (dangerCount) {
+        badge.className = "admin-performance-alert-badge danger";
+        badge.textContent = `느림 ${dangerCount}${warningCount ? ` · 주의 ${warningCount}` : ""}`;
+    } else if (warningCount) {
+        badge.className = "admin-performance-alert-badge warning";
+        badge.textContent = `주의 ${warningCount}`;
+    } else {
+        badge.className = "admin-performance-alert-badge good";
+        badge.textContent = measuredCount ? "정상" : "측정중";
+    }
+    badge.title = details.length ? details.join("\n") : measuredCount ? "최근 성능 측정이 정상 범위입니다." : "성능 측정 중입니다.";
 }
 function renderAdminPerformanceReport() {
     if (!elements.adminPerformanceList || !elements.adminPerformanceStatus) return;
     elements.adminPerformanceList.replaceChildren();
     let measuredCount = 0;
-    let slowCount = 0;
+    let warningCount = 0;
+    let dangerCount = 0;
     for (const [key, rule] of Object.entries(PERFORMANCE_RULES)) {
-        const latest = Number(state.performanceMetrics[key]);
-        const latestValue = Number.isFinite(latest) ? latest : null;
-        const averageInfo = getPerformanceAverage(key);
-        const tone = getPerformanceTone(latestValue, rule);
-        if (latestValue !== null) measuredCount += 1;
-        if (tone === "danger") slowCount += 1;
+        const stats = getPerformanceStatistics(key, rule);
+        if (stats.count) measuredCount += 1;
+        if (stats.homeTone === "warn") warningCount += 1;
+        if (stats.homeTone === "danger") dangerCount += 1;
+        const displayTone = stats.latestTone === "danger" || stats.medianTone === "danger"
+            ? "danger"
+            : stats.latestTone === "warn" || stats.medianTone === "warn"
+                ? "warn"
+                : stats.count ? "good" : "pending";
         const row = document.createElement("div");
-        row.className = `admin-performance-item ${tone}`;
+        row.className = `admin-performance-item ${displayTone}`;
         const head = document.createElement("div");
         head.className = "admin-performance-head";
         const label = document.createElement("div");
         label.className = "admin-performance-label";
         label.textContent = rule.label;
         const badge = document.createElement("div");
-        badge.className = `admin-performance-badge ${tone}`;
-        badge.textContent = tone === "good" ? "정상" : tone === "warn" ? "주의" : tone === "danger" ? "느림" : "측정 전";
+        badge.className = `admin-performance-badge ${displayTone}`;
+        badge.textContent = displayTone === "good" ? "정상" : displayTone === "warn" ? "주의" : displayTone === "danger" ? "느림" : "측정 전";
         head.append(label, badge);
         const value = document.createElement("div");
         value.className = "admin-performance-value";
-        value.textContent = `최신 ${formatPerformanceDuration(latestValue)} · 최근 ${averageInfo.count || 0}회 평균 ${formatPerformanceDuration(averageInfo.average)}`;
+        value.textContent = `최신 ${formatPerformanceDuration(stats.latest)} · 평균 ${formatPerformanceDuration(stats.average)} · 중앙값 ${formatPerformanceDuration(stats.median)}`;
+        const trend = document.createElement("div");
+        trend.className = "admin-performance-trend";
+        const warningText = stats.consecutiveWarnings ? ` · 연속 주의 ${stats.consecutiveWarnings}회` : "";
+        const dangerText = stats.hasDanger ? ` · 최근 ${stats.count}회 중 느림 ${stats.values.filter(item => getPerformanceTone(item, rule) === "danger").length}회` : "";
+        trend.textContent = `${rule.category} · 최근 ${stats.count}회${warningText}${dangerText}`;
         const range = document.createElement("div");
         range.className = "admin-performance-range";
         range.textContent = formatPerformanceRange(rule);
-        row.append(head, value, range);
+        row.append(head, value, trend, range);
         elements.adminPerformanceList.appendChild(row);
     }
-    elements.adminPerformanceStatus.className = `admin-data-quality-status ${slowCount ? "danger" : measuredCount ? "good" : ""}`;
-    elements.adminPerformanceStatus.textContent = slowCount ? `느림 ${slowCount}개` : measuredCount ? `${measuredCount}/${Object.keys(PERFORMANCE_RULES).length} 측정` : "측정 중";
+    const overallTone = dangerCount ? "danger" : warningCount ? "warn" : measuredCount ? "good" : "";
+    elements.adminPerformanceStatus.className = `admin-data-quality-status ${overallTone}`;
+    elements.adminPerformanceStatus.textContent = dangerCount
+        ? `느림 ${dangerCount}개${warningCount ? ` · 주의 ${warningCount}개` : ""}`
+        : warningCount
+            ? `주의 ${warningCount}개`
+            : measuredCount
+                ? `전체 정상 · ${measuredCount}/${Object.keys(PERFORMANCE_RULES).length} 측정`
+                : "측정 중";
 }
 
 function createAdminMetric(label, value, tone = "") { const wrapper = document.createElement("div"); wrapper.className = "admin-metric"; const labelElement = document.createElement("div"); labelElement.className = "admin-metric-label"; labelElement.textContent = label; const valueElement = document.createElement("div"); valueElement.className = `admin-metric-value${tone ? ` ${tone}` : ""}`; valueElement.textContent = value; wrapper.append(labelElement, valueElement); return wrapper; } function renderBackupList(backups, pendingCount) { elements.backupList.replaceChildren(); if (!backups.length) { const empty = document.createElement("div"); empty.className = "backup-empty"; empty.textContent = "아직 생성된 백업이 없습니다."; elements.backupList.appendChild(empty); return; } for (const backup of backups) { const item = document.createElement("div"); item.className = "backup-item"; const info = document.createElement("div"); info.className = "backup-info"; const name = document.createElement("div"); name.className = "backup-name"; name.textContent = backup.kind; name.title = backup.name; const meta = document.createElement("div"); meta.className = "backup-meta"; meta.textContent = `${backup.createdAt || backup.name} · ${backup.rowCount.toLocaleString()}행`; info.append(name, meta); const restoreButton = document.createElement("button"); restoreButton.type = "button"; restoreButton.className = "restore-backup-btn"; restoreButton.textContent = state.restoringBackupName === backup.name ? "복구 중..." : "복구"; restoreButton.disabled = Boolean(state.restoringBackupName) || state.backupCreating || pendingCount > 0; restoreButton.title = pendingCount > 0 ? "저장 대기 작업이 끝난 뒤 복구할 수 있습니다." : ""; restoreButton.addEventListener("click", () => restoreDataBackup(backup)); item.append(info, restoreButton); elements.backupList.appendChild(item); } } async function setupAutomaticBackup() {
@@ -3666,14 +3711,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v23",
+    app: "gimpo-b-app-v24",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260715-11", "./script.js?v=20260715-11", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260715-12", "./script.js?v=20260715-12", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -3852,8 +3897,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-/* ========================= 최종 정합성 보정 v23 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260715-11", serviceWorkerVersion: "v23" });
+/* ========================= 성능 판정 현실화 v24 ========================= */
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260715-12", serviceWorkerVersion: "v24" });
 const FINAL_DIAGNOSTIC_CONFIG = Object.freeze({
     GPS_FRESH_MS: 3 * 60 * 1000,
     GPS_STALE_MS: 10 * 60 * 1000,
