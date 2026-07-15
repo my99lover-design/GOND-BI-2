@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260714-7">
+    <link rel="stylesheet" href="style.css?v=20260715-1">
 </head>
 <body>
 <div class="container">
@@ -138,12 +138,12 @@
                     <div>🔎 데이터 오류 점검</div>
                     <div id="adminDataQualityStatus" class="admin-data-quality-status">확인 중</div>
                 </div>
-                <div class="admin-help">동·라인 중복, 중복 비밀번호, 필수값 누락, 구분기호와 우선순위·호수 정렬 이상, GPS 좌표 미연결을 점검합니다.</div>
+                <div class="admin-help">동·라인 중복, 중복 비밀번호, 구분기호와 우선순위·호수 정렬 이상, GPS 좌표 미연결을 점검합니다.</div>
                 <div class="admin-cleanup-actions">
                     <button id="sortPasswordsBtn" class="admin-cleanup-btn" type="button">쉬운 번호 우선 정렬</button>
                     <button id="deduplicatePasswordsBtn" class="admin-cleanup-btn danger" type="button">중복 제거</button>
                 </div>
-                <div class="admin-cleanup-help">정상 구분기호로 저장된 비밀번호만 처리합니다. 구분기호·앞뒤 공백·동·라인 값은 변경하지 않으며 실행 전 자동 백업됩니다.</div>
+                <div class="admin-cleanup-help">정상 구분기호로 저장된 비밀번호만 처리합니다. 비밀번호 열 외의 데이터는 변경하지 않으며, 변경 대상이 있으면 실행 전 자동 백업됩니다.</div>
                 <div id="adminDataQualityList" class="admin-data-quality-list"></div>
             </section>
             <section class="admin-section">
@@ -182,6 +182,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260714-7"></script>
+<script src="script.js?v=20260715-1"></script>
 </body>
 </html>

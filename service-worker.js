@@ -1,11 +1,11 @@
-const CACHE_NAME = "gimpo-b-pwa-runtime-v12";
+const CACHE_NAME = "gimpo-b-pwa-runtime-v13";
 const NAVIGATION_TIMEOUT_MS = 2000;
 
 const APP_SHELL = [
     "./",
     "./index.html",
-    "./style.css?v=20260714-7",
-    "./script.js?v=20260714-7",
+    "./style.css?v=20260715-1",
+    "./script.js?v=20260715-1",
     "./manifest.json",
     "./locations.json",
     "./icons/icon-180.png",

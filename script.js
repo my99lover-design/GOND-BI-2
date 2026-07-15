@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 데이터점검·자동백업 감시·비밀번호 자동정리·형식자동입력 20260714-6 */
+/* 넘버원 김포B 공비 - 관리자 점검·자동정리 활성화 수정 20260715-1 */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
 const GATE_IMAGES = Object.freeze({
@@ -1431,16 +1431,26 @@ function renderPasswordCleanupActions(cleanup, pendingCount) {
     const duplicateCount = Number(cleanup?.duplicateCount) || 0;
     const busy = Boolean(state.passwordCleanupMode) || state.backupCreating || Boolean(state.restoringBackupName) || pendingCount > 0;
     if (elements.sortPasswordsBtn) {
-        elements.sortPasswordsBtn.disabled = busy || sortableCount === 0;
+        elements.sortPasswordsBtn.disabled = busy;
         elements.sortPasswordsBtn.textContent = state.passwordCleanupMode === "sort"
             ? "정렬 중..."
-            : `쉬운 번호 우선 정렬 (${sortableCount.toLocaleString()})`;
+            : sortableCount > 0
+                ? `쉬운 번호 우선 정렬 (${sortableCount.toLocaleString()})`
+                : "쉬운 번호 우선 정렬";
+        elements.sortPasswordsBtn.title = sortableCount > 0
+            ? `${sortableCount.toLocaleString()}개 행이 점검에서 확인되었습니다.`
+            : "누르면 서버에서 전체 비밀번호를 다시 확인합니다.";
     }
     if (elements.deduplicatePasswordsBtn) {
-        elements.deduplicatePasswordsBtn.disabled = busy || duplicateCount === 0;
+        elements.deduplicatePasswordsBtn.disabled = busy;
         elements.deduplicatePasswordsBtn.textContent = state.passwordCleanupMode === "deduplicate"
             ? "제거 중..."
-            : `중복 제거 (${duplicateCount.toLocaleString()})`;
+            : duplicateCount > 0
+                ? `중복 제거 (${duplicateCount.toLocaleString()})`
+                : "중복 제거";
+        elements.deduplicatePasswordsBtn.title = duplicateCount > 0
+            ? `${duplicateCount.toLocaleString()}개 행이 점검에서 확인되었습니다.`
+            : "누르면 서버에서 전체 비밀번호를 다시 확인합니다.";
     }
 }
 
@@ -1454,16 +1464,15 @@ async function runPasswordCleanup(mode) {
     const count = isSort
         ? Number(state.adminDashboard.dataQuality.cleanup?.sortableCount) || 0
         : Number(state.adminDashboard.dataQuality.cleanup?.duplicateCount) || 0;
-    if (count < 1) {
-        showToast(isSort ? "정렬할 비밀번호가 없습니다." : "제거할 중복 비밀번호가 없습니다.");
-        return;
-    }
     const title = isSort ? "쉬운 번호 우선·호수 정렬" : "중복 비밀번호 제거";
     const detail = isSort
         ? "쉬운 비밀번호를 앞에 모으고, 쉬운 그룹과 일반 그룹을 각각 호수순으로 정렬합니다. 중복 개수는 유지합니다."
         : "처음 저장된 값은 유지하고 같은 비밀번호만 제거합니다. 순서는 변경하지 않습니다.";
+    const targetText = count > 0
+        ? `점검에서 확인된 대상 ${count.toLocaleString()}개 행을 처리합니다.`
+        : "서버에서 전체 비밀번호 데이터를 다시 확인한 뒤 대상 행만 처리합니다.";
     const confirmation = window.confirm(
-        `${title} 대상 ${count.toLocaleString()}개 행을 처리합니다.\n\n${detail}\n구분기호·앞뒤 공백·동·라인 값은 변경하지 않습니다.\n실행 전 자동 백업됩니다.\n\n계속할까요?`
+        `${title}\n\n${targetText}\n${detail}\n비밀번호 열 외의 데이터는 변경하지 않습니다.\n변경 대상이 있으면 실행 전 자동 백업됩니다.\n\n계속할까요?`
     );
     if (!confirmation) return;
 
