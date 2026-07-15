@@ -260,3 +260,23 @@ button { touch-action:manipulation; }
     .gps-refresh-btn { min-width:56px; padding:5px 6px; font-size:.7rem; }
     .gps-info-row { gap:5px; font-size:.64rem; }
 }
+
+/* ========================= 장기운영 안정화 ========================= */
+.toast { display:flex; align-items:center; gap:10px; }
+.toast-action-btn { border:0; border-radius:10px; padding:7px 10px; font-weight:800; cursor:pointer; background:#fff; color:#222; white-space:nowrap; }
+.admin-diagnostics-list { display:grid; gap:8px; margin-top:10px; }
+.admin-diagnostic-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; padding:10px 12px; border-radius:12px; background:var(--card-bg, rgba(127,127,127,.08)); }
+.admin-diagnostic-row .label { font-weight:700; }
+.admin-diagnostic-row .detail { font-size:.82rem; opacity:.75; margin-top:2px; word-break:break-word; }
+.admin-diagnostic-row .status { font-weight:900; white-space:nowrap; }
+.admin-diagnostic-row[data-level="good"] .status { color:#2e9d50; }
+.admin-diagnostic-row[data-level="warning"] .status { color:#d58a00; }
+.admin-diagnostic-row[data-level="error"] .status { color:#d33; }
+.backup-compare-modal-content { max-width:620px; }
+.backup-compare-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:12px 0; }
+.backup-compare-stat { padding:12px; border-radius:12px; background:var(--card-bg, rgba(127,127,127,.08)); text-align:center; }
+.backup-compare-stat strong { display:block; font-size:1.3rem; }
+.backup-compare-examples { max-height:42vh; overflow:auto; display:grid; gap:8px; }
+.backup-compare-example { padding:10px; border-radius:10px; background:var(--card-bg, rgba(127,127,127,.08)); font-size:.86rem; word-break:break-word; }
+.pending-operation-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 7px; border-radius:999px; font-size:.72rem; font-weight:800; background:#f2a900; color:#111; }
+@media (max-width:360px) { .backup-compare-summary { grid-template-columns:1fr; } }

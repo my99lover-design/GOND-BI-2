@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260715-5">
+    <link rel="stylesheet" href="style.css?v=20260715-6">
 </head>
 <body>
 <div class="container">
@@ -171,6 +171,15 @@
             </section>
             <section class="admin-section">
                 <div class="admin-section-head">
+                    <div>🩺 앱 진단 보고서</div>
+                    <button id="adminDiagnosticsRefreshBtn" class="admin-cleanup-btn" type="button">다시 점검</button>
+                </div>
+                <div class="admin-help">현재 기기의 캐시·GPS·서비스워커·동기화·오류 상태를 점검합니다.</div>
+                <div id="adminDiagnosticsStatus" class="admin-data-quality-status">확인 중</div>
+                <div id="adminDiagnosticsList" class="admin-diagnostics-list"></div>
+            </section>
+            <section class="admin-section">
+                <div class="admin-section-head">
                     <div>💾 백업·복구</div>
                     <button id="createBackupBtn" class="create-backup-btn" type="button">지금 백업</button>
                 </div>
@@ -182,6 +191,19 @@
                 <div id="autoBackupWarning" class="admin-backup-warning" hidden></div>
                 <div id="backupList" class="backup-list"></div>
             </section>
+        </div>
+    </div>
+</div>
+
+<div id="backupCompareModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="backupCompareTitle">
+    <div class="modal-content backup-compare-modal-content">
+        <h2 id="backupCompareTitle">백업 복구 전 비교</h2>
+        <div id="backupCompareStatus" class="modal-info">비교 중...</div>
+        <div id="backupCompareSummary" class="backup-compare-summary"></div>
+        <div id="backupCompareExamples" class="backup-compare-examples"></div>
+        <div class="modal-buttons">
+            <button id="backupCompareRestoreBtn" class="modal-btn btn-danger" type="button">이 백업으로 복구</button>
+            <button id="backupCompareCancelBtn" class="modal-btn btn-cancel" type="button">취소</button>
         </div>
     </div>
 </div>
@@ -204,7 +226,7 @@
     </div>
 </div>
 
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260715-5"></script>
+<div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
+<script src="script.js?v=20260715-6"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 화면 복원·핵심 정보 고정·부분 동기화 최적화 20260715-5 */
+/* 넘버원 김포B 공비 - 최종 장기운영 안정화판 20260715-6 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -553,8 +553,20 @@ async function processPendingQueue() {
             state.syncHadWork = false;
         }
     } catch (error) {
-        console.warn("백그라운드 저장 실패, 자동 재시도:", operation.action, error);
+        const conflict = /먼저 변경|최신 데이터를 확인|충돌/u.test(cleanText(error?.message));
+        console.warn(conflict ? "저장 충돌 감지:" : "백그라운드 저장 실패, 자동 재시도:", operation.action, error);
         operation.attempts = Math.max(0, Number(operation.attempts) || 0) + 1;
+        if (conflict) {
+            operation.conflict = true;
+            operation.conflictMessage = cleanText(error?.message);
+            operation.nextAttemptAt = Number.MAX_SAFE_INTEGER;
+            savePendingOperations();
+            state.syncProcessing = false;
+            updateDataSyncStatus("error", state.lastSuccessfulSyncAt);
+            showToast("⚠ 다른 수정과 충돌했습니다. 최신 데이터 확인이 필요합니다.");
+            logLocalError("save-conflict", error, { action: operation.action, rowId: operation.payload?.rowId });
+            return;
+        }
         const retryDelay = getRetryDelay(operation.attempts);
         operation.nextAttemptAt = Date.now() + retryDelay;
         savePendingOperations();
@@ -2669,3 +2681,597 @@ if ("serviceWorker" in navigator) {
         }
     });
 }
+
+/* ========================= 최종 장기운영 안정화 레이어 20260715-6 ========================= */
+const LONGTERM_CONFIG = Object.freeze({
+    CACHE_ENVELOPE_KEY: "gimpoB_records_envelope_v1",
+    CACHE_BACKUP_KEY: "gimpoB_records_envelope_backup_v1",
+    CACHE_TEMP_KEY: "gimpoB_records_envelope_temp_v1",
+    CACHE_SCHEMA_VERSION: 1,
+    ERROR_LOG_KEY: "gimpoB_error_log_v1",
+    ERROR_LOG_LIMIT: 20,
+    SAFE_MODE_KEY: "gimpoB_safe_mode_v1",
+    BOOT_FAILURE_KEY: "gimpoB_boot_failure_v1",
+    REQUEST_TIMEOUT: 20000,
+    GPS_JUMP_MAX_SPEED_MPS: 80,
+    GPS_JUMP_MIN_DISTANCE: 300,
+    GPS_RANK_HYSTERESIS_METERS: 18,
+    INTEGRITY_INTERVAL: 5 * 60 * 1000,
+    UNDO_VISIBLE_MS: 10000
+});
+
+const longtermState = {
+    inFlightRequests: new Map(),
+    requestSequence: new Map(),
+    lastUndo: null,
+    undoTimer: null,
+    backupToRestore: null,
+    lastStableGpsItems: [],
+    lastIntegrityAt: 0,
+    safeMode: false,
+    diagnosticsLastAt: 0
+};
+
+function fnv1aHash(text) {
+    let hash = 0x811c9dc5;
+    const value = String(text || "");
+    for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function safeStorageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (error) {
+        pruneNonessentialStorage();
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch (retryError) {
+            logLocalError("storage-write", retryError, { key });
+            return false;
+        }
+    }
+}
+
+function pruneNonessentialStorage() {
+    try {
+        localStorage.removeItem(APP_CONFIG.PERFORMANCE_HISTORY_KEY);
+        localStorage.removeItem(APP_CONFIG.HISTORY_CACHE_KEY);
+        localStorage.removeItem(APP_CONFIG.HISTORY_CACHE_TIME_KEY);
+        const logs = loadLocalErrorLogs().slice(0, 5);
+        localStorage.setItem(LONGTERM_CONFIG.ERROR_LOG_KEY, JSON.stringify(logs));
+    } catch (error) {}
+}
+
+function makeRecordsEnvelope(records) {
+    const normalized = normalizeRecordCollection(Array.isArray(records) ? records : []);
+    const serializedData = JSON.stringify(normalized);
+    return {
+        schemaVersion: LONGTERM_CONFIG.CACHE_SCHEMA_VERSION,
+        savedAt: Date.now(),
+        dataVersion: cleanText(state.dataVersion),
+        rowCount: normalized.length,
+        checksum: fnv1aHash(serializedData),
+        data: normalized
+    };
+}
+
+function validateRecordsEnvelope(envelope) {
+    if (!envelope || typeof envelope !== "object") return null;
+    if (Number(envelope.schemaVersion) !== LONGTERM_CONFIG.CACHE_SCHEMA_VERSION) return null;
+    if (!Array.isArray(envelope.data) || Number(envelope.rowCount) !== envelope.data.length) return null;
+    const normalized = normalizeRecordCollection(envelope.data);
+    const checksum = fnv1aHash(JSON.stringify(normalized));
+    if (checksum !== cleanText(envelope.checksum)) return null;
+    return { ...envelope, data: normalized };
+}
+
+function readEnvelopeFromStorage(key) {
+    try {
+        const text = localStorage.getItem(key);
+        if (!text) return null;
+        return validateRecordsEnvelope(JSON.parse(text));
+    } catch (error) {
+        logLocalError("cache-read", error, { key });
+        return null;
+    }
+}
+
+const originalLoadCachedRecordsLongterm = loadCachedRecords;
+loadCachedRecords = function loadCachedRecordsLongterm() {
+    const primary = readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY);
+    const backup = primary ? null : readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_BACKUP_KEY);
+    const envelope = primary || backup;
+    if (envelope) {
+        state.dataVersion = cleanText(envelope.dataVersion) || cleanText(localStorage.getItem(APP_CONFIG.CACHE_VERSION_KEY));
+        if (!primary && backup) safeStorageSet(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY, JSON.stringify(backup));
+        return envelope.data;
+    }
+    const legacy = originalLoadCachedRecordsLongterm();
+    if (legacy.length > 0) {
+        const migrated = makeRecordsEnvelope(legacy);
+        safeStorageSet(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY, JSON.stringify(migrated));
+    }
+    return legacy;
+};
+
+flushRecordsCache = function flushRecordsCacheLongterm() {
+    clearTimeout(state.cacheWriteTimer);
+    state.cacheWriteTimer = null;
+    if (!state.cacheWritePending || !Array.isArray(state.records)) return;
+    const envelope = makeRecordsEnvelope(state.records);
+    const text = JSON.stringify(envelope);
+    const current = localStorage.getItem(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY);
+    if (!safeStorageSet(LONGTERM_CONFIG.CACHE_TEMP_KEY, text)) return;
+    const verified = readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_TEMP_KEY);
+    if (!verified) {
+        localStorage.removeItem(LONGTERM_CONFIG.CACHE_TEMP_KEY);
+        logLocalError("cache-verify", new Error("임시 캐시 검증 실패"));
+        return;
+    }
+    if (current) safeStorageSet(LONGTERM_CONFIG.CACHE_BACKUP_KEY, current);
+    if (!safeStorageSet(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY, text)) return;
+    localStorage.removeItem(LONGTERM_CONFIG.CACHE_TEMP_KEY);
+    safeStorageSet(APP_CONFIG.CACHE_KEY, JSON.stringify(state.records));
+    safeStorageSet(APP_CONFIG.CACHE_TIME_KEY, String(envelope.savedAt));
+    if (state.dataVersion) safeStorageSet(APP_CONFIG.CACHE_VERSION_KEY, state.dataVersion);
+    state.cacheWritePending = false;
+};
+
+function logLocalError(type, error, context = {}) {
+    try {
+        const item = {
+            at: Date.now(),
+            type: cleanText(type) || "unknown",
+            message: cleanText(error?.message || error) || "알 수 없는 오류",
+            view: cleanText(state?.view),
+            online: navigator.onLine !== false,
+            dataVersion: cleanText(state?.dataVersion),
+            context
+        };
+        const logs = loadLocalErrorLogs();
+        logs.unshift(item);
+        localStorage.setItem(LONGTERM_CONFIG.ERROR_LOG_KEY, JSON.stringify(logs.slice(0, LONGTERM_CONFIG.ERROR_LOG_LIMIT)));
+    } catch (storageError) {}
+}
+
+function loadLocalErrorLogs() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(LONGTERM_CONFIG.ERROR_LOG_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+window.addEventListener("error", event => logLocalError("javascript", event.error || event.message, { source: event.filename, line: event.lineno }));
+window.addEventListener("unhandledrejection", event => logLocalError("promise", event.reason || "처리되지 않은 Promise 오류"));
+
+const originalRequestApiLongterm = requestApi;
+requestApi = function requestApiLongterm(action, payload = {}) {
+    const readOnly = ["getData", "getDataVersion", "getChangeHistory", "getAdminDashboard", "compareBackup"].includes(action);
+    const requestKey = readOnly ? `${action}:${JSON.stringify(payload || {})}` : "";
+    if (readOnly && longtermState.inFlightRequests.has(requestKey)) return longtermState.inFlightRequests.get(requestKey);
+    const sequence = (longtermState.requestSequence.get(action) || 0) + 1;
+    longtermState.requestSequence.set(action, sequence);
+    const timeoutPromise = new Promise((_, reject) => window.setTimeout(() => reject(new Error("서버 응답 시간이 초과되었습니다.")), LONGTERM_CONFIG.REQUEST_TIMEOUT));
+    const promise = Promise.race([originalRequestApiLongterm(action, payload), timeoutPromise])
+        .then(result => {
+            if (readOnly && sequence < (longtermState.requestSequence.get(action) || 0)) {
+                const staleError = new Error("더 최신 요청이 완료되어 오래된 응답을 무시했습니다.");
+                staleError.staleResponse = true;
+                throw staleError;
+            }
+            return result;
+        })
+        .catch(error => {
+            if (!error?.staleResponse) logLocalError("network", error, { action });
+            throw error;
+        })
+        .finally(() => {
+            if (readOnly && longtermState.inFlightRequests.get(requestKey) === promise) longtermState.inFlightRequests.delete(requestKey);
+        });
+    if (readOnly) longtermState.inFlightRequests.set(requestKey, promise);
+    return promise;
+};
+
+const originalShouldUseNewLocationLongterm = shouldUseNewLocation;
+shouldUseNewLocation = function shouldUseNewLocationLongterm(currentLocation, newLocation) {
+    if (currentLocation && newLocation) {
+        const elapsedSeconds = Math.max(0.1, (Number(newLocation.timestamp) - Number(currentLocation.timestamp)) / 1000);
+        const distance = calculateDistanceMeters(Number(currentLocation.latitude), Number(currentLocation.longitude), Number(newLocation.latitude), Number(newLocation.longitude));
+        const speed = distance / elapsedSeconds;
+        const newAccuracy = Number(newLocation.accuracy);
+        if (distance >= LONGTERM_CONFIG.GPS_JUMP_MIN_DISTANCE && speed > LONGTERM_CONFIG.GPS_JUMP_MAX_SPEED_MPS && (!Number.isFinite(newAccuracy) || newAccuracy > 15)) {
+            logLocalError("gps-jump", new Error("비정상 위치 점프 차단"), { distance: Math.round(distance), speed: Math.round(speed) });
+            return false;
+        }
+    }
+    return originalShouldUseNewLocationLongterm(currentLocation, newLocation);
+};
+
+const originalGetNearbyApartmentsLongterm = getNearbyApartments;
+getNearbyApartments = function getNearbyApartmentsLongterm(latitude, longitude, buttonCount = APP_CONFIG.GPS_BUTTON_COUNT) {
+    const next = originalGetNearbyApartmentsLongterm(latitude, longitude, buttonCount);
+    const previous = longtermState.lastStableGpsItems;
+    if (!Array.isArray(previous) || previous.length === 0 || !Array.isArray(next) || next.length === 0) {
+        longtermState.lastStableGpsItems = next.map(item => ({ ...item }));
+        return next;
+    }
+    const nextMap = new Map(next.map(item => [makeGpsItemIdentity(item), item]));
+    const stable = [];
+    for (const oldItem of previous) {
+        const current = nextMap.get(makeGpsItemIdentity(oldItem));
+        if (current) {
+            stable.push(current);
+            nextMap.delete(makeGpsItemIdentity(oldItem));
+        }
+    }
+    const newcomers = [...nextMap.values()].sort((a, b) => a.distance - b.distance);
+    for (const newcomer of newcomers) {
+        let inserted = false;
+        for (let index = 0; index < stable.length; index += 1) {
+            if (newcomer.distance + LONGTERM_CONFIG.GPS_RANK_HYSTERESIS_METERS < stable[index].distance) {
+                stable.splice(index, 0, newcomer);
+                inserted = true;
+                break;
+            }
+        }
+        if (!inserted) stable.push(newcomer);
+    }
+    const result = stable.slice(0, Math.max(1, Number(buttonCount) || APP_CONFIG.GPS_BUTTON_COUNT));
+    longtermState.lastStableGpsItems = result.map(item => ({ ...item }));
+    return result;
+};
+
+function makeGpsItemIdentity(item) {
+    return makeKey(item?.region, item?.apartment, item?.dong, item?.displayName);
+}
+
+const originalRebuildDataIndexesLongterm = rebuildDataIndexes;
+rebuildDataIndexes = function rebuildDataIndexesLongterm() {
+    originalRebuildDataIndexesLongterm();
+    verifyIndexIntegrity();
+};
+
+function verifyIndexIntegrity(force = false) {
+    if (!force && Date.now() - longtermState.lastIntegrityAt < LONGTERM_CONFIG.INTEGRITY_INTERVAL) return true;
+    longtermState.lastIntegrityAt = Date.now();
+    const indexedIds = new Set(state.indexes.rowById.keys());
+    const recordIds = state.records.map(record => cleanText(record.rowId)).filter(Boolean);
+    const uniqueIds = new Set(recordIds);
+    const valid = indexedIds.size === uniqueIds.size && recordIds.length === uniqueIds.size && recordIds.every(id => indexedIds.has(id));
+    if (!valid) {
+        logLocalError("index-integrity", new Error("탐색 인덱스 불일치"), { records: recordIds.length, indexed: indexedIds.size });
+        return false;
+    }
+    return true;
+}
+
+const originalEnqueuePendingOperationLongterm = enqueuePendingOperation;
+enqueuePendingOperation = function enqueuePendingOperationLongterm(action, payload) {
+    const safePayload = payload && typeof payload === "object" ? { ...payload } : {};
+    let record = safePayload.rowId ? findRecordByRowId(safePayload.rowId) : null;
+    if (!record && safePayload.region && safePayload.apartment) {
+        record = (state.indexes.recordsByApartment.get(makeKey(safePayload.region, safePayload.apartment)) || [])[0] || null;
+    }
+    const snapshot = {
+        action,
+        rowId: cleanText(safePayload.rowId),
+        region: cleanText(safePayload.region),
+        apartment: cleanText(safePayload.apartment),
+        beforePassword: record ? cleanText(record.password) : "",
+        beforeCommonPassword: record ? cleanText(record.commonPassword) : "",
+        createdAt: Date.now()
+    };
+    if (record && ["addPassword", "updatePassword", "deletePassword"].includes(action)) safePayload.expectedPassword = cleanText(record.password);
+    const operation = originalEnqueuePendingOperationLongterm(action, safePayload);
+    longtermState.lastUndo = { operationId: operation.id, snapshot, historyId: "", synced: false };
+    clearTimeout(longtermState.undoTimer);
+    window.setTimeout(() => showToastAction("변경 내용을 저장합니다.", "되돌리기", undoLastImmediateChange), 0);
+    longtermState.undoTimer = window.setTimeout(clearImmediateUndo, LONGTERM_CONFIG.UNDO_VISIBLE_MS);
+    return operation;
+};
+
+const originalApplyServerOperationResponseLongterm = applyServerOperationResponse;
+applyServerOperationResponse = function applyServerOperationResponseLongterm(operation, response) {
+    originalApplyServerOperationResponseLongterm(operation, response);
+    if (longtermState.lastUndo?.operationId === operation?.id) {
+        longtermState.lastUndo.synced = true;
+        longtermState.lastUndo.historyId = cleanText(response?.historyId);
+    }
+};
+
+function clearImmediateUndo() {
+    clearTimeout(longtermState.undoTimer);
+    longtermState.undoTimer = null;
+    longtermState.lastUndo = null;
+    hideToastAction();
+}
+
+async function undoLastImmediateChange() {
+    const candidate = longtermState.lastUndo;
+    if (!candidate) return;
+    const queueIndex = state.pendingOperations.findIndex(item => item.id === candidate.operationId);
+    if (queueIndex >= 0 && !(state.syncProcessing && queueIndex === 0)) {
+        state.pendingOperations.splice(queueIndex, 1);
+        savePendingOperations();
+        restoreLocalOperationSnapshot(candidate.snapshot);
+        clearImmediateUndo();
+        showToast("↩ 변경을 취소했습니다.");
+        return;
+    }
+    if (candidate.historyId) {
+        try {
+            const response = await requestApi("undoChange", { historyId: candidate.historyId, operationId: createOperationId() });
+            updateLocalDataVersion(response);
+            await refreshRecordsFromServer(true);
+            clearChangeHistoryCache();
+            clearImmediateUndo();
+            showToast("↩ 서버 변경을 되돌렸습니다.");
+        } catch (error) {
+            showToast(`되돌리기 실패: ${error.message}`);
+        }
+        return;
+    }
+    showToast("저장 완료 직후 다시 되돌려주세요.");
+}
+
+function restoreLocalOperationSnapshot(snapshot) {
+    if (!snapshot) return;
+    if (snapshot.rowId) {
+        const record = findRecordByRowId(snapshot.rowId);
+        if (record) {
+            record.password = cleanText(snapshot.beforePassword);
+            record.commonPassword = cleanText(snapshot.beforeCommonPassword);
+            refreshPasswordCard(snapshot.rowId);
+        }
+    } else if (snapshot.region && snapshot.apartment) {
+        for (const record of state.indexes.recordsByApartment.get(makeKey(snapshot.region, snapshot.apartment)) || []) record.commonPassword = cleanText(snapshot.beforeCommonPassword);
+        renderCommonPassword();
+    }
+    saveRecordsToCache(state.records);
+}
+
+const originalShowToastLongterm = showToast;
+showToast = function showToastLongterm(message) {
+    hideToastAction();
+    const messageTarget = document.getElementById("toastMessage");
+    if (!messageTarget) return originalShowToastLongterm(message);
+    const text = cleanText(message);
+    if (!text) return;
+    clearTimeout(state.toastTimer);
+    messageTarget.textContent = text;
+    elements.toast.classList.add("show");
+    state.toastTimer = window.setTimeout(() => elements.toast.classList.remove("show"), 2500);
+};
+
+function showToastAction(message, actionLabel, handler) {
+    const messageTarget = document.getElementById("toastMessage");
+    const actionButton = document.getElementById("toastActionBtn");
+    if (!messageTarget || !actionButton) return showToast(message);
+    clearTimeout(state.toastTimer);
+    messageTarget.textContent = cleanText(message);
+    actionButton.textContent = cleanText(actionLabel);
+    actionButton.hidden = false;
+    actionButton.onclick = handler;
+    elements.toast.classList.add("show");
+    state.toastTimer = window.setTimeout(() => {
+        elements.toast.classList.remove("show");
+        hideToastAction();
+    }, LONGTERM_CONFIG.UNDO_VISIBLE_MS);
+}
+
+function hideToastAction() {
+    const actionButton = document.getElementById("toastActionBtn");
+    if (actionButton) {
+        actionButton.hidden = true;
+        actionButton.onclick = null;
+        actionButton.textContent = "";
+    }
+}
+
+function initializeBackupCompareUi() {
+    document.getElementById("backupCompareCancelBtn")?.addEventListener("click", closeBackupCompareModal);
+    document.getElementById("backupCompareRestoreBtn")?.addEventListener("click", confirmComparedBackupRestore);
+    document.getElementById("backupCompareModal")?.addEventListener("click", event => {
+        if (event.target?.id === "backupCompareModal") closeBackupCompareModal();
+    });
+}
+
+const originalRestoreDataBackupLongterm = restoreDataBackup;
+restoreDataBackup = async function restoreDataBackupWithCompare(backup) {
+    if (!backup?.name || state.restoringBackupName || state.backupCreating) return;
+    if (state.pendingOperations.length > 0) {
+        window.alert("아직 저장 대기 중인 작업이 있습니다. 저장 완료 후 다시 복구해주세요.");
+        return;
+    }
+    longtermState.backupToRestore = backup;
+    openModal(document.getElementById("backupCompareModal"));
+    renderBackupCompareLoading();
+    try {
+        const response = await requestApi("compareBackup", { backupName: backup.name, adminToken: requireAdminToken() });
+        renderBackupComparison(response?.data || response);
+    } catch (error) {
+        document.getElementById("backupCompareStatus").textContent = `비교 실패: ${error.message}`;
+        document.getElementById("backupCompareRestoreBtn").disabled = true;
+    }
+};
+
+function renderBackupCompareLoading() {
+    document.getElementById("backupCompareStatus").textContent = "현재 데이터와 백업을 비교하는 중입니다...";
+    document.getElementById("backupCompareSummary").replaceChildren();
+    document.getElementById("backupCompareExamples").replaceChildren();
+    document.getElementById("backupCompareRestoreBtn").disabled = true;
+}
+
+function renderBackupComparison(data) {
+    const status = document.getElementById("backupCompareStatus");
+    const summary = document.getElementById("backupCompareSummary");
+    const examples = document.getElementById("backupCompareExamples");
+    const restoreButton = document.getElementById("backupCompareRestoreBtn");
+    status.textContent = `${data?.backup?.createdAt || data?.backup?.name || "선택 백업"} · 비교 완료`;
+    summary.replaceChildren();
+    const stats = [["추가", data.added], ["삭제", data.removed], ["수정", data.changed], ["전체 변경", data.totalChanges]];
+    for (const [label, value] of stats) {
+        const item = document.createElement("div");
+        item.className = "backup-compare-stat";
+        item.innerHTML = `<strong>${Number(value || 0).toLocaleString()}</strong>${label}`;
+        summary.appendChild(item);
+    }
+    examples.replaceChildren();
+    for (const item of Array.isArray(data.examples) ? data.examples : []) {
+        const node = document.createElement("div");
+        node.className = "backup-compare-example";
+        const before = cleanText(item.beforeValue).replace("\u0001", " / ") || "없음";
+        const after = cleanText(item.afterValue).replace("\u0001", " / ") || "없음";
+        node.textContent = `${item.type} · ${item.identity}\n현재: ${before}\n복구 후: ${after}`;
+        examples.appendChild(node);
+    }
+    if (!examples.childElementCount) {
+        const empty = document.createElement("div");
+        empty.className = "backup-compare-example";
+        empty.textContent = "현재 데이터와 차이가 없습니다.";
+        examples.appendChild(empty);
+    }
+    restoreButton.disabled = false;
+}
+
+function closeBackupCompareModal() {
+    longtermState.backupToRestore = null;
+    closeModal(document.getElementById("backupCompareModal"));
+}
+
+async function confirmComparedBackupRestore() {
+    const backup = longtermState.backupToRestore;
+    if (!backup?.name) return;
+    const confirmation = window.prompt(`${backup.createdAt || backup.name} 백업으로 전체 복구합니다.\n현재 데이터는 복구 전에 자동 백업됩니다.\n\n계속하려면 '복구'를 입력하세요.`);
+    if (cleanText(confirmation) !== "복구") return;
+    closeBackupCompareModal();
+    state.restoringBackupName = backup.name;
+    renderAdminDashboard();
+    try {
+        const response = await requestApi("restoreBackup", { backupName: backup.name, operationId: createOperationId(), adminToken: requireAdminToken() });
+        updateLocalDataVersion(response);
+        showToast("✅ 백업 데이터로 복구했습니다.");
+        await refreshRecordsFromServer(true);
+        await loadAdminDashboard(false);
+    } catch (error) {
+        logLocalError("backup-restore", error, { backupName: backup.name });
+        if (!handleAdminAuthError(error)) window.alert(`백업 복구에 실패했습니다.\n${error.message}`);
+    } finally {
+        state.restoringBackupName = "";
+        if (state.adminDashboard) renderAdminDashboard();
+    }
+}
+
+function initializeDiagnosticsUi() {
+    document.getElementById("adminDiagnosticsRefreshBtn")?.addEventListener("click", () => renderAdminDiagnostics(true));
+}
+
+const originalRenderAdminDashboardLongterm = renderAdminDashboard;
+renderAdminDashboard = function renderAdminDashboardLongterm() {
+    originalRenderAdminDashboardLongterm();
+    renderAdminDiagnostics(false);
+};
+
+async function renderAdminDiagnostics(force = false) {
+    const status = document.getElementById("adminDiagnosticsStatus");
+    const list = document.getElementById("adminDiagnosticsList");
+    if (!status || !list) return;
+    if (!force && Date.now() - longtermState.diagnosticsLastAt < 3000 && list.childElementCount) return;
+    longtermState.diagnosticsLastAt = Date.now();
+    status.textContent = "점검 중";
+    const diagnostics = await collectDiagnostics();
+    list.replaceChildren();
+    let warningCount = 0;
+    let errorCount = 0;
+    for (const item of diagnostics) {
+        if (item.level === "warning") warningCount += 1;
+        if (item.level === "error") errorCount += 1;
+        const row = document.createElement("div");
+        row.className = "admin-diagnostic-row";
+        row.dataset.level = item.level;
+        const left = document.createElement("div");
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = item.label;
+        const detail = document.createElement("div");
+        detail.className = "detail";
+        detail.textContent = item.detail;
+        left.append(label, detail);
+        const right = document.createElement("div");
+        right.className = "status";
+        right.textContent = item.status;
+        row.append(left, right);
+        list.appendChild(row);
+    }
+    status.textContent = errorCount ? `오류 ${errorCount} · 주의 ${warningCount}` : warningCount ? `주의 ${warningCount}` : "전체 정상";
+    status.dataset.status = errorCount ? "danger" : warningCount ? "warning" : "good";
+}
+
+async function collectDiagnostics() {
+    const envelope = readEnvelopeFromStorage(LONGTERM_CONFIG.CACHE_ENVELOPE_KEY);
+    const indexValid = verifyIndexIntegrity(true);
+    const errorLogs = loadLocalErrorLogs();
+    const gpsWatchCount = state.gpsWatchId === null ? 0 : 1;
+    const pendingCount = state.pendingOperations.length;
+    const diagnostics = [
+        { label: "데이터 캐시", status: envelope ? "정상" : "복구 필요", level: envelope ? "good" : "warning", detail: envelope ? `${envelope.rowCount.toLocaleString()}행 · 체크섬 정상` : "다음 온라인 동기화에서 자동 복구됩니다." },
+        { label: "탐색 인덱스", status: indexValid ? "정상" : "재생성 필요", level: indexValid ? "good" : "error", detail: `${state.indexes.rowById.size.toLocaleString()}행 연결` },
+        { label: "GPS 감시", status: gpsWatchCount === 1 ? "정상" : "확인", level: gpsWatchCount === 1 ? "good" : "warning", detail: `${gpsWatchCount}개 등록 · 중복 감시 없음` },
+        { label: "저장 대기열", status: pendingCount ? `${pendingCount}건` : "정상", level: pendingCount ? "warning" : "good", detail: pendingCount ? "온라인 복귀 시 순서대로 자동 전송됩니다." : "전송 대기 작업이 없습니다." },
+        { label: "최근 동기화", status: state.lastSuccessfulSyncAt ? "정상" : "확인 전", level: state.lastSuccessfulSyncAt ? "good" : "warning", detail: state.lastSuccessfulSyncAt ? formatLocalDateTime(state.lastSuccessfulSyncAt) : "서버 동기화 기록이 없습니다." },
+        { label: "로컬 오류 기록", status: errorLogs.length ? `${errorLogs.length}건` : "정상", level: errorLogs.some(item => Date.now() - Number(item.at) < 60 * 60 * 1000) ? "warning" : "good", detail: errorLogs[0] ? `${formatLocalDateTime(errorLogs[0].at)} · ${errorLogs[0].type} · ${errorLogs[0].message}` : "최근 오류가 없습니다." },
+        { label: "안전모드", status: longtermState.safeMode ? "사용 중" : "정상", level: longtermState.safeMode ? "warning" : "good", detail: longtermState.safeMode ? "복원 기능을 줄여 최소 기능으로 실행 중입니다." : "일반 모드로 실행 중입니다." }
+    ];
+    if ("serviceWorker" in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.getRegistration();
+            diagnostics.push({ label: "서비스워커", status: registration?.active ? "정상" : "확인", level: registration?.active ? "good" : "warning", detail: registration?.active?.scriptURL || "활성 서비스워커 없음" });
+        } catch (error) {
+            diagnostics.push({ label: "서비스워커", status: "오류", level: "error", detail: error.message });
+        }
+    }
+    if (navigator.storage?.estimate) {
+        try {
+            const estimate = await navigator.storage.estimate();
+            const usage = Number(estimate.usage) || 0;
+            const quota = Number(estimate.quota) || 0;
+            const ratio = quota ? usage / quota : 0;
+            diagnostics.push({ label: "기기 저장공간", status: ratio > 0.85 ? "부족" : "정상", level: ratio > 0.85 ? "warning" : "good", detail: quota ? `${(usage / 1024 / 1024).toFixed(1)}MB / ${(quota / 1024 / 1024).toFixed(0)}MB` : "용량 확인 불가" });
+        } catch (error) {}
+    }
+    return diagnostics;
+}
+
+function initializeSafeMode() {
+    try {
+        const boot = JSON.parse(sessionStorage.getItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY) || "{}");
+        const count = Number(boot.count) || 0;
+        longtermState.safeMode = count >= 3 || localStorage.getItem(LONGTERM_CONFIG.SAFE_MODE_KEY) === "1";
+        sessionStorage.setItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY, JSON.stringify({ count: count + 1, at: Date.now() }));
+        window.setTimeout(() => sessionStorage.setItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY, JSON.stringify({ count: 0, at: Date.now() })), 8000);
+        if (longtermState.safeMode) {
+            state.savedViewState = null;
+            localStorage.removeItem(APP_CONFIG.VIEW_STATE_KEY);
+        }
+    } catch (error) {}
+}
+
+const originalLoadSavedViewStateLongterm = loadSavedViewState;
+loadSavedViewState = function loadSavedViewStateLongterm() {
+    if (longtermState.safeMode) return null;
+    return originalLoadSavedViewStateLongterm();
+};
+
+initializeSafeMode();
+document.addEventListener("DOMContentLoaded", () => {
+    initializeBackupCompareUi();
+    initializeDiagnosticsUi();
+});
