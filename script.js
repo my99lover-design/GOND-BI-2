@@ -1,5 +1,6 @@
 "use strict";
-/* 넘버원 김포B 공비 - 관리자 점검·자동정리 활성화 수정 20260715-1 */
+/* 넘버원 김포B 공비 - GPS 복귀·탐색·렌더링·성능 최적화 20260715-3 */
+const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
 const GATE_IMAGES = Object.freeze({
@@ -8,37 +9,76 @@ const GATE_IMAGES = Object.freeze({
     "럭스B": { src: "./gate-images/럭스B.webp", label: "럭스B" },
     "루체뷰1": { src: "./gate-images/루체뷰1.webp", label: "루체뷰1" }
 });
-const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
+const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_HIGH_ACCURACY_TARGET: 60, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
+const PERFORMANCE_RULES = Object.freeze({
+    cacheLoad: { label: "캐시 데이터 로딩", good: 120, warning: 350 },
+    indexBuild: { label: "탐색 인덱스 생성", good: 80, warning: 220 },
+    firstScreen: { label: "첫 화면 표시", good: 500, warning: 1200 },
+    cachedGps: { label: "저장 GPS 표시", good: 80, warning: 250 },
+    firstGps: { label: "첫 기기 위치 수신", good: 2500, warning: 6000 },
+    highAccuracyGps: { label: "고정밀 위치 수신", good: 6000, warning: 12000 },
+    versionCheck: { label: "데이터 버전 확인", good: 1200, warning: 3000 },
+    dataSync: { label: "전체 데이터 동기화", good: 2500, warning: 6000 }
+});
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
-    records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null, gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastRenderSignature: "", toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null
+    records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
+    gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
+    toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
+    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
     initializeTheme();
-    initializeInstallButton();
+    initializePendingSync();
+    initializeGpsEvents();
     initializeHistoryButton();
     initializeAdminButton();
     initializeModalEvents();
-    initializeGateImageModal();
-    scheduleGateImagePreload();
-    initializePendingSync();
-    initializeFreshnessChecks();
-    initializeGpsEvents();
+    initializePerformanceTracking();
     renderLoading("데이터를 불러오는 중입니다...");
+
+    const cacheStartedAt = performance.now();
     const cachedRecords = applyPendingOperationsToRecords(loadCachedRecords());
+    recordPerformanceMetric("cacheLoad", performance.now() - cacheStartedAt);
     if (cachedRecords.length > 0) {
         setRecords(cachedRecords);
         state.loading = false;
         resetSteps(false);
+        const cacheTime = Number(localStorage.getItem(APP_CONFIG.CACHE_TIME_KEY)) || 0;
+        state.lastSuccessfulSyncAt = cacheTime;
+        updateDataSyncStatus(navigator.onLine === false ? "offline" : "cached", cacheTime);
     }
+
     loadCachedLocations();
+    if (loadLastLocation()) {
+        recordPerformanceMetric("cachedGps", performance.now() - APP_BOOT_STARTED_AT);
+        updateGpsStatus("🟡 최근 위치", "cached");
+        renderGpsMeta();
+        renderGpsButtons();
+    }
     syncGpsWatch();
-    await Promise.allSettled([ refreshRecordsFromServer(false), loadLocations() ]);
-    renderGpsButtons();
+    markFirstScreenRendered();
+
+    scheduleDeferredInitialization();
+    refreshRecordsFromServer(false).catch(() => {});
+    loadLocations().catch(() => {});
     schedulePendingSync(300);
+}
+function scheduleDeferredInitialization() {
+    const run = () => {
+        initializeInstallButton();
+        initializeGateImageModal();
+        initializeFreshnessChecks();
+        scheduleGateImagePreload();
+    };
+    if ("requestIdleCallback" in window) window.requestIdleCallback(run, { timeout: 1200 });
+    else window.setTimeout(run, 60);
+}
+function markFirstScreenRendered() {
+    window.requestAnimationFrame(() => recordPerformanceMetric("firstScreen", performance.now() - APP_BOOT_STARTED_AT));
 }
 /* ========================= 테마 ========================= */
 function initializeTheme() { const savedTheme = localStorage.getItem(APP_CONFIG.THEME_KEY) || "light"; applyTheme(savedTheme); elements.themeToggle.addEventListener("click", toggleTheme); }
@@ -77,30 +117,51 @@ async function handleInstallApp() {
 /* ========================= 데이터 로딩 ========================= */
 function initializeFreshnessChecks() {
     window.addEventListener("online", () => {
+        updateDataSyncStatus("checking");
         refreshRecordsFromServer(false).catch(() => {});
         loadLocations().catch(() => {});
     });
+    window.addEventListener("offline", () => updateDataSyncStatus("offline", state.lastSuccessfulSyncAt));
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
             flushRecordsCache();
             return;
         }
-        if (Date.now() - state.lastDataCheckAt >= APP_CONFIG.DATA_CHECK_INTERVAL) {
-            refreshRecordsFromServer(false).catch(() => {});
-        }
-        if (!isLocationCacheFresh()) {
-            loadLocations().catch(() => {});
-        }
+        if (Date.now() - state.lastDataCheckAt >= APP_CONFIG.DATA_CHECK_INTERVAL) refreshRecordsFromServer(false).catch(() => {});
+        if (!isLocationCacheFresh()) loadLocations().catch(() => {});
     });
+}
+function updateDataSyncStatus(status, timestamp = 0) {
+    state.dataSyncState = status;
+    const target = elements.dataSyncStatus;
+    if (!target) return;
+    const timeText = timestamp ? formatClockTime(timestamp) : "";
+    let text = "데이터 확인 중…";
+    if (status === "current") text = `데이터 최신${timeText ? ` · ${timeText}` : ""}`;
+    else if (status === "cached") text = `저장 데이터${timeText ? ` · ${timeText}` : ""}`;
+    else if (status === "offline") text = `오프라인 데이터${timeText ? ` · ${timeText}` : ""}`;
+    else if (status === "error") text = `동기화 지연${timeText ? ` · ${timeText}` : ""}`;
+    target.textContent = text;
+    target.dataset.status = status;
+}
+function formatClockTime(value) {
+    const date = new Date(Number(value));
+    if (!Number.isFinite(date.getTime())) return "";
+    return new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
 function createEmptyIndexes() {
     return {
-        regions: [], apartmentsByRegion: new Map(), recordsByApartment: new Map(), dongsByApartment: new Map(), recordsByApartmentDong: new Map(), rowById: new Map(), gpsPlaces: []
+        regions: [], apartmentsByRegion: new Map(), recordsByApartment: new Map(), dongsByApartment: new Map(), recordsByApartmentDong: new Map(), rowById: new Map(), gpsPlaces: [], gpsCandidates: []
     };
 }
 function makeKey(...parts) { return parts.map(part => cleanText(part).normalize("NFC")).join("\u0000"); }
 function setRecords(records) { state.records = Array.isArray(records) ? records : []; rebuildDataIndexes(); invalidateGpsCache(); }
+function compareRecordDisplayOrder(a, b) {
+    const lineCompare = naturalCompare(a.line, b.line);
+    return lineCompare !== 0 ? lineCompare : Number(a.rowId) - Number(b.rowId);
+}
 function rebuildDataIndexes() {
+    const startedAt = performance.now();
     const indexes = createEmptyIndexes();
     const regionSet = new Set();
     const apartmentsByRegionSet = new Map();
@@ -127,36 +188,56 @@ function rebuildDataIndexes() {
         const locationName = isOffice ? cleanText(record.dong) : apartment;
         const exactName = normalizeGpsName(locationName);
         if (!exactName) continue;
-        const gpsKey = isOffice
-            ? makeKey(region, apartment, exactName) : makeKey(region, exactName); if (!gpsPlaceMap.has(gpsKey)) {
-            gpsPlaceMap.set(gpsKey, { region, apartment, dong: isOffice ? cleanText(record.dong) : "", displayName: locationName, exactName, isOffice });
-        }
+        const gpsKey = isOffice ? makeKey(region, apartment, exactName) : makeKey(region, exactName);
+        if (!gpsPlaceMap.has(gpsKey)) gpsPlaceMap.set(gpsKey, { region, apartment, dong: isOffice ? cleanText(record.dong) : "", displayName: locationName, exactName, isOffice });
     }
     indexes.regions = [...regionSet].sort(compareRegions);
-    for (const [region, apartmentSet] of apartmentsByRegionSet.entries()) {
-        indexes.apartmentsByRegion.set( region, sortApartmentsWithOfficeLast([...apartmentSet]) );
-    }
-    for (const [apartmentKey, dongSet] of dongsByApartmentSet.entries()) {
-        indexes.dongsByApartment.set(apartmentKey, [...dongSet].sort(naturalCompare));
-    }
+    for (const [region, apartmentSet] of apartmentsByRegionSet.entries()) indexes.apartmentsByRegion.set(region, sortApartmentsWithOfficeLast([...apartmentSet]));
+    for (const [apartmentKey, dongSet] of dongsByApartmentSet.entries()) indexes.dongsByApartment.set(apartmentKey, [...dongSet].sort(naturalCompare));
+    for (const records of indexes.recordsByApartment.values()) records.sort(compareRecordDisplayOrder);
+    for (const records of indexes.recordsByApartmentDong.values()) records.sort(compareRecordDisplayOrder);
     indexes.gpsPlaces = [...gpsPlaceMap.values()];
     state.indexes = indexes;
     state.dataGeneration += 1;
+    rebuildGpsCandidateIndex();
+    recordPerformanceMetric("indexBuild", performance.now() - startedAt);
+}
+function rebuildGpsCandidateIndex() {
+    if (!state.indexes || !Array.isArray(state.indexes.gpsPlaces)) return;
+    const candidates = [];
+    if (state.locationMap.size > 0) {
+        for (const placeInfo of state.indexes.gpsPlaces) {
+            const locationEntry = findLocationEntryForPlace(placeInfo);
+            if (!locationEntry?.coordinates?.length) continue;
+            candidates.push({ ...placeInfo, coordinates: locationEntry.coordinates });
+        }
+    }
+    state.indexes.gpsCandidates = candidates;
+    invalidateGpsCache();
 }
 async function refreshRecordsFromServer(force = false) {
     if (state.networkLoading) return;
     state.networkLoading = true;
+    updateDataSyncStatus("checking");
     try {
         if (!force && state.records.length > 0 && state.dataVersion) {
+            const versionStartedAt = performance.now();
             try {
                 const versionResponse = await requestApi("getDataVersion");
+                recordPerformanceMetric("versionCheck", performance.now() - versionStartedAt);
                 const serverVersion = extractDataVersion(versionResponse);
                 state.lastDataCheckAt = Date.now();
-                if (serverVersion && serverVersion === state.dataVersion) return;
+                if (serverVersion && serverVersion === state.dataVersion) {
+                    state.lastSuccessfulSyncAt = state.lastDataCheckAt;
+                    updateDataSyncStatus("current", state.lastSuccessfulSyncAt);
+                    return;
+                }
             } catch (versionError) {
+                recordPerformanceMetric("versionCheck", performance.now() - versionStartedAt);
                 console.warn("데이터 버전 확인 실패, 전체 데이터를 다시 확인합니다:", versionError);
             }
         }
+        const syncStartedAt = performance.now();
         const response = await requestApi("getData");
         const rawData = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : [];
         if (rawData.length === 0) throw new Error("불러온 데이터가 없습니다.");
@@ -167,16 +248,20 @@ async function refreshRecordsFromServer(force = false) {
         setRecords(normalizedRecords);
         state.dataVersion = serverVersion || state.dataVersion;
         state.lastDataCheckAt = Date.now();
+        state.lastSuccessfulSyncAt = state.lastDataCheckAt;
         state.loading = false;
         saveRecordsToCache(state.records);
         validateCurrentSelection();
         renderCurrentView();
         renderGpsButtons();
+        recordPerformanceMetric("dataSync", performance.now() - syncStartedAt);
+        updateDataSyncStatus("current", state.lastSuccessfulSyncAt);
     } catch (error) {
         console.error("데이터 불러오기 실패:", error);
         state.loading = false;
         if (state.records.length === 0) renderError("데이터를 불러오지 못했습니다.", error.message);
         else if (force) showToast("저장된 데이터를 표시합니다.");
+        updateDataSyncStatus(navigator.onLine === false ? "offline" : "error", state.lastSuccessfulSyncAt);
     } finally {
         state.networkLoading = false;
     }
@@ -201,7 +286,7 @@ function loadCachedLocations() {
         if (savedTime && Date.now() - savedTime > APP_CONFIG.LOCATION_CACHE_MAX_AGE) {
             console.info("오래된 좌표 캐시를 먼저 표시합니다.");
         }
-        invalidateGpsCache();
+        rebuildGpsCandidateIndex();
         renderGpsButtons();
         return true;
     } catch (error) {
@@ -247,7 +332,7 @@ async function loadLocations(force = false) {
         } catch (cacheError) {
             console.warn("좌표 캐시 저장 실패:", cacheError);
         }
-        invalidateGpsCache();
+        rebuildGpsCandidateIndex();
         console.info(`GPS 좌표 아파트 수: ${state.locationMap.size}`);
         return true;
     } catch (error) {
@@ -695,7 +780,7 @@ function renderPasswordCards() {
     } else {
         records = getSelectedApartmentRecords();
     }
-    records = [...records].sort((a, b) => { const lineCompare = naturalCompare(a.line, b.line); return lineCompare !== 0 ? lineCompare : Number(a.rowId) - Number(b.rowId); });
+    records = Array.isArray(records) ? records : [];
     if (records.length === 0) {
         const message = document.createElement("div");
         message.className = "status-msg";
@@ -743,6 +828,26 @@ function createPasswordCard(record) {
     }
     card.append(lineTitle, passwordContainer, footer);
     return card;
+}
+function refreshPasswordCard(rowId) {
+    if (state.view !== "cards") {
+        renderCurrentView();
+        return;
+    }
+    const record = findRecordByRowId(rowId);
+    if (!record) {
+        renderCurrentView();
+        return;
+    }
+    const visibleApartment = record.region === state.selectedRegion && record.apartment === state.selectedApartment;
+    const visibleDong = !state.selectedDong || state.selectedDong === "전체" || normalizeDongValue(record.dong) === normalizeDongValue(state.selectedDong);
+    if (!visibleApartment || !visibleDong) return;
+    const existingCard = [...elements.cardList.querySelectorAll(".card[data-row-id]")].find(card => card.dataset.rowId === cleanText(rowId));
+    if (!existingCard) {
+        renderCurrentView();
+        return;
+    }
+    existingCard.replaceWith(createPasswordCard(record));
 }
 /* ========================= 게이트 이미지 백그라운드 선로딩 ========================= */
 const gateImagePreloadPool = [];
@@ -1322,6 +1427,7 @@ function normalizeBackupInfo(item) { return { name: cleanText(item?.name), creat
         ["마지막 동기화", lastSync, ""]
     ];
     for (const [label, value, tone] of metrics) elements.adminMetrics.appendChild(createAdminMetric(label, value, tone));
+    renderAdminPerformanceReport();
 
     if (gpsMissingItems.length > 0) {
         const preview = gpsMissingItems.slice(0, 10).join(", ");
@@ -1495,6 +1601,94 @@ async function runPasswordCleanup(mode) {
         state.passwordCleanupMode = "";
         if (state.adminDashboard) renderAdminDashboard();
     }
+}
+
+function initializePerformanceTracking() {
+    state.performanceHistory = loadPerformanceHistory();
+    savePerformanceSnapshot();
+}
+function loadPerformanceHistory() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(APP_CONFIG.PERFORMANCE_HISTORY_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed.filter(item => item && typeof item === "object").slice(0, APP_CONFIG.PERFORMANCE_HISTORY_LIMIT) : [];
+    } catch (error) {
+        console.warn("성능 측정 기록 읽기 실패:", error);
+        return [];
+    }
+}
+function recordPerformanceMetric(key, value) {
+    const numericValue = Number(value);
+    if (!Object.prototype.hasOwnProperty.call(PERFORMANCE_RULES, key) || !Number.isFinite(numericValue) || numericValue < 0) return;
+    state.performanceMetrics[key] = Math.round(numericValue);
+    savePerformanceSnapshot();
+    if (elements.adminModal?.style.display === "flex" && state.adminDashboard) renderAdminPerformanceReport();
+}
+function savePerformanceSnapshot() {
+    try {
+        const history = Array.isArray(state.performanceHistory) ? state.performanceHistory.slice() : [];
+        const entry = { id: state.performanceSessionId, measuredAt: Date.now(), metrics: { ...state.performanceMetrics } };
+        const index = history.findIndex(item => item.id === state.performanceSessionId);
+        if (index >= 0) history[index] = entry;
+        else history.unshift(entry);
+        state.performanceHistory = history.slice(0, APP_CONFIG.PERFORMANCE_HISTORY_LIMIT);
+        localStorage.setItem(APP_CONFIG.PERFORMANCE_HISTORY_KEY, JSON.stringify(state.performanceHistory));
+    } catch (error) {
+        console.warn("성능 측정 기록 저장 실패:", error);
+    }
+}
+function getPerformanceTone(value, rule) {
+    if (!Number.isFinite(value)) return "pending";
+    if (value <= rule.good) return "good";
+    if (value <= rule.warning) return "warn";
+    return "danger";
+}
+function formatPerformanceDuration(value) {
+    if (!Number.isFinite(value)) return "측정 전";
+    if (value < 1000) return `${Math.round(value)}ms`;
+    return `${(value / 1000).toFixed(value < 10000 ? 1 : 0)}초`;
+}
+function formatPerformanceRange(rule) {
+    return `정상 ≤ ${formatPerformanceDuration(rule.good)} · 주의 ≤ ${formatPerformanceDuration(rule.warning)} · 느림 > ${formatPerformanceDuration(rule.warning)}`;
+}
+function getPerformanceAverage(key) {
+    const values = state.performanceHistory.map(item => Number(item?.metrics?.[key])).filter(Number.isFinite);
+    if (!values.length) return { average: null, count: 0 };
+    return { average: values.reduce((sum, value) => sum + value, 0) / values.length, count: values.length };
+}
+function renderAdminPerformanceReport() {
+    if (!elements.adminPerformanceList || !elements.adminPerformanceStatus) return;
+    elements.adminPerformanceList.replaceChildren();
+    let measuredCount = 0;
+    let slowCount = 0;
+    for (const [key, rule] of Object.entries(PERFORMANCE_RULES)) {
+        const latest = Number(state.performanceMetrics[key]);
+        const latestValue = Number.isFinite(latest) ? latest : null;
+        const averageInfo = getPerformanceAverage(key);
+        const tone = getPerformanceTone(latestValue, rule);
+        if (latestValue !== null) measuredCount += 1;
+        if (tone === "danger") slowCount += 1;
+        const row = document.createElement("div");
+        row.className = `admin-performance-item ${tone}`;
+        const head = document.createElement("div");
+        head.className = "admin-performance-head";
+        const label = document.createElement("div");
+        label.className = "admin-performance-label";
+        label.textContent = rule.label;
+        const badge = document.createElement("div");
+        badge.className = `admin-performance-badge ${tone}`;
+        badge.textContent = tone === "good" ? "정상" : tone === "warn" ? "주의" : tone === "danger" ? "느림" : "측정 전";
+        head.append(label, badge);
+        const value = document.createElement("div");
+        value.className = "admin-performance-value";
+        value.textContent = `최신 ${formatPerformanceDuration(latestValue)} · 최근 ${averageInfo.count || 0}회 평균 ${formatPerformanceDuration(averageInfo.average)}`;
+        const range = document.createElement("div");
+        range.className = "admin-performance-range";
+        range.textContent = formatPerformanceRange(rule);
+        row.append(head, value, range);
+        elements.adminPerformanceList.appendChild(row);
+    }
+    elements.adminPerformanceStatus.className = `admin-data-quality-status ${slowCount ? "danger" : measuredCount ? "good" : ""}`;
+    elements.adminPerformanceStatus.textContent = slowCount ? `느림 ${slowCount}개` : measuredCount ? `${measuredCount}/${Object.keys(PERFORMANCE_RULES).length} 측정` : "측정 중";
 }
 
 function createAdminMetric(label, value, tone = "") { const wrapper = document.createElement("div"); wrapper.className = "admin-metric"; const labelElement = document.createElement("div"); labelElement.className = "admin-metric-label"; labelElement.textContent = label; const valueElement = document.createElement("div"); valueElement.className = `admin-metric-value${tone ? ` ${tone}` : ""}`; valueElement.textContent = value; wrapper.append(labelElement, valueElement); return wrapper; } function renderBackupList(backups, pendingCount) { elements.backupList.replaceChildren(); if (!backups.length) { const empty = document.createElement("div"); empty.className = "backup-empty"; empty.textContent = "아직 생성된 백업이 없습니다."; elements.backupList.appendChild(empty); return; } for (const backup of backups) { const item = document.createElement("div"); item.className = "backup-item"; const info = document.createElement("div"); info.className = "backup-info"; const name = document.createElement("div"); name.className = "backup-name"; name.textContent = backup.kind; name.title = backup.name; const meta = document.createElement("div"); meta.className = "backup-meta"; meta.textContent = `${backup.createdAt || backup.name} · ${backup.rowCount.toLocaleString()}행`; info.append(name, meta); const restoreButton = document.createElement("button"); restoreButton.type = "button"; restoreButton.className = "restore-backup-btn"; restoreButton.textContent = state.restoringBackupName === backup.name ? "복구 중..." : "복구"; restoreButton.disabled = Boolean(state.restoringBackupName) || state.backupCreating || pendingCount > 0; restoreButton.title = pendingCount > 0 ? "저장 대기 작업이 끝난 뒤 복구할 수 있습니다." : ""; restoreButton.addEventListener("click", () => restoreDataBackup(backup)); item.append(info, restoreButton); elements.backupList.appendChild(item); } } async function setupAutomaticBackup() {
@@ -1671,7 +1865,7 @@ function submitAddPwd() {
     record.password = sortPasswords(currentPasswords).join(" / ");
     saveRecordsToCache(state.records);
     closeAddPwdModal();
-    renderCurrentView();
+    refreshPasswordCard(rowId);
 }
 function parsePasswordTemplate(value) {
     const text = cleanText(value);
@@ -1781,7 +1975,7 @@ function submitUpdatePassword() {
     )).join(" / ");
     saveRecordsToCache(state.records);
     closeDeletePwdModal();
-    renderCurrentView();
+    refreshPasswordCard(rowId);
 }
 function confirmDeleteSelectedPassword() {
     const rowId = cleanText(elements.deletePwdRowId.value);
@@ -1795,7 +1989,7 @@ function confirmDeleteSelectedPassword() {
         .join(" / ");
     saveRecordsToCache(state.records);
     closeDeletePwdModal();
-    renderCurrentView();
+    refreshPasswordCard(rowId);
 }
 function findRecordByRowId(rowId) { return state.indexes.rowById.get(cleanText(rowId)) || null; }
 function createRecordInfoText(record) { return [record.region, record.apartment, formatDongLabel(normalizeDongValue(record.dong)), formatLineLabel(record.line)].filter(Boolean).join(" · "); }
@@ -1818,25 +2012,81 @@ function sortPasswordEntriesByPriority(values) {
         .sort(comparePasswordSortEntries)
         .map(entry => entry.value);
 }
+const EASY_PASSWORD_SPECIAL_NUMBERS = Object.freeze({
+    "1004": true,
+    "2580": true,
+    "7942": true,
+    "8282": true,
+    "2424": true
+});
 function analyzePasswordSortEntry(value, originalIndex) {
     const text = cleanText(value);
     const matches = text.match(/\d+/gu) || [];
-    if (matches.length !== 2) {
-        return { value: text, group: 2, roomNumber: Number.POSITIVE_INFINITY, originalIndex };
-    }
+    if (matches.length !== 2) return { value: text, group: 2, roomNumber: Number.POSITIVE_INFINITY, originalIndex, easyReason: "형식 인식 불가" };
     const roomText = matches[0];
     const passwordText = matches[1];
     const roomNumber = Number(roomText);
-    const repeatedPassword = /^(\d)\1+$/u.test(passwordText);
-    const specialEasyPassword = passwordText === "1004" || passwordText === "2580";
-    const sameAsRoom = normalizeNumericText(roomText) === normalizeNumericText(passwordText);
-    const shortPassword = passwordText.length <= 3;
+    const easyResult = analyzeEasyPassword(roomText, passwordText);
     return {
         value: text,
-        group: repeatedPassword || specialEasyPassword || sameAsRoom || shortPassword ? 0 : 1,
+        group: easyResult.easy ? 0 : 1,
         roomNumber: Number.isFinite(roomNumber) ? roomNumber : Number.POSITIVE_INFINITY,
-        originalIndex
+        originalIndex,
+        easyReason: easyResult.reason
     };
+}
+function analyzeEasyPassword(roomTextValue, passwordTextValue) {
+    const roomText = cleanText(roomTextValue);
+    const passwordText = cleanText(passwordTextValue);
+    if (!passwordText) return { easy: false, reason: "" };
+    const normalizedRoom = normalizeNumericText(roomText);
+    const normalizedPassword = normalizeNumericText(passwordText);
+    if (passwordText.length <= 3) return { easy: true, reason: "짧은 비밀번호" };
+    if (normalizedRoom === normalizedPassword) return { easy: true, reason: "호수와 동일" };
+    if (/^(\d)+$/u.test(passwordText)) return { easy: true, reason: "같은 숫자 반복" };
+    if (hasRepeatedDigitBlock(passwordText)) return { easy: true, reason: "숫자 블록 반복" };
+    if (hasRepeatedDigitPairs(passwordText)) return { easy: true, reason: "숫자 쌍 반복" };
+    if (isSequentialDigitPattern(passwordText)) return { easy: true, reason: "연속·역순 숫자" };
+    if (isPalindromeDigitPattern(passwordText)) return { easy: true, reason: "앞뒤 대칭" };
+    if (EASY_PASSWORD_SPECIAL_NUMBERS[passwordText]) return { easy: true, reason: "지정 쉬운 번호" };
+    return { easy: false, reason: "" };
+}
+function hasRepeatedDigitBlock(value) {
+    const text = cleanText(value);
+    const length = text.length;
+    if (length < 4) return false;
+    for (let blockLength = 1; blockLength <= Math.floor(length / 2); blockLength += 1) {
+        if (length % blockLength !== 0) continue;
+        const repeatCount = length / blockLength;
+        if (repeatCount < 2) continue;
+        const block = text.slice(0, blockLength);
+        if (block.repeat(repeatCount) === text) return true;
+    }
+    return false;
+}
+function hasRepeatedDigitPairs(value) {
+    const text = cleanText(value);
+    if (text.length < 4 || text.length % 2 !== 0) return false;
+    for (let index = 0; index < text.length; index += 2) {
+        if (text[index] !== text[index + 1]) return false;
+    }
+    return true;
+}
+function isSequentialDigitPattern(value) {
+    const text = cleanText(value);
+    if (text.length < 4) return false;
+    const digits = text.split("").map(Number);
+    return [1, -1].some(direction => {
+        for (let index = 1; index < digits.length; index += 1) {
+            const expected = (digits[index - 1] + direction + 10) % 10;
+            if (digits[index] !== expected) return false;
+        }
+        return true;
+    });
+}
+function isPalindromeDigitPattern(value) {
+    const text = cleanText(value);
+    return text.length >= 4 && text === text.split("").reverse().join("");
 }
 function comparePasswordSortEntries(left, right) {
     if (left.group !== right.group) return left.group - right.group;
@@ -1848,116 +2098,197 @@ function normalizeNumericText(value) {
     return normalized || "0";
 }
 /* ========================= GPS ========================= */
-function initializeGpsEvents() { document.addEventListener("visibilitychange", () => { if (!document.hidden) restartGpsWatch(); }); window.addEventListener("pageshow", restartGpsWatch); }
-function syncGpsWatch() { if (state.gpsWatchId === null) startGps(); }
-function restartGpsWatch() { clearTimeout(state.gpsRestartTimer); stopGpsWatch(); state.gpsRestartTimer = window.setTimeout(() => { state.gpsRestartTimer = null; startGps(); }, 200); }
-function startGps() {
-    if (!state.currentLocation) {
-        loadLastLocation();
-        if (state.currentLocation) {
-            updateGpsStatus("🟡 최근 위치", "cached");
-            invalidateGpsCache();
-            renderGpsButtons();
-        }
+function initializeGpsEvents() {
+    if (elements.gpsRefreshBtn) elements.gpsRefreshBtn.addEventListener("click", requestManualGpsRefresh);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) scheduleGpsResumeRefresh(); });
+    window.addEventListener("pageshow", event => { if (event.persisted) scheduleGpsResumeRefresh(); });
+    clearInterval(state.gpsMetaTimer);
+    state.gpsMetaTimer = window.setInterval(renderGpsMeta, APP_CONFIG.GPS_META_REFRESH_INTERVAL);
+    renderGpsMeta();
+}
+function syncGpsWatch() { if (state.gpsWatchId === null) startGps({ reason: "startup", useFastPosition: true }); }
+function scheduleGpsResumeRefresh() {
+    const now = Date.now();
+    if (now - state.lastGpsResumeAt < 900) return;
+    state.lastGpsResumeAt = now;
+    clearTimeout(state.gpsResumeTimer);
+    state.gpsResumeTimer = window.setTimeout(() => {
+        state.gpsResumeTimer = null;
+        startGps({ force: true, reason: "resume", useFastPosition: true });
+    }, 120);
+}
+function restartGpsWatch() { scheduleGpsResumeRefresh(); }
+function requestManualGpsRefresh() {
+    if (state.gpsRefreshInProgress) return;
+    state.gpsRefreshInProgress = true;
+    updateGpsRefreshButton();
+    clearTimeout(state.gpsRefreshUnlockTimer);
+    state.gpsRefreshUnlockTimer = window.setTimeout(finishGpsRefresh, APP_CONFIG.GPS_REFRESH_TIMEOUT);
+    updateGpsStatus("📡 GPS 갱신 중", "loading");
+    startGps({ force: true, reason: "manual", useFastPosition: true });
+}
+function finishGpsRefresh() {
+    clearTimeout(state.gpsRefreshUnlockTimer);
+    state.gpsRefreshUnlockTimer = null;
+    state.gpsRefreshInProgress = false;
+    updateGpsRefreshButton();
+}
+function updateGpsRefreshButton() {
+    if (!elements.gpsRefreshBtn) return;
+    elements.gpsRefreshBtn.disabled = state.gpsRefreshInProgress;
+    elements.gpsRefreshBtn.classList.toggle("loading", state.gpsRefreshInProgress);
+    elements.gpsRefreshBtn.textContent = state.gpsRefreshInProgress ? "갱신 중…" : "🔄 갱신";
+}
+function startGps(options = {}) {
+    const force = options.force === true;
+    const useFastPosition = options.useFastPosition !== false;
+    if (!state.currentLocation && loadLastLocation()) {
+        updateGpsStatus("🟡 최근 위치", "cached");
+        renderGpsMeta();
+        renderGpsButtons();
     }
     if (!("geolocation" in navigator)) {
         updateGpsStatus("🔴 GPS 미지원", "error");
         renderGpsButtons();
+        finishGpsRefresh();
         return;
     }
+    if (force) stopGpsWatch();
     if (state.gpsWatchId !== null) return;
-    updateGpsStatus( state.currentLocation ? "🟡 위치 갱신 중" : "📡 위치 확인 중", "loading" );
-    navigator.geolocation.getCurrentPosition( handleGpsSuccess, handleGpsInitialError, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30 * 1000 } );
-    state.gpsWatchId = navigator.geolocation.watchPosition( handleGpsSuccess, handleGpsWatchError, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 } );
+    const generation = ++state.gpsRequestGeneration;
+    updateGpsStatus(state.currentLocation ? "🟡 위치 갱신 중" : "📡 위치 확인 중", "loading");
+    if (useFastPosition) {
+        navigator.geolocation.getCurrentPosition(
+            position => handleGpsSuccess(position, { generation, source: "fast" }),
+            error => handleGpsFastError(error, generation),
+            { enableHighAccuracy: false, timeout: APP_CONFIG.GPS_FAST_TIMEOUT, maximumAge: APP_CONFIG.GPS_FAST_MAX_AGE }
+        );
+    }
+    navigator.geolocation.getCurrentPosition(
+        position => handleGpsSuccess(position, { generation, source: "high" }),
+        error => handleGpsInitialError(error, generation),
+        { enableHighAccuracy: true, timeout: APP_CONFIG.GPS_HIGH_TIMEOUT, maximumAge: 30 * 1000 }
+    );
+    state.gpsWatchId = navigator.geolocation.watchPosition(
+        position => handleGpsSuccess(position, { generation, source: "watch" }),
+        error => handleGpsWatchError(error, generation),
+        { enableHighAccuracy: true, timeout: APP_CONFIG.GPS_HIGH_TIMEOUT, maximumAge: 3000 }
+    );
 }
 function stopGpsWatch() {
-    if (state.gpsWatchId !== null && "geolocation" in navigator) {
-        navigator.geolocation.clearWatch(state.gpsWatchId);
-        state.gpsWatchId = null;
-    }
+    state.gpsRequestGeneration += 1;
+    if (state.gpsWatchId !== null && "geolocation" in navigator) navigator.geolocation.clearWatch(state.gpsWatchId);
+    state.gpsWatchId = null;
     clearTimeout(state.gpsStopTimer);
     state.gpsStopTimer = null;
 }
-function handleGpsSuccess(position) {
-    if (!position?.coords) return;
+function handleGpsSuccess(position, context = {}) {
+    if (!position?.coords || context.generation !== state.gpsRequestGeneration) return;
     const latitude = Number(position.coords.latitude);
     const longitude = Number(position.coords.longitude);
     const accuracy = Number(position.coords.accuracy);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-    const newLocation = {
-        latitude, longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null, timestamp: Number(position.timestamp) || Date.now()
-    };
-    if (shouldUseNewLocation(state.currentLocation, newLocation)) {
+    if (!state.firstDeviceGpsRecorded) {
+        state.firstDeviceGpsRecorded = true;
+        recordPerformanceMetric("firstGps", performance.now() - APP_BOOT_STARTED_AT);
+    }
+    if (!state.highAccuracyGpsRecorded && Number.isFinite(accuracy) && accuracy <= APP_CONFIG.GPS_HIGH_ACCURACY_TARGET) {
+        state.highAccuracyGpsRecorded = true;
+        recordPerformanceMetric("highAccuracyGps", performance.now() - APP_BOOT_STARTED_AT);
+    }
+    const newLocation = { latitude, longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null, timestamp: Number(position.timestamp) || Date.now(), source: context.source || "gps" };
+    const locationAccepted = shouldUseNewLocation(state.currentLocation, newLocation);
+    if (locationAccepted) {
         state.currentLocation = newLocation;
         saveLastLocation(newLocation);
         invalidateGpsCache();
         renderGpsButtons();
     }
-    updateGpsAccuracyStatus(newLocation.accuracy);
+    updateGpsAccuracyStatus(locationAccepted ? newLocation.accuracy : state.currentLocation?.accuracy);
+    renderGpsMeta();
+    if (state.gpsRefreshInProgress && (locationAccepted || context.source !== "fast")) finishGpsRefresh();
 }
 function shouldUseNewLocation(currentLocation, newLocation) {
     if (!currentLocation) return true;
+    const currentTime = Number(currentLocation.timestamp) || 0;
+    const newTime = Number(newLocation.timestamp) || Date.now();
+    if (newTime + 2000 < currentTime) return false;
     const currentLatitude = Number(currentLocation.latitude);
     const currentLongitude = Number(currentLocation.longitude);
     const newLatitude = Number(newLocation.latitude);
     const newLongitude = Number(newLocation.longitude);
-    if ( !isValidCoordinate(currentLatitude, currentLongitude) || !isValidCoordinate(newLatitude, newLongitude) ) {
-        return true;
-    }
-    const movedDistance = calculateDistanceMeters( currentLatitude, currentLongitude, newLatitude, newLongitude );
-    if (movedDistance >= APP_CONFIG.GPS_RECALC_DISTANCE) return true;
+    if (!isValidCoordinate(currentLatitude, currentLongitude) || !isValidCoordinate(newLatitude, newLongitude)) return true;
+    const movedDistance = calculateDistanceMeters(currentLatitude, currentLongitude, newLatitude, newLongitude);
     const currentAccuracy = Number(currentLocation.accuracy);
     const newAccuracy = Number(newLocation.accuracy);
-    if ( Number.isFinite(newAccuracy) && (!Number.isFinite(currentAccuracy) || newAccuracy + 10 < currentAccuracy) ) {
-        return true;
-    }
-    const currentTime = Number(currentLocation.timestamp) || 0;
-    const newTime = Number(newLocation.timestamp) || Date.now();
+    const currentIsRecent = Date.now() - currentTime < 2 * 60 * 1000;
+    if (currentIsRecent && Number.isFinite(currentAccuracy) && Number.isFinite(newAccuracy) && newAccuracy > Math.max(100, currentAccuracy * 2) && movedDistance < 100) return false;
+    if (movedDistance >= APP_CONFIG.GPS_RECALC_DISTANCE) return true;
+    if (Number.isFinite(newAccuracy) && (!Number.isFinite(currentAccuracy) || newAccuracy + 10 < currentAccuracy)) return true;
     return newTime - currentTime >= 60 * 1000;
 }
-function handleGpsInitialError(error) {
+function handleGpsFastError(error, generation) { if (generation === state.gpsRequestGeneration) console.info("빠른 위치 수신 생략:", error?.message || error); }
+function handleGpsInitialError(error, generation) {
+    if (generation !== state.gpsRequestGeneration) return;
     console.warn("초기 GPS 수신 실패:", error);
     if (state.currentLocation) {
         updateGpsStatus("🟡 최근 위치", "cached");
         renderGpsButtons();
+        renderGpsMeta();
+        finishGpsRefresh();
         return;
     }
     updateGpsErrorStatus(error);
+    finishGpsRefresh();
 }
-function handleGpsWatchError(error) { console.warn("GPS 감시 오류:", error); if (!state.currentLocation) updateGpsErrorStatus(error); }
-function updateGpsErrorStatus(error) { const errorCode = Number(error?.code); if (errorCode === 1) updateGpsStatus("🔴 위치 권한 필요", "error"); else if (errorCode === 2) updateGpsStatus("🔴 위치 확인 불가", "error"); else if (errorCode === 3) updateGpsStatus("🟡 GPS 지연", "warning"); else updateGpsStatus("🔴 GPS 오류", "error"); renderGpsButtons(); }
+function handleGpsWatchError(error, generation) { if (generation !== state.gpsRequestGeneration) return; console.warn("GPS 감시 오류:", error); if (!state.currentLocation) updateGpsErrorStatus(error); }
+function updateGpsErrorStatus(error) { const errorCode = Number(error?.code); if (errorCode === 1) updateGpsStatus("🔴 위치 권한 필요", "error"); else if (errorCode === 2) updateGpsStatus("🔴 위치 확인 불가", "error"); else if (errorCode === 3) updateGpsStatus("🟡 GPS 지연", "warning"); else updateGpsStatus("🔴 GPS 오류", "error"); renderGpsButtons(); renderGpsMeta(); }
 function updateGpsAccuracyStatus(accuracy) { if (!Number.isFinite(accuracy)) updateGpsStatus("🟡 위치 확인됨", "warning"); else if (accuracy <= 30) updateGpsStatus("🟢 강함", "strong"); else if (accuracy <= 100) updateGpsStatus("🟡 보통", "medium"); else updateGpsStatus("🔴 약함", "weak"); }
-function updateGpsStatus(text, status = "") { if (elements.gpsStatusBadge.textContent === text && elements.gpsStatusBadge.dataset.status === status) return; elements.gpsStatusBadge.textContent = text; elements.gpsStatusBadge.dataset.status = status; }
+function updateGpsStatus(text, status = "") { if (!elements.gpsStatusBadge || (elements.gpsStatusBadge.textContent === text && elements.gpsStatusBadge.dataset.status === status)) return; elements.gpsStatusBadge.textContent = text; elements.gpsStatusBadge.dataset.status = status; }
 function loadLastLocation() {
     try {
         const saved = localStorage.getItem(APP_CONFIG.LAST_LOCATION_KEY);
-        if (!saved) return;
+        if (!saved) return false;
         const parsed = JSON.parse(saved);
         const latitude = Number(parsed.latitude);
         const longitude = Number(parsed.longitude);
         const timestamp = Number(parsed.timestamp);
-        if (!isValidCoordinate(latitude, longitude) || !Number.isFinite(timestamp)) return;
+        if (!isValidCoordinate(latitude, longitude) || !Number.isFinite(timestamp)) return false;
         if (Date.now() - timestamp > APP_CONFIG.LAST_LOCATION_MAX_AGE) {
             localStorage.removeItem(APP_CONFIG.LAST_LOCATION_KEY);
-            return;
+            return false;
         }
         const parsedAccuracy = Number(parsed.accuracy);
-        state.currentLocation = {
-            latitude, longitude, accuracy: Number.isFinite(parsedAccuracy) ? parsedAccuracy : null, timestamp
-        };
+        state.currentLocation = { latitude, longitude, accuracy: Number.isFinite(parsedAccuracy) ? parsedAccuracy : null, timestamp, source: "stored" };
+        return true;
     } catch (error) {
         console.error("최근 위치 읽기 실패:", error);
         localStorage.removeItem(APP_CONFIG.LAST_LOCATION_KEY);
+        return false;
     }
 }
-function saveLastLocation(location) {
-    try {
-        localStorage.setItem(APP_CONFIG.LAST_LOCATION_KEY, JSON.stringify(location));
-    } catch (error) {
-        console.error("최근 위치 저장 실패:", error);
+function saveLastLocation(location) { try { localStorage.setItem(APP_CONFIG.LAST_LOCATION_KEY, JSON.stringify(location)); } catch (error) { console.error("최근 위치 저장 실패:", error); } }
+function renderGpsMeta() {
+    if (!elements.gpsLocationMeta) return;
+    if (!state.currentLocation) {
+        elements.gpsLocationMeta.textContent = "최근 위치 확인 중";
+        elements.gpsLocationMeta.dataset.status = "loading";
+        return;
     }
+    const age = Math.max(0, Date.now() - (Number(state.currentLocation.timestamp) || Date.now()));
+    const accuracy = Number(state.currentLocation.accuracy);
+    const ageText = formatLocationAge(age);
+    const accuracyText = Number.isFinite(accuracy) ? `오차 ${Math.round(accuracy)}m` : "오차 확인 중";
+    elements.gpsLocationMeta.textContent = `최근 위치 ${ageText} · ${accuracyText}`;
+    elements.gpsLocationMeta.dataset.status = age <= 60 * 1000 ? "fresh" : age <= 3 * 60 * 1000 ? "aging" : "stale";
 }
-function invalidateGpsCache() { state.gpsNearbyCache = []; state.gpsCacheLocation = null; state.gpsCacheGeneration = -1; state.gpsLastRenderSignature = ""; }
+function formatLocationAge(milliseconds) {
+    if (milliseconds < 15000) return "방금";
+    if (milliseconds < 60 * 1000) return `${Math.floor(milliseconds / 1000)}초 전`;
+    if (milliseconds < 60 * 60 * 1000) return `${Math.floor(milliseconds / (60 * 1000))}분 전`;
+    return `${Math.floor(milliseconds / (60 * 60 * 1000))}시간 전`;
+}
+function invalidateGpsCache() { state.gpsNearbyCache = []; state.gpsCacheLocation = null; state.gpsCacheGeneration = -1; }
 function renderGpsButtons() {
     let placeholderText = "";
     let nearbyApartments = [];
@@ -1966,41 +2297,56 @@ function renderGpsButtons() {
     else if (!state.locationsLoaded) placeholderText = "좌표 확인 중";
     else if (state.locationsError || state.locationMap.size === 0) placeholderText = "좌표 오류";
     else {
-        nearbyApartments = getNearbyApartments( state.currentLocation.latitude, state.currentLocation.longitude, APP_CONFIG.GPS_BUTTON_COUNT );
+        nearbyApartments = getNearbyApartments(state.currentLocation.latitude, state.currentLocation.longitude, APP_CONFIG.GPS_BUTTON_COUNT);
         if (nearbyApartments.length === 0) placeholderText = "이름 매칭 없음";
     }
-    const signature = placeholderText
-        ? `placeholder:${placeholderText}` : nearbyApartments.map(item => [ item.region, item.apartment, item.dong, Math.round(item.distance) ].join("|")).join("::");
-    if (signature === state.gpsLastRenderSignature) return;
-    state.gpsLastRenderSignature = signature;
-    elements.gpsButtons.replaceChildren();
     if (placeholderText) {
-        for (let index = 0; index < APP_CONFIG.GPS_BUTTON_COUNT; index += 1) {
-            elements.gpsButtons.appendChild(createGpsPlaceholderButton(placeholderText));
-        }
+        if (state.gpsLastPlaceholder === placeholderText && state.gpsLastListSignature === "") return;
+        state.gpsLastPlaceholder = placeholderText;
+        state.gpsLastListSignature = "";
+        state.gpsButtonItems = [];
+        elements.gpsButtons.replaceChildren();
+        for (let index = 0; index < APP_CONFIG.GPS_BUTTON_COUNT; index += 1) elements.gpsButtons.appendChild(createGpsPlaceholderButton(placeholderText));
         return;
     }
-    for (const item of nearbyApartments) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "gps-btn";
-        button.style.whiteSpace = "pre-line";
-        const distanceText = formatDistance(item.distance);
-        button.textContent = `${item.displayName}\n${distanceText}`;
-        button.title = item.isOffice
-            ? `${item.region} · ${item.apartment} · ${item.dong} · ${distanceText}` : `${item.region} · ${item.apartment} · ${distanceText}`; button.addEventListener("click", () => openApartmentFromGps(item));
-        elements.gpsButtons.appendChild(button);
+    const listSignature = nearbyApartments.map(item => [item.region, item.apartment, item.dong].join("|")).join("::");
+    if (listSignature === state.gpsLastListSignature) {
+        updateGpsButtonDistances(nearbyApartments);
+        return;
     }
-    while (elements.gpsButtons.children.length < APP_CONFIG.GPS_BUTTON_COUNT) {
-        elements.gpsButtons.appendChild(createGpsPlaceholderButton(""));
-    }
+    state.gpsLastPlaceholder = "";
+    state.gpsLastListSignature = listSignature;
+    state.gpsButtonItems = nearbyApartments.slice();
+    elements.gpsButtons.replaceChildren();
+    for (const item of nearbyApartments) elements.gpsButtons.appendChild(createGpsPlaceButton(item));
+    while (elements.gpsButtons.children.length < APP_CONFIG.GPS_BUTTON_COUNT) elements.gpsButtons.appendChild(createGpsPlaceholderButton(""));
+}
+function createGpsPlaceButton(item) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "gps-btn";
+    button.style.whiteSpace = "pre-line";
+    updateGpsPlaceButton(button, item);
+    button.addEventListener("click", () => openApartmentFromGps(item));
+    return button;
+}
+function updateGpsPlaceButton(button, item) {
+    const distanceText = formatDistance(item.distance);
+    const nextText = `${item.displayName}\n${distanceText}`;
+    if (button.textContent !== nextText) button.textContent = nextText;
+    button.dataset.distance = String(Math.round(item.distance));
+    button.title = item.isOffice ? `${item.region} · ${item.apartment} · ${item.dong} · ${distanceText}` : `${item.region} · ${item.apartment} · ${distanceText}`;
+}
+function updateGpsButtonDistances(items) {
+    const buttons = [...elements.gpsButtons.querySelectorAll(".gps-btn:not(:disabled)")];
+    items.forEach((item, index) => { if (buttons[index]) updateGpsPlaceButton(buttons[index], item); });
+    state.gpsButtonItems = items.slice();
 }
 function renderGpsPlaceholderButtons(text = "위치 확인 중") {
-    state.gpsLastRenderSignature = "";
+    state.gpsLastListSignature = "";
+    state.gpsLastPlaceholder = text;
     elements.gpsButtons.replaceChildren();
-    for (let index = 0; index < APP_CONFIG.GPS_BUTTON_COUNT; index += 1) {
-        elements.gpsButtons.appendChild(createGpsPlaceholderButton(text));
-    }
+    for (let index = 0; index < APP_CONFIG.GPS_BUTTON_COUNT; index += 1) elements.gpsButtons.appendChild(createGpsPlaceholderButton(text));
 }
 function createGpsPlaceholderButton(text = "") { const button = document.createElement("button"); button.type = "button"; button.className = "gps-btn"; button.disabled = true; button.textContent = text; return button; }
 function normalizeOfficeGpsAlias(value) { return normalizeGpsName(value) .toUpperCase() .replace(/[()（）\[\]{}·ㆍ_\-–—]/gu, "") .replace(/오피스텔|OFFICETEL/gu, "") .replace(/오피$/u, ""); }
@@ -2028,11 +2374,9 @@ function getNearbyApartments(currentLatitude, currentLongitude, buttonCount = AP
     const canReuse = state.gpsCacheLocation && state.gpsCacheGeneration === state.dataGeneration && state.gpsNearbyCache.length > 0 && calculateDistanceMeters( currentPoint.latitude, currentPoint.longitude, state.gpsCacheLocation.latitude, state.gpsCacheLocation.longitude ) < APP_CONFIG.GPS_RECALC_DISTANCE;
     if (canReuse) return state.gpsNearbyCache.slice(0, limit);
     const results = [];
-    for (const placeInfo of state.indexes.gpsPlaces) {
-        const locationEntry = findLocationEntryForPlace(placeInfo);
-        if (!locationEntry) continue;
+    for (const placeInfo of state.indexes.gpsCandidates) {
         let shortestDistance = Infinity;
-        for (const coordinate of locationEntry.coordinates) {
+        for (const coordinate of placeInfo.coordinates) {
             const distance = calculateDistanceMeters( currentPoint.latitude, currentPoint.longitude, coordinate.latitude, coordinate.longitude );
             if (distance < shortestDistance) shortestDistance = distance;
         }
@@ -2092,7 +2436,7 @@ function closeModalByElement(modal) { if (modal === elements.commonEditorModal) 
 function closeTopModal() { const modals = [elements.adminModal, elements.adminPinModal, elements.historyModal, elements.deletePwdModal, elements.addPwdModal, elements.commonEditorModal]; const openedModal = modals.find(modal => modal.style.display === "flex"); if (openedModal) closeModalByElement(openedModal); }
 /* ========================= 토스트 ========================= */
 function showToast(message) { const text = cleanText(message); if (!text) return; clearTimeout(state.toastTimer); elements.toast.textContent = text; elements.toast.classList.add("show"); state.toastTimer = window.setTimeout(() => { elements.toast.classList.remove("show"); }, 2500); }
-window.addEventListener("beforeunload", () => { clearTimeout(state.gpsRestartTimer); flushRecordsCache(); stopGpsWatch(); });
+window.addEventListener("beforeunload", () => { clearTimeout(state.gpsRestartTimer); clearTimeout(state.gpsResumeTimer); clearTimeout(state.gpsRefreshUnlockTimer); clearInterval(state.gpsMetaTimer); flushRecordsCache(); savePerformanceSnapshot(); stopGpsWatch(); });
 function scheduleAppUpdateReload() { state.appUpdatePending = true; clearTimeout(state.appUpdateTimer); state.appUpdateTimer = window.setTimeout(tryApplyAppUpdate, 700); }
 function tryApplyAppUpdate() {
     if (!state.appUpdatePending) return;

@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260715-2">
+    <link rel="stylesheet" href="style.css?v=20260715-3">
 </head>
 <body>
 <div class="container">
@@ -28,7 +28,17 @@
     </nav>
 
     <section id="gpsSection" class="gps-section">
-        <div class="gps-header-row"><div class="gps-title">📍 내 주변(GPS)</div><div id="gpsStatusBadge" class="gps-status-badge">📡 신호 분석 중...</div></div>
+        <div class="gps-header-row">
+            <div class="gps-title">📍 내 주변(GPS)</div>
+            <div class="gps-header-actions">
+                <div id="gpsStatusBadge" class="gps-status-badge">📡 신호 분석 중...</div>
+                <button id="gpsRefreshBtn" class="gps-refresh-btn" type="button" aria-label="GPS 위치 새로고침">🔄 갱신</button>
+            </div>
+        </div>
+        <div class="gps-info-row">
+            <div id="gpsLocationMeta" class="gps-location-meta">최근 위치 확인 중</div>
+            <div id="dataSyncStatus" class="data-sync-status">저장 데이터 확인 중</div>
+        </div>
         <div id="gpsButtons" class="gps-buttons"></div>
     </section>
 
@@ -135,6 +145,14 @@
             </section>
             <section class="admin-section">
                 <div class="admin-section-head">
+                    <div>⚡ 앱 성능 측정</div>
+                    <div id="adminPerformanceStatus" class="admin-data-quality-status">측정 중</div>
+                </div>
+                <div class="admin-help">최근 실행값과 최근 5회 평균을 표시합니다. 표준 범위는 이 앱의 실사용 기준이며 GPS·통신 환경에 따라 달라질 수 있습니다.</div>
+                <div id="adminPerformanceList" class="admin-performance-list"></div>
+            </section>
+            <section class="admin-section">
+                <div class="admin-section-head">
                     <div>🔎 데이터 오류 점검</div>
                     <div id="adminDataQualityStatus" class="admin-data-quality-status">확인 중</div>
                 </div>
@@ -182,6 +200,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="script.js?v=20260715-2"></script>
+<script src="script.js?v=20260715-3"></script>
 </body>
 </html>
