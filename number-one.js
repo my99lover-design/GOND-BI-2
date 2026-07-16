@@ -1,17 +1,19 @@
 "use strict";
 
-/* 넘버원 전용 주간 수행·추가금 계산기 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-17 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_KEYS = Object.freeze({
-    TOKEN: "gimpoB_number_one_token_v1",
-    TOKEN_EXPIRES: "gimpoB_number_one_token_expires_v1",
-    CLIENT_ID: "gimpoB_number_one_client_id_v1",
-    CACHE: "gimpoB_number_one_week_cache_v1",
-    PENDING: "gimpoB_number_one_pending_v1"
+    TOKEN: "gimpoB_number_one_prod_account_token_v2",
+    TOKEN_EXPIRES: "gimpoB_number_one_prod_account_expires_v2",
+    USER_ID: "gimpoB_number_one_prod_user_id_v2",
+    CLIENT_ID: "gimpoB_number_one_prod_client_id_v2",
+    CACHE_PREFIX: "gimpoB_number_one_prod_week_cache_v2_",
+    PENDING_PREFIX: "gimpoB_number_one_prod_pending_v2_"
 });
 const numberOneState = {
     token: "",
     expiresAt: 0,
+    userId: "",
     data: null,
     selectedWorkDate: "",
     loading: false,
@@ -20,6 +22,10 @@ const numberOneState = {
     previousDetailsOpen: false,
     pendingSync: false,
     screenOpen: false,
+    authMode: "login",
+    accessToken: "",
+    accessExpiresAt: 0,
+    issuedUserId: "",
     saveButtonTimer: 0
 };
 const numberOneElements = {};
@@ -28,26 +34,49 @@ document.addEventListener("DOMContentLoaded", initializeNumberOne, { once: true 
 
 function initializeNumberOne() {
     [
-        "numberOneSection", "numberOneOpenBtn", "numberOneHomeBtn", "numberOneLocked", "numberOneApp", "numberOneLoginBtn", "numberOneRetryBtn",
-        "numberOneWeekRange", "numberOneUserCode", "numberOneTotal", "numberOnePeak", "numberOneBonus",
+        "numberOneSection", "numberOneOpenBtn", "numberOneHomeBtn", "numberOneLocked", "numberOneLockedSub", "numberOneApp", "numberOneLoginBtn", "numberOneRetryBtn",
+        "numberOneWeekRange", "numberOneUserCode", "numberOneLogoutBtn", "numberOneTotal", "numberOnePeak", "numberOneBonus",
         "numberOneCondition150", "numberOneConditionPeak", "numberOneStartPart", "numberOneStartCurrent", "numberOneWeekCurrent",
         "numberOnePeakPart", "numberOnePeakCurrent", "numberOneStandardCurrent", "numberOnePremiumCurrent", "numberOneInputTitle",
         "numberOneDayStatus", "numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input",
         "numberOneInputGuide", "numberOneSaveBtn", "numberOneDeleteBtn",
-        "numberOneDetailsToggle", "numberOneDetails", "numberOneSyncNote", "numberOnePreviousWeek", "numberOnePreviousToggle", "numberOnePreviousDetails", "numberOnePinModal",
-        "numberOnePinInput", "numberOnePinError", "numberOnePinSubmitBtn", "numberOnePinCancelBtn"
+        "numberOneDetailsToggle", "numberOneDetails", "numberOneSyncNote", "numberOnePreviousWeek", "numberOnePreviousToggle", "numberOnePreviousDetails",
+        "numberOneAuthModal", "numberOneAccessGatePanel", "numberOneAccessPin", "numberOneAccessSubmitBtn", "numberOneAuthTabs", "numberOneAuthLoginTab", "numberOneAuthRegisterTab", "numberOneLoginPanel", "numberOneRegisterPanel",
+        "numberOneLoginUserId", "numberOneLoginPersonalPin", "numberOneLoginSubmitBtn", "numberOneRegisterPersonalPin",
+        "numberOneRegisterPersonalPinConfirm", "numberOneRegisterSubmitBtn", "numberOneIssuedPanel", "numberOneIssuedUserId", "numberOneIssuedCopyBtn",
+        "numberOneIssuedContinueBtn", "numberOneAuthError", "numberOneAuthCancelBtn"
     ].forEach(id => { numberOneElements[id] = document.getElementById(id); });
     if (!numberOneElements.numberOneSection) return;
 
     numberOneElements.numberOneOpenBtn?.addEventListener("click", openNumberOneScreen);
     numberOneElements.numberOneHomeBtn?.addEventListener("click", closeNumberOneScreen);
-    numberOneElements.numberOneLoginBtn?.addEventListener("click", openNumberOnePinModal);
-    numberOneElements.numberOneRetryBtn?.addEventListener("click", refreshNumberOneWeek);
-    numberOneElements.numberOnePinSubmitBtn?.addEventListener("click", submitNumberOnePin);
-    numberOneElements.numberOnePinCancelBtn?.addEventListener("click", closeNumberOnePinModal);
-    numberOneElements.numberOnePinInput?.addEventListener("keydown", event => {
-        if (event.key === "Enter") submitNumberOnePin();
-        if (event.key === "Escape") closeNumberOnePinModal();
+    numberOneElements.numberOneLoginBtn?.addEventListener("click", () => openNumberOneAuthModal("login"));
+    numberOneElements.numberOneRetryBtn?.addEventListener("click", () => numberOneState.token ? refreshNumberOneWeek() : openNumberOneAuthModal("login"));
+    numberOneElements.numberOneLogoutBtn?.addEventListener("click", logoutNumberOneAccount);
+    numberOneElements.numberOneAccessSubmitBtn?.addEventListener("click", submitNumberOneAccessGate);
+    numberOneElements.numberOneAuthLoginTab?.addEventListener("click", () => setNumberOneAuthMode("login"));
+    numberOneElements.numberOneAuthRegisterTab?.addEventListener("click", () => setNumberOneAuthMode("register"));
+    numberOneElements.numberOneLoginSubmitBtn?.addEventListener("click", submitNumberOneAccountLogin);
+    numberOneElements.numberOneRegisterSubmitBtn?.addEventListener("click", submitNumberOneRegistration);
+    numberOneElements.numberOneIssuedCopyBtn?.addEventListener("click", copyNumberOneIssuedUserId);
+    numberOneElements.numberOneIssuedUserId?.addEventListener("click", copyNumberOneIssuedUserId);
+    numberOneElements.numberOneIssuedContinueBtn?.addEventListener("click", () => closeNumberOneAuthModal(true));
+    numberOneElements.numberOneAuthCancelBtn?.addEventListener("click", () => closeNumberOneAuthModal());
+    numberOneElements.numberOneAccessPin?.addEventListener("keydown", event => {
+        if (event.key === "Enter") submitNumberOneAccessGate();
+        if (event.key === "Escape") closeNumberOneAuthModal();
+    });
+    [numberOneElements.numberOneLoginUserId, numberOneElements.numberOneLoginPersonalPin].forEach(input => {
+        input?.addEventListener("keydown", event => {
+            if (event.key === "Enter") submitNumberOneAccountLogin();
+            if (event.key === "Escape") closeNumberOneAuthModal();
+        });
+    });
+    [numberOneElements.numberOneRegisterPersonalPin, numberOneElements.numberOneRegisterPersonalPinConfirm].forEach(input => {
+        input?.addEventListener("keydown", event => {
+            if (event.key === "Enter") submitNumberOneRegistration();
+            if (event.key === "Escape") closeNumberOneAuthModal();
+        });
     });
     numberOneElements.numberOneSaveBtn?.addEventListener("click", saveNumberOneDay);
     numberOneElements.numberOneDeleteBtn?.addEventListener("click", deleteNumberOneDay);
@@ -60,14 +89,15 @@ function initializeNumberOne() {
     window.addEventListener("online", flushNumberOnePending);
 
     restoreNumberOneSession();
-    const cached = loadNumberOneCache();
-    if (cached) {
-        numberOneState.data = normalizeNumberOneSummary(cached);
-        numberOneState.selectedWorkDate = cached.context?.currentWorkDate || "";
-        renderNumberOneApp();
-    } else if (!numberOneState.token) {
-        renderNumberOneLocked();
+    if (numberOneState.token && numberOneState.userId) {
+        const cached = loadNumberOneCache();
+        if (cached && normalizeNumberOneClientUserId(cached.userCode) === numberOneState.userId) {
+            numberOneState.data = normalizeNumberOneSummary(cached);
+            numberOneState.selectedWorkDate = cached.context?.currentWorkDate || "";
+            renderNumberOneApp();
+        }
     }
+    if (!numberOneState.token) renderNumberOneLocked();
     numberOneElements.numberOneSection.hidden = true;
 }
 
@@ -77,15 +107,20 @@ function openNumberOneScreen() {
     document.body.classList.add("number-one-screen-active");
     numberOneElements.numberOneSection.hidden = false;
     window.scrollTo({ top: 0, behavior: "auto" });
-    if (numberOneState.data) renderNumberOneApp();
-    else renderNumberOneLocked();
-    if (numberOneState.token) refreshNumberOneWeek();
+    if (numberOneState.token) {
+        if (numberOneState.data) renderNumberOneApp();
+        else renderNumberOneLocked("로그인 정보를 확인하고 있습니다.");
+        void refreshNumberOneWeek();
+    } else {
+        renderNumberOneLocked();
+        openNumberOneAuthModal("login");
+    }
 }
 
 function closeNumberOneScreen() {
     numberOneState.screenOpen = false;
     document.body.classList.remove("number-one-screen-active");
-    closeNumberOnePinModal(true);
+    closeNumberOneAuthModal(true);
     try {
         if (typeof resetSteps === "function") resetSteps();
     } catch (error) {}
@@ -97,34 +132,56 @@ function closeNumberOneScreen() {
 function restoreNumberOneSession() {
     const token = localStorage.getItem(NUMBER_ONE_KEYS.TOKEN) || "";
     const expiresAt = Number(localStorage.getItem(NUMBER_ONE_KEYS.TOKEN_EXPIRES)) || 0;
-    if (!token || (expiresAt && expiresAt <= Date.now())) {
+    const userId = normalizeNumberOneClientUserId(localStorage.getItem(NUMBER_ONE_KEYS.USER_ID) || "");
+    if (!token || !userId || (expiresAt && expiresAt <= Date.now())) {
         clearNumberOneSession();
         return;
     }
     numberOneState.token = token;
     numberOneState.expiresAt = expiresAt;
+    numberOneState.userId = userId;
 }
 
-function saveNumberOneSession(token, expiresAt) {
+function saveNumberOneSession(token, expiresAt, userIdValue) {
+    const userId = normalizeNumberOneClientUserId(userIdValue);
     numberOneState.token = String(token || "");
     numberOneState.expiresAt = new Date(expiresAt || 0).getTime() || 0;
+    numberOneState.userId = userId;
     localStorage.setItem(NUMBER_ONE_KEYS.TOKEN, numberOneState.token);
     localStorage.setItem(NUMBER_ONE_KEYS.TOKEN_EXPIRES, String(numberOneState.expiresAt));
+    localStorage.setItem(NUMBER_ONE_KEYS.USER_ID, userId);
 }
 
 function clearNumberOneSession() {
     numberOneState.token = "";
     numberOneState.expiresAt = 0;
+    numberOneState.userId = "";
+    numberOneState.data = null;
+    numberOneState.selectedWorkDate = "";
+    numberOneState.detailsOpen = false;
+    numberOneState.previousDetailsOpen = false;
     localStorage.removeItem(NUMBER_ONE_KEYS.TOKEN);
     localStorage.removeItem(NUMBER_ONE_KEYS.TOKEN_EXPIRES);
+    localStorage.removeItem(NUMBER_ONE_KEYS.USER_ID);
 }
 
 function getNumberOneClientId() {
     let clientId = localStorage.getItem(NUMBER_ONE_KEYS.CLIENT_ID) || "";
     if (clientId.length >= 12) return clientId;
-    clientId = `no_${Date.now()}_${cryptoRandomText(28)}`;
+    clientId = `no_prod_${Date.now()}_${cryptoRandomText(28)}`;
     localStorage.setItem(NUMBER_ONE_KEYS.CLIENT_ID, clientId);
     return clientId;
+}
+
+function normalizeNumberOneClientUserId(value) {
+    let text = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+    if (/^[A-Z0-9]{6}$/.test(text)) text = `NO-${text}`;
+    return /^NO-[A-Z0-9]{6}$/.test(text) ? text : "";
+}
+
+function getNumberOneScopedStorageKey(prefix) {
+    const userId = numberOneState.userId || "NO-UNKNOWN";
+    return `${prefix}${userId}`;
 }
 
 function cryptoRandomText(length) {
@@ -154,7 +211,10 @@ async function numberOneRequest(action, payload = {}) {
 function renderNumberOneLocked(message = "") {
     numberOneElements.numberOneLocked.hidden = false;
     numberOneElements.numberOneApp.hidden = true;
-    if (numberOneElements.numberOneRetryBtn) numberOneElements.numberOneRetryBtn.hidden = !message;
+    if (numberOneElements.numberOneLockedSub) {
+        numberOneElements.numberOneLockedSub.textContent = message || "사용자ID 로그인 또는 신규 ID 발급";
+    }
+    if (numberOneElements.numberOneRetryBtn) numberOneElements.numberOneRetryBtn.hidden = !message || !numberOneState.token;
 }
 
 function renderNumberOneApp() {
@@ -167,8 +227,8 @@ function renderNumberOneApp() {
     if (!numberOneState.selectedWorkDate) numberOneState.selectedWorkDate = context.currentWorkDate || context.weekStart || "";
 
     numberOneElements.numberOneWeekRange.textContent = `${formatNumberOneDate(context.weekStart)} 06시 ~ ${formatNumberOneDate(context.weekEnd)} 05시`;
-    numberOneElements.numberOneUserCode.textContent = data.userCode || "익명 사용자";
-    numberOneElements.numberOneUserCode.title = "눌러서 익명 코드 복사";
+    numberOneElements.numberOneUserCode.textContent = data.userCode || numberOneState.userId || "사용자ID";
+    numberOneElements.numberOneUserCode.title = "눌러서 사용자ID 복사";
     numberOneElements.numberOneTotal.textContent = `${formatNumber(summary.totalCount)}건`;
     numberOneElements.numberOnePeak.textContent = `${formatNumber(summary.tenToSeventeenCount)}건`;
     numberOneElements.numberOneBonus.textContent = formatMoney(summary.totalBonus);
@@ -322,10 +382,10 @@ async function refreshNumberOneWeek() {
         renderNumberOneApp();
         await flushNumberOnePending();
     } catch (error) {
-        if (/인증|토큰|만료|사용 중지/.test(error.message)) {
+        if (/인증|토큰|로그인|계정|만료|사용 중지|사용할 수 없는/.test(error.message)) {
             clearNumberOneSession();
             renderNumberOneLocked();
-            numberOneToast("전용 인증이 만료되었습니다.");
+            numberOneToast("로그인 정보가 만료되었습니다.");
         } else if (numberOneState.data) {
             renderNumberOneApp();
             numberOneElements.numberOneSyncNote.textContent = "오프라인 저장본을 표시 중입니다.";
@@ -338,51 +398,192 @@ async function refreshNumberOneWeek() {
     }
 }
 
-function openNumberOnePinModal() {
-    numberOneElements.numberOnePinError.hidden = true;
-    numberOneElements.numberOnePinError.textContent = "";
-    numberOneElements.numberOnePinInput.value = "";
-    numberOneElements.numberOnePinModal.style.display = "flex";
-    window.setTimeout(() => numberOneElements.numberOnePinInput.focus(), 50);
+function openNumberOneAuthModal(mode = "login") {
+    if (!numberOneElements.numberOneAuthModal) return;
+    numberOneState.issuedUserId = "";
+    numberOneState.accessToken = "";
+    numberOneState.accessExpiresAt = 0;
+    numberOneState.authMode = mode === "register" ? "register" : "login";
+    numberOneElements.numberOneIssuedPanel.hidden = true;
+    numberOneElements.numberOneAccessGatePanel.hidden = false;
+    numberOneElements.numberOneAuthTabs.hidden = true;
+    numberOneElements.numberOneLoginPanel.hidden = true;
+    numberOneElements.numberOneRegisterPanel.hidden = true;
+    numberOneElements.numberOneAuthCancelBtn.hidden = false;
+    if (numberOneElements.numberOneAccessPin) numberOneElements.numberOneAccessPin.value = "";
+    clearNumberOneAuthError();
+    numberOneElements.numberOneAuthModal.style.display = "flex";
+    window.setTimeout(() => numberOneElements.numberOneAccessPin?.focus(), 50);
 }
 
-function closeNumberOnePinModal(force = false) {
+function closeNumberOneAuthModal(force = false) {
     if (numberOneState.loading && !force) return;
-    numberOneElements.numberOnePinModal.style.display = "none";
+    numberOneState.accessToken = "";
+    numberOneState.accessExpiresAt = 0;
+    if (numberOneElements.numberOneAuthModal) numberOneElements.numberOneAuthModal.style.display = "none";
 }
 
-async function submitNumberOnePin() {
+async function submitNumberOneAccessGate() {
     if (numberOneState.loading) return;
-    const pin = String(numberOneElements.numberOnePinInput.value || "").replace(/\D/g, "");
-    if (!/^\d{6}$/.test(pin)) {
-        showNumberOnePinError("전용 PIN 숫자 6자리를 입력해주세요.");
-        return;
-    }
-    numberOneState.loading = true;
-    numberOneElements.numberOnePinSubmitBtn.disabled = true;
-    numberOneElements.numberOnePinSubmitBtn.textContent = "인증 중…";
+    const accessPin = String(numberOneElements.numberOneAccessPin?.value || "").replace(/\D/g, "");
+    if (!/^\d{6}$/.test(accessPin)) return showNumberOneAuthError("관리자가 설정한 전용 비밀번호 숫자 6자리를 입력해주세요.");
+    setNumberOneAuthBusy(true, "gate");
     try {
-        const result = await numberOneRequest("numberOneLogin", { pin, clientId: getNumberOneClientId() });
-        saveNumberOneSession(result.token, result.expiresAt);
-        numberOneState.data = normalizeNumberOneSummary(result.data);
-        numberOneState.selectedWorkDate = result.data?.context?.currentWorkDate || "";
-        reapplyNumberOnePendingLocally();
-        saveNumberOneCache(numberOneState.data);
-        closeNumberOnePinModal(true);
-        renderNumberOneApp();
-        numberOneToast(`인증 완료 · ${result.data?.userCode || "익명 사용자"}`);
+        const result = await numberOneRequest("numberOneVerifyAccessPin", {
+            accessPin,
+            clientId: getNumberOneClientId()
+        });
+        numberOneState.accessToken = String(result.accessToken || "");
+        numberOneState.accessExpiresAt = new Date(result.expiresAt || 0).getTime() || 0;
+        if (!numberOneState.accessToken) throw new Error("안전 인증 응답이 올바르지 않습니다.");
+        numberOneElements.numberOneAccessGatePanel.hidden = true;
+        numberOneElements.numberOneAuthTabs.hidden = false;
+        setNumberOneAuthMode(numberOneState.authMode);
+        clearNumberOneAuthError();
+        window.setTimeout(() => {
+            if (numberOneState.authMode === "register") numberOneElements.numberOneRegisterPersonalPin?.focus();
+            else numberOneElements.numberOneLoginUserId?.focus();
+        }, 50);
     } catch (error) {
-        showNumberOnePinError(error.message);
+        showNumberOneAuthError(error.message);
     } finally {
-        numberOneState.loading = false;
-        numberOneElements.numberOnePinSubmitBtn.disabled = false;
-        numberOneElements.numberOnePinSubmitBtn.textContent = "확인";
+        setNumberOneAuthBusy(false, "gate");
     }
 }
 
-function showNumberOnePinError(message) {
-    numberOneElements.numberOnePinError.textContent = message;
-    numberOneElements.numberOnePinError.hidden = false;
+function resetNumberOneAccessGate(message = "") {
+    numberOneState.accessToken = "";
+    numberOneState.accessExpiresAt = 0;
+    numberOneElements.numberOneIssuedPanel.hidden = true;
+    numberOneElements.numberOneAccessGatePanel.hidden = false;
+    numberOneElements.numberOneAuthTabs.hidden = true;
+    numberOneElements.numberOneLoginPanel.hidden = true;
+    numberOneElements.numberOneRegisterPanel.hidden = true;
+    if (numberOneElements.numberOneAccessPin) numberOneElements.numberOneAccessPin.value = "";
+    if (message) showNumberOneAuthError(message);
+    window.setTimeout(() => numberOneElements.numberOneAccessPin?.focus(), 50);
+}
+
+function setNumberOneAuthMode(mode) {
+    numberOneState.authMode = mode === "register" ? "register" : "login";
+    const login = numberOneState.authMode === "login";
+    numberOneElements.numberOneAuthLoginTab?.classList.toggle("active", login);
+    numberOneElements.numberOneAuthRegisterTab?.classList.toggle("active", !login);
+    numberOneElements.numberOneAuthLoginTab?.setAttribute("aria-selected", String(login));
+    numberOneElements.numberOneAuthRegisterTab?.setAttribute("aria-selected", String(!login));
+    const gatePassed = Boolean(numberOneState.accessToken) && (!numberOneState.accessExpiresAt || numberOneState.accessExpiresAt > Date.now());
+    if (numberOneElements.numberOneLoginPanel) numberOneElements.numberOneLoginPanel.hidden = !gatePassed || !login;
+    if (numberOneElements.numberOneRegisterPanel) numberOneElements.numberOneRegisterPanel.hidden = !gatePassed || login;
+    clearNumberOneAuthError();
+}
+
+async function submitNumberOneAccountLogin() {
+    if (numberOneState.loading) return;
+    if (!numberOneState.accessToken || (numberOneState.accessExpiresAt && numberOneState.accessExpiresAt <= Date.now())) {
+        return resetNumberOneAccessGate("안전 인증이 만료되었습니다. 전용 비밀번호를 다시 입력해주세요.");
+    }
+    const userId = normalizeNumberOneClientUserId(numberOneElements.numberOneLoginUserId?.value);
+    const personalPin = String(numberOneElements.numberOneLoginPersonalPin?.value || "").replace(/\D/g, "");
+    if (!userId) return showNumberOneAuthError("사용자ID를 확인해주세요. 예: NO-ABC123");
+    if (!/^\d{6}$/.test(personalPin)) return showNumberOneAuthError("개인 PIN 숫자 6자리를 입력해주세요.");
+    setNumberOneAuthBusy(true, "login");
+    try {
+        const result = await numberOneRequest("numberOneAccountLogin", {
+            accessToken: numberOneState.accessToken,
+            userId, personalPin, clientId: getNumberOneClientId()
+        });
+        completeNumberOneAccountAuth(result);
+        closeNumberOneAuthModal(true);
+        numberOneToast(`로그인 완료 · ${result.userId || result.data?.userCode}`);
+    } catch (error) {
+        if (/안전 인증|전용 비밀번호/.test(error.message)) resetNumberOneAccessGate(error.message);
+        else showNumberOneAuthError(error.message);
+    } finally {
+        setNumberOneAuthBusy(false, "login");
+    }
+}
+
+async function submitNumberOneRegistration() {
+    if (numberOneState.loading) return;
+    if (!numberOneState.accessToken || (numberOneState.accessExpiresAt && numberOneState.accessExpiresAt <= Date.now())) {
+        return resetNumberOneAccessGate("안전 인증이 만료되었습니다. 전용 비밀번호를 다시 입력해주세요.");
+    }
+    const personalPin = String(numberOneElements.numberOneRegisterPersonalPin?.value || "").replace(/\D/g, "");
+    const confirmPin = String(numberOneElements.numberOneRegisterPersonalPinConfirm?.value || "").replace(/\D/g, "");
+    if (!/^\d{6}$/.test(personalPin)) return showNumberOneAuthError("새 개인 PIN 숫자 6자리를 입력해주세요.");
+    if (personalPin !== confirmPin) return showNumberOneAuthError("개인 PIN 확인값이 일치하지 않습니다.");
+    setNumberOneAuthBusy(true, "register");
+    try {
+        const result = await numberOneRequest("numberOneRegister", {
+            accessToken: numberOneState.accessToken,
+            personalPin, clientId: getNumberOneClientId()
+        });
+        completeNumberOneAccountAuth(result);
+        numberOneState.issuedUserId = result.userId || result.data?.userCode || "";
+        numberOneElements.numberOneIssuedUserId.textContent = numberOneState.issuedUserId;
+        numberOneElements.numberOneAccessGatePanel.hidden = true;
+        numberOneElements.numberOneAuthTabs.hidden = true;
+        numberOneElements.numberOneLoginPanel.hidden = true;
+        numberOneElements.numberOneRegisterPanel.hidden = true;
+        numberOneElements.numberOneIssuedPanel.hidden = false;
+        numberOneElements.numberOneAuthCancelBtn.hidden = true;
+        clearNumberOneAuthError();
+    } catch (error) {
+        if (/안전 인증|전용 비밀번호/.test(error.message)) resetNumberOneAccessGate(error.message);
+        else showNumberOneAuthError(error.message);
+    } finally {
+        setNumberOneAuthBusy(false, "register");
+    }
+}
+
+function completeNumberOneAccountAuth(result) {
+    const userId = normalizeNumberOneClientUserId(result.userId || result.data?.userCode);
+    if (!userId || !result.token) throw new Error("계정 인증 응답이 올바르지 않습니다.");
+    saveNumberOneSession(result.token, result.expiresAt, userId);
+    numberOneState.data = normalizeNumberOneSummary(result.data);
+    numberOneState.selectedWorkDate = result.data?.context?.currentWorkDate || "";
+    reapplyNumberOnePendingLocally();
+    saveNumberOneCache(numberOneState.data);
+    renderNumberOneApp();
+    void flushNumberOnePending();
+}
+
+function setNumberOneAuthBusy(busy, mode) {
+    numberOneState.loading = !!busy;
+    const button = mode === "gate"
+        ? numberOneElements.numberOneAccessSubmitBtn
+        : (mode === "register" ? numberOneElements.numberOneRegisterSubmitBtn : numberOneElements.numberOneLoginSubmitBtn);
+    if (!button) return;
+    button.disabled = !!busy;
+    if (mode === "gate") button.textContent = busy ? "확인 중…" : "전용 비밀번호 확인";
+    else button.textContent = busy ? (mode === "register" ? "발급 중…" : "로그인 중…") : (mode === "register" ? "신규 사용자ID 발급" : "로그인");
+}
+
+function showNumberOneAuthError(message) {
+    numberOneElements.numberOneAuthError.textContent = message;
+    numberOneElements.numberOneAuthError.hidden = false;
+}
+
+function clearNumberOneAuthError() {
+    if (!numberOneElements.numberOneAuthError) return;
+    numberOneElements.numberOneAuthError.textContent = "";
+    numberOneElements.numberOneAuthError.hidden = true;
+}
+
+function copyNumberOneIssuedUserId() {
+    const userId = numberOneState.issuedUserId || numberOneElements.numberOneIssuedUserId?.textContent || "";
+    if (!userId) return;
+    navigator.clipboard?.writeText(userId).then(() => numberOneToast("사용자ID를 복사했습니다.")).catch(() => numberOneToast(userId));
+}
+
+function logoutNumberOneAccount() {
+    if (!numberOneState.token) return;
+    if (!window.confirm("이 기기에서 넘버원 전용 계정을 로그아웃할까요?")) return;
+    const token = numberOneState.token;
+    clearNumberOneSession();
+    renderNumberOneLocked("로그아웃되었습니다. 다시 로그인해주세요.");
+    numberOneToast("로그아웃했습니다.");
+    void numberOneRequest("numberOneLogout", { token }).catch(() => {});
 }
 
 async function saveNumberOneDay() {
@@ -490,7 +691,11 @@ function renderNumberOnePreviousWeek() {
     const range = `${formatNumberOneDate(context.weekStart)} 06시 ~ ${formatNumberOneDate(context.weekEnd)} 05시`;
     toggle.textContent = numberOneState.previousDetailsOpen ? `직전주 기록 접기 · ${range}` : `직전주 기록 보기 · ${range}`;
     details.hidden = !numberOneState.previousDetailsOpen;
-    if (!numberOneState.previousDetailsOpen) return;
+    details.style.display = numberOneState.previousDetailsOpen ? "grid" : "none";
+    if (!numberOneState.previousDetailsOpen) {
+        details.innerHTML = "";
+        return;
+    }
 
     const daysMap = new Map((previous.days || []).map(day => [day.workDate, day]));
     const dates = makeNumberOneWeekDates(context.weekStart);
@@ -551,23 +756,24 @@ function formatMoney(value) {
 function copyNumberOneUserCode() {
     const code = numberOneState.data?.userCode;
     if (!code) return;
-    navigator.clipboard?.writeText(code).then(() => numberOneToast("익명 코드를 복사했습니다.")).catch(() => numberOneToast(code));
+     navigator.clipboard?.writeText(code).then(() => numberOneToast("사용자ID를 복사했습니다.")).catch(() => numberOneToast(code));
 }
 
 function saveNumberOneCache(data) {
-    try { localStorage.setItem(NUMBER_ONE_KEYS.CACHE, JSON.stringify(data)); } catch (error) {}
+    if (!numberOneState.userId || !data || normalizeNumberOneClientUserId(data.userCode) !== numberOneState.userId) return;
+    try { localStorage.setItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.CACHE_PREFIX), JSON.stringify(data)); } catch (error) {}
 }
 
 function loadNumberOneCache() {
     try {
-        const data = JSON.parse(localStorage.getItem(NUMBER_ONE_KEYS.CACHE) || "null");
+        const data = JSON.parse(localStorage.getItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.CACHE_PREFIX)) || "null");
         return data && typeof data === "object" ? data : null;
     } catch (error) { return null; }
 }
 
 function loadNumberOnePending() {
     try {
-        const values = JSON.parse(localStorage.getItem(NUMBER_ONE_KEYS.PENDING) || "[]");
+        const values = JSON.parse(localStorage.getItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX)) || "[]");
         return Array.isArray(values) ? values : [];
     } catch (error) { return []; }
 }
@@ -575,7 +781,7 @@ function loadNumberOnePending() {
 function queueNumberOnePending(type, workDate, values) {
     const pending = loadNumberOnePending().filter(item => item.workDate !== workDate);
     pending.push({ type: type === "delete" ? "delete" : "save", workDate, values, savedAt: Date.now() });
-    localStorage.setItem(NUMBER_ONE_KEYS.PENDING, JSON.stringify(pending));
+    localStorage.setItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX), JSON.stringify(pending));
 }
 
 function removeNumberOnePending(workDate, savedAt) {
@@ -584,7 +790,7 @@ function removeNumberOnePending(workDate, savedAt) {
         if (savedAt && Number(item.savedAt) !== Number(savedAt)) return true;
         return false;
     });
-    localStorage.setItem(NUMBER_ONE_KEYS.PENDING, JSON.stringify(pending));
+    localStorage.setItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX), JSON.stringify(pending));
 }
 
 async function flushNumberOnePending() {
@@ -609,10 +815,10 @@ async function flushNumberOnePending() {
         if (numberOneState.data) saveNumberOneCache(numberOneState.data);
         renderNumberOneApp();
     } catch (error) {
-        if (/인증|토큰|만료|사용 중지/.test(error.message)) {
+        if (/인증|토큰|로그인|계정|만료|사용 중지|사용할 수 없는/.test(error.message)) {
             clearNumberOneSession();
             renderNumberOneLocked();
-            numberOneToast("전용 인증이 만료되었습니다.");
+            numberOneToast("로그인 정보가 만료되었습니다.");
         } else if (numberOneElements.numberOneSyncNote) {
             numberOneElements.numberOneSyncNote.textContent = "서버 연결 시 자동으로 다시 동기화합니다.";
             numberOneElements.numberOneSyncNote.classList.add("warning");

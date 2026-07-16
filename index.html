@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-16">
-    <link rel="stylesheet" href="number-one.css?v=20260716-16">
+    <link rel="stylesheet" href="style.css?v=20260716-17">
+    <link rel="stylesheet" href="number-one.css?v=20260716-17">
 </head>
 <body>
 <div class="container">
@@ -32,10 +32,10 @@
             <div id="numberOneLocked" class="number-one-locked">
                 <div class="number-one-locked-copy">
                     <div class="number-one-locked-title">🏅 넘버원 전용 주간 수행</div>
-                    <div class="number-one-locked-sub">익명 인증 후 내 기록만 저장·계산</div>
+                    <div id="numberOneLockedSub" class="number-one-locked-sub">사용자ID 로그인 또는 신규 ID 발급</div>
                 </div>
                 <div>
-                    <button id="numberOneLoginBtn" class="number-one-auth-btn" type="button">인증</button>
+                    <button id="numberOneLoginBtn" class="number-one-auth-btn" type="button">로그인 / 신규 발급</button>
                     <button id="numberOneRetryBtn" class="number-one-auth-btn" type="button" hidden>재연결</button>
                 </div>
             </div>
@@ -45,7 +45,10 @@
                         <div class="number-one-title">🏅 넘버원 전용</div>
                         <div id="numberOneWeekRange" class="number-one-week-range">주간 정보 확인 중</div>
                     </div>
-                    <button id="numberOneUserCode" class="number-one-user-code" type="button">익명 코드</button>
+                    <div class="number-one-account-actions">
+                        <button id="numberOneUserCode" class="number-one-user-code" type="button">사용자ID</button>
+                        <button id="numberOneLogoutBtn" class="number-one-logout-btn" type="button">로그아웃</button>
+                    </div>
                 </div>
                 <div class="number-one-summary">
                     <div class="number-one-summary-item"><div class="number-one-summary-label">주간 총건수</div><div id="numberOneTotal" class="number-one-summary-value">0건</div></div>
@@ -154,19 +157,59 @@
 </div>
 
 
-<div id="numberOnePinModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="numberOnePinModalTitle">
-    <div class="modal-content number-one-pin-modal-content">
-        <h3 id="numberOnePinModalTitle">🏅 넘버원 전용 인증</h3>
-        <p class="number-one-pin-description">공통 PIN 인증 후 익명 사용자 코드가 자동 발급됩니다.<br>같은 휴대폰에서는 다음부터 자동으로 열립니다.</p>
-        <div class="form-group">
-            <label for="numberOnePinInput">전용 PIN 6자리</label>
-            <input id="numberOnePinInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••••">
+<div id="numberOneAuthModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="numberOneAuthModalTitle">
+    <div class="modal-content number-one-auth-modal-content">
+        <h3 id="numberOneAuthModalTitle">🏅 넘버원 전용 계정</h3>
+        <p class="number-one-auth-description">처음 접속한 기기는 관리자가 설정한 전용 비밀번호를 먼저 확인합니다.<br>계정 인증 완료 후에는 이 기기에서 바로 진입합니다.</p>
+
+        <div id="numberOneAccessGatePanel" class="number-one-access-gate-panel">
+            <div class="form-group">
+                <label for="numberOneAccessPin">전용 비밀번호 6자리</label>
+                <input id="numberOneAccessPin" class="number-one-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••••">
+            </div>
+            <button id="numberOneAccessSubmitBtn" class="number-one-auth-submit" type="button">전용 비밀번호 확인</button>
+            <p class="number-one-gate-note">이 비밀번호를 통과해야 기존 사용자 로그인 또는 신규 ID 발급이 가능합니다.</p>
         </div>
-        <div id="numberOnePinError" class="number-one-pin-error" hidden></div>
-        <div class="modal-buttons">
-            <button id="numberOnePinSubmitBtn" class="modal-btn btn-submit" type="button">확인</button>
-            <button id="numberOnePinCancelBtn" class="modal-btn btn-cancel" type="button">취소</button>
+
+        <div id="numberOneAuthTabs" class="number-one-auth-tabs" role="tablist" aria-label="계정 인증 방식" hidden>
+            <button id="numberOneAuthLoginTab" class="number-one-auth-tab active" type="button" role="tab" aria-selected="true">기존 사용자 로그인</button>
+            <button id="numberOneAuthRegisterTab" class="number-one-auth-tab" type="button" role="tab" aria-selected="false">신규 ID 발급</button>
         </div>
+
+        <div id="numberOneLoginPanel" class="number-one-auth-panel" hidden>
+            <div class="form-group">
+                <label for="numberOneLoginUserId">사용자ID</label>
+                <input id="numberOneLoginUserId" class="number-one-user-id-input" type="text" maxlength="9" autocomplete="username" autocapitalize="characters" placeholder="NO-ABC123">
+            </div>
+            <div class="form-group">
+                <label for="numberOneLoginPersonalPin">개인 PIN 6자리</label>
+                <input id="numberOneLoginPersonalPin" class="number-one-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password" placeholder="••••••">
+            </div>
+            <button id="numberOneLoginSubmitBtn" class="number-one-auth-submit" type="button">로그인</button>
+        </div>
+
+        <div id="numberOneRegisterPanel" class="number-one-auth-panel" hidden>
+            <div class="form-group">
+                <label for="numberOneRegisterPersonalPin">새 개인 PIN 6자리</label>
+                <input id="numberOneRegisterPersonalPin" class="number-one-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" placeholder="••••••">
+            </div>
+            <div class="form-group">
+                <label for="numberOneRegisterPersonalPinConfirm">개인 PIN 확인</label>
+                <input id="numberOneRegisterPersonalPinConfirm" class="number-one-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" placeholder="••••••">
+            </div>
+            <button id="numberOneRegisterSubmitBtn" class="number-one-auth-submit" type="button">신규 사용자ID 발급</button>
+        </div>
+
+        <div id="numberOneIssuedPanel" class="number-one-issued-panel" hidden>
+            <div class="number-one-issued-label">신규 사용자ID</div>
+            <button id="numberOneIssuedUserId" class="number-one-issued-user-id" type="button">NO-000000</button>
+            <p>사용자ID와 개인 PIN을 보관하세요.<br>다른 기기에서 같은 기록으로 로그인할 때 필요합니다.</p>
+            <button id="numberOneIssuedCopyBtn" class="number-one-auth-submit" type="button">사용자ID 복사</button>
+            <button id="numberOneIssuedContinueBtn" class="number-one-auth-secondary" type="button">확인하고 시작</button>
+        </div>
+
+        <div id="numberOneAuthError" class="number-one-pin-error" hidden></div>
+        <button id="numberOneAuthCancelBtn" class="number-one-auth-secondary" type="button">취소</button>
     </div>
 </div>
 
@@ -377,7 +420,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-16"></script>
-<script src="number-one.js?v=20260716-16"></script>
+<script src="script.js?v=20260716-17"></script>
+<script src="number-one.js?v=20260716-17"></script>
 </body>
 </html>
