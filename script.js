@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 공동비번 수정·삭제 통합판 20260716-6 */
+/* 넘버원 김포B 공비 - 공동비번 수정·삭제 통합판 20260716-7 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -3830,14 +3830,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v31",
+    app: "gimpo-b-app-v32",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-6", "./script.js?v=20260716-6", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-7", "./script.js?v=20260716-7", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4017,7 +4017,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-6", serviceWorkerVersion: "v31" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-7", serviceWorkerVersion: "v32" });
 const FINAL_DIAGNOSTIC_CONFIG = Object.freeze({
     GPS_FRESH_MS: 3 * 60 * 1000,
     GPS_STALE_MS: 10 * 60 * 1000,
@@ -4383,8 +4383,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-6",
-    serviceWorkerVersion: "v31",
+    fileVersion: "20260716-7",
+    serviceWorkerVersion: "v32",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -4571,7 +4571,7 @@ document.addEventListener("DOMContentLoaded", () => {
 }, { once: true });
 
 
-/* ========================= v31 공동비번 수정·삭제 ========================= */
+/* ========================= v32 공동비번 수정·삭제 ========================= */
 /* 저장 작업은 로컬 대기열 등록과 화면 반영이 동기식이므로, 검증 실패에도 표시되던 임시 진행 상태를 제거합니다. */
 submitCommonPwdForm = v25SubmitCommon;
 submitAddPwd = v25SubmitAdd;
