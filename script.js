@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 최종 UI 정합성 최적화판 20260715-13 */
+/* 넘버원 김포B 공비 - 익명 사용 현황 통합판 20260716-2 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -9,7 +9,7 @@ const GATE_IMAGES = Object.freeze({
     "럭스B": { src: "./gate-images/럭스B.webp", label: "럭스B" },
     "루체뷰1": { src: "./gate-images/루체뷰1.webp", label: "루체뷰1" }
 });
-const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
+const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", USAGE_CLIENT_ID_KEY: "gimpoB_usage_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, USAGE_HEARTBEAT_INTERVAL: 2 * 60 * 1000, USAGE_HEARTBEAT_MIN_GAP: 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const PERFORMANCE_RULES = Object.freeze({
     cacheLoad: { label: "캐시 데이터 로딩", category: "기기 처리", good: 250, warning: 600 },
     indexBuild: { label: "탐색 인덱스 생성", category: "기기 처리", good: 200, warning: 500 },
@@ -27,7 +27,7 @@ const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
     gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
-    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false
+    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
@@ -65,6 +65,7 @@ async function initializeApp() {
     markFirstScreenRendered();
 
     scheduleDeferredInitialization();
+    initializeUsageHeartbeat();
     refreshRecordsFromServer(false).catch(() => {});
     loadLocations().catch(() => {});
     schedulePendingSync(300);
@@ -117,6 +118,42 @@ async function handleInstallApp() {
     if (choice.outcome === "accepted") markAppInstalled();
     else updateInstallButtonVisibility();
 }
+
+/* ========================= 익명 앱 사용 현황 ========================= */
+function getUsageClientId() {
+    try {
+        let value = cleanText(localStorage.getItem(APP_CONFIG.USAGE_CLIENT_ID_KEY));
+        if (!value) {
+            value = `usage_${Date.now()}_${crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}_${Math.random().toString(36).slice(2)}`;
+            localStorage.setItem(APP_CONFIG.USAGE_CLIENT_ID_KEY, value);
+        }
+        return value;
+    } catch (error) {
+        return `session_${state.performanceSessionId}`;
+    }
+}
+function initializeUsageHeartbeat() {
+    sendUsageHeartbeat(true);
+    if (state.usageHeartbeatTimer) window.clearInterval(state.usageHeartbeatTimer);
+    state.usageHeartbeatTimer = window.setInterval(() => {
+        if (!document.hidden) sendUsageHeartbeat(false);
+    }, APP_CONFIG.USAGE_HEARTBEAT_INTERVAL);
+}
+async function sendUsageHeartbeat(force = false) {
+    const now = Date.now();
+    if (document.hidden || !navigator.onLine || state.usageHeartbeatInFlight) return;
+    if (!force && now - state.lastUsageHeartbeatAt < APP_CONFIG.USAGE_HEARTBEAT_MIN_GAP) return;
+    state.usageHeartbeatInFlight = true;
+    try {
+        await requestApi("recordUsage", { clientId: getUsageClientId() });
+        state.lastUsageHeartbeatAt = Date.now();
+    } catch (error) {
+        console.warn("익명 사용 현황 기록 실패:", error?.message || error);
+    } finally {
+        state.usageHeartbeatInFlight = false;
+    }
+}
+
 /* ========================= 데이터 로딩 ========================= */
 function initializeFreshnessChecks() {
     window.addEventListener("online", () => {
@@ -130,6 +167,7 @@ function initializeFreshnessChecks() {
             flushRecordsCache();
             return;
         }
+        sendUsageHeartbeat(false);
         if (Date.now() - state.lastDataCheckAt >= APP_CONFIG.DATA_CHECK_INTERVAL) refreshRecordsFromServer(false).catch(() => {});
         if (!isLocationCacheFresh()) loadLocations().catch(() => {});
     });
@@ -1530,6 +1568,7 @@ function handleAdminAuthError(error) {
         blankPasswordRowCount: Number(data?.blankPasswordRowCount) || 0,
         historyCount: Number(data?.historyCount) || 0,
         statistics: normalizeAdminStatistics(data?.statistics),
+        usage: normalizeUsageStatistics(data?.usage),
         dataVersion: cleanText(data?.dataVersion),
         checkedAt: cleanText(data?.checkedAt),
         dataQuality: {
@@ -1557,6 +1596,14 @@ function handleAdminAuthError(error) {
             hoursSinceSuccess: Number.isFinite(Number(data?.autoBackup?.hoursSinceSuccess)) ? Number(data.autoBackup.hoursSinceSuccess) : null
         },
         backups: Array.isArray(data?.backups) ? data.backups.map(normalizeBackupInfo).filter(item => item.name) : []
+    };
+}
+function normalizeUsageStatistics(data) {
+    return {
+        todayUsers: Number(data?.todayUsers) || 0,
+        activeUsers: Number(data?.activeUsers) || 0,
+        activeMinutes: Number(data?.activeMinutes) || 5,
+        checkedAt: cleanText(data?.checkedAt)
     };
 }
 function normalizeAdminStatistics(data) {
@@ -1612,6 +1659,8 @@ function normalizeBackupInfo(item) { return { name: cleanText(item?.name), creat
         ["데이터 오류", `${totalDataIssues.toLocaleString()}건`, totalDataIssues ? "danger" : "good"],
         ["GPS 좌표 연결", `${gpsMatched.toLocaleString()} / ${gpsTotal.toLocaleString()}`, gpsMissingItems.length ? "warn" : "good"],
         ["저장 대기", `${pendingCount.toLocaleString()}건`, pendingCount ? "danger" : "good"],
+        ["오늘 사용 기기", `${dashboard.usage.todayUsers.toLocaleString()}명`, dashboard.usage.todayUsers ? "good" : ""],
+        ["현재 활동 기기", `${dashboard.usage.activeUsers.toLocaleString()}명 · 최근 ${dashboard.usage.activeMinutes}분`, dashboard.usage.activeUsers ? "good" : ""],
         ["수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""],
         ["자동 백업", getAutoBackupMetricText(dashboard.autoBackup), dashboard.autoBackup.needsAttention ? "danger" : "good"],
         ["보관 백업", `${dashboard.backups.length.toLocaleString()}개`, dashboard.backups.length ? "good" : "warn"],
@@ -1665,6 +1714,8 @@ function renderAdminStatistics(dashboard, gpsInfo) {
         ["공동비번 등록", `${stats.commonPasswordPlaceCount.toLocaleString()}곳 · ${commonRate}%`, commonRate >= 90 ? "good" : ""],
         ["GPS 연결률", `${gpsInfo.gpsMatched.toLocaleString()}/${gpsInfo.gpsTotal.toLocaleString()} · ${gpsRate}%`, gpsInfo.gpsMissing ? "warn" : "good"],
         ["게이트 이미지", `${gateCount.toLocaleString()}개`, gateCount ? "good" : ""],
+        ["오늘 사용 기기", `${dashboard.usage.todayUsers.toLocaleString()}명`, dashboard.usage.todayUsers ? "good" : ""],
+        ["현재 활동 기기", `${dashboard.usage.activeUsers.toLocaleString()}명 · 최근 ${dashboard.usage.activeMinutes}분`, dashboard.usage.activeUsers ? "good" : ""],
         ["최근 7일 수정", `${stats.recent7Days.toLocaleString()}건`, ""],
         ["최근 30일 수정", `${stats.recent30Days.toLocaleString()}건`, ""],
         ["전체 수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""]
@@ -1820,7 +1871,7 @@ async function runPasswordCleanup(mode) {
         : Number(state.adminDashboard.dataQuality.cleanup?.duplicateCount) || 0;
     const title = isSort ? "쉬운 번호 우선·호수 정렬" : "중복 비밀번호 제거";
     const detail = isSort
-        ? "반복·연속·역순·대칭·쌍 반복·호수 동일·3자리 이하·지정 쉬운 번호를 앞에 모으고, 쉬운 그룹과 일반 그룹을 각각 호수순으로 정렬합니다. 중복 개수는 유지합니다."
+        ? "쉬운 번호를 1) 3자리 이하, 2) 같은 숫자 반복, 3) 숫자 블록 반복, 4) 숫자 쌍 반복, 5) 연속 숫자, 6) 역순 숫자, 7) 앞뒤 대칭, 8) 호수와 동일, 9) 지정 쉬운 번호 순으로 나누고, 각 순위 안에서는 호수순으로 정렬합니다. 일반 번호는 그 뒤에서 호수순으로 정렬하며 중복 개수는 유지합니다."
         : "처음 저장된 값은 유지하고 같은 비밀번호만 제거합니다. 순서는 변경하지 않습니다.";
     const targetText = count > 0
         ? `점검에서 확인된 대상 ${count.toLocaleString()}개 행을 처리합니다.`
@@ -2348,43 +2399,68 @@ const EASY_PASSWORD_SPECIAL_NUMBERS = Object.freeze({
     "8282": true,
     "2424": true
 });
+const PASSWORD_SORT_PRIORITY = Object.freeze({
+    SHORT: 1,
+    SAME_DIGIT: 2,
+    REPEATED_BLOCK: 3,
+    REPEATED_PAIRS: 4,
+    ASCENDING_SEQUENCE: 5,
+    DESCENDING_SEQUENCE: 6,
+    PALINDROME: 7,
+    SAME_AS_ROOM: 8,
+    SPECIAL: 9,
+    GENERAL: 10,
+    UNRECOGNIZED: 11
+});
 function analyzePasswordSortEntry(value, originalIndex) {
     const text = cleanText(value);
     const matches = text.match(/\d+/gu) || [];
-    if (matches.length !== 2) return { value: text, group: 2, roomNumber: Number.POSITIVE_INFINITY, originalIndex, easyReason: "형식 인식 불가" };
+    if (matches.length !== 2) {
+        return {
+            value: text,
+            priority: PASSWORD_SORT_PRIORITY.UNRECOGNIZED,
+            roomNumber: Number.POSITIVE_INFINITY,
+            originalIndex,
+            easyReason: "형식 인식 불가"
+        };
+    }
     const roomText = matches[0];
     const passwordText = matches[1];
     const roomNumber = Number(roomText);
-    const easyResult = analyzeEasyPassword(roomText, passwordText);
+    const analysis = analyzeEasyPassword(roomText, passwordText);
     return {
         value: text,
-        group: easyResult.easy ? 0 : 1,
+        priority: analysis.priority,
         roomNumber: Number.isFinite(roomNumber) ? roomNumber : Number.POSITIVE_INFINITY,
         originalIndex,
-        easyReason: easyResult.reason
+        easyReason: analysis.reason
     };
 }
 function analyzeEasyPassword(roomTextValue, passwordTextValue) {
     const roomText = cleanText(roomTextValue);
     const passwordText = cleanText(passwordTextValue);
-    if (!passwordText) return { easy: false, reason: "" };
+    if (!passwordText) return { easy: false, priority: PASSWORD_SORT_PRIORITY.GENERAL, reason: "" };
     const normalizedRoom = normalizeNumericText(roomText);
     const normalizedPassword = normalizeNumericText(passwordText);
-    if (passwordText.length <= 3) return { easy: true, reason: "짧은 비밀번호" };
-    if (normalizedRoom === normalizedPassword) return { easy: true, reason: "호수와 동일" };
-    if (/^(\d)+$/u.test(passwordText)) return { easy: true, reason: "같은 숫자 반복" };
-    if (hasRepeatedDigitBlock(passwordText)) return { easy: true, reason: "숫자 블록 반복" };
-    if (hasRepeatedDigitPairs(passwordText)) return { easy: true, reason: "숫자 쌍 반복" };
-    if (isSequentialDigitPattern(passwordText)) return { easy: true, reason: "연속·역순 숫자" };
-    if (isPalindromeDigitPattern(passwordText)) return { easy: true, reason: "앞뒤 대칭" };
-    if (EASY_PASSWORD_SPECIAL_NUMBERS[passwordText]) return { easy: true, reason: "지정 쉬운 번호" };
-    return { easy: false, reason: "" };
+
+    // 한 번호가 여러 조건에 해당하면 아래에서 먼저 일치한 가장 높은 순위를 적용합니다.
+    if (passwordText.length <= 3) return { easy: true, priority: PASSWORD_SORT_PRIORITY.SHORT, reason: "1순위 · 3자리 이하" };
+    if (/^(\d)\1+$/u.test(passwordText)) return { easy: true, priority: PASSWORD_SORT_PRIORITY.SAME_DIGIT, reason: "2순위 · 같은 숫자 반복" };
+    if (hasRepeatedDigitBlock(passwordText)) return { easy: true, priority: PASSWORD_SORT_PRIORITY.REPEATED_BLOCK, reason: "3순위 · 숫자 블록 반복" };
+    if (hasRepeatedDigitPairs(passwordText)) return { easy: true, priority: PASSWORD_SORT_PRIORITY.REPEATED_PAIRS, reason: "4순위 · 숫자 쌍 반복" };
+    if (isAscendingDigitPattern(passwordText)) return { easy: true, priority: PASSWORD_SORT_PRIORITY.ASCENDING_SEQUENCE, reason: "5순위 · 연속 숫자" };
+    if (isDescendingDigitPattern(passwordText)) return { easy: true, priority: PASSWORD_SORT_PRIORITY.DESCENDING_SEQUENCE, reason: "6순위 · 역순 숫자" };
+    if (isPalindromeDigitPattern(passwordText)) return { easy: true, priority: PASSWORD_SORT_PRIORITY.PALINDROME, reason: "7순위 · 앞뒤 대칭" };
+    if (normalizedRoom === normalizedPassword) return { easy: true, priority: PASSWORD_SORT_PRIORITY.SAME_AS_ROOM, reason: "8순위 · 호수와 동일" };
+    if (EASY_PASSWORD_SPECIAL_NUMBERS[passwordText]) return { easy: true, priority: PASSWORD_SORT_PRIORITY.SPECIAL, reason: "9순위 · 지정 쉬운 번호" };
+    return { easy: false, priority: PASSWORD_SORT_PRIORITY.GENERAL, reason: "일반 번호" };
 }
 function hasRepeatedDigitBlock(value) {
     const text = cleanText(value);
     const length = text.length;
     if (length < 4) return false;
-    for (let blockLength = 1; blockLength <= Math.floor(length / 2); blockLength += 1) {
+    // 한 자리 반복은 2순위에서 처리하므로 블록은 최소 2자리부터 검사합니다.
+    for (let blockLength = 2; blockLength <= Math.floor(length / 2); blockLength += 1) {
         if (length % blockLength !== 0) continue;
         const repeatCount = length / blockLength;
         if (repeatCount < 2) continue;
@@ -2401,24 +2477,27 @@ function hasRepeatedDigitPairs(value) {
     }
     return true;
 }
-function isSequentialDigitPattern(value) {
+function isAscendingDigitPattern(value) { return isDirectionalDigitPattern(value, 1); }
+function isDescendingDigitPattern(value) { return isDirectionalDigitPattern(value, -1); }
+function isDirectionalDigitPattern(value, direction) {
     const text = cleanText(value);
     if (text.length < 4) return false;
     const digits = text.split("").map(Number);
-    return [1, -1].some(direction => {
-        for (let index = 1; index < digits.length; index += 1) {
-            const expected = (digits[index - 1] + direction + 10) % 10;
-            if (digits[index] !== expected) return false;
-        }
-        return true;
-    });
+    for (let index = 1; index < digits.length; index += 1) {
+        const expected = (digits[index - 1] + direction + 10) % 10;
+        if (digits[index] !== expected) return false;
+    }
+    return true;
+}
+function isSequentialDigitPattern(value) {
+    return isAscendingDigitPattern(value) || isDescendingDigitPattern(value);
 }
 function isPalindromeDigitPattern(value) {
     const text = cleanText(value);
     return text.length >= 4 && text === text.split("").reverse().join("");
 }
 function comparePasswordSortEntries(left, right) {
-    if (left.group !== right.group) return left.group - right.group;
+    if (left.priority !== right.priority) return left.priority - right.priority;
     if (left.roomNumber !== right.roomNumber) return left.roomNumber - right.roomNumber;
     return naturalCompare(left.value, right.value) || left.originalIndex - right.originalIndex;
 }
@@ -3712,14 +3791,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v25",
+    app: "gimpo-b-app-v27",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260715-13", "./script.js?v=20260715-13", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-2", "./script.js?v=20260716-2", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -3899,7 +3978,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260715-13", serviceWorkerVersion: "v25" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-2", serviceWorkerVersion: "v27" });
 const FINAL_DIAGNOSTIC_CONFIG = Object.freeze({
     GPS_FRESH_MS: 3 * 60 * 1000,
     GPS_STALE_MS: 10 * 60 * 1000,
@@ -4265,8 +4344,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260715-13",
-    serviceWorkerVersion: "v25",
+    fileVersion: "20260716-2",
+    serviceWorkerVersion: "v27",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
