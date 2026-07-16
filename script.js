@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 공동비번 수정·삭제 통합판 20260716-8 */
+/* 넘버원 김포B 공비 - 공동비번 삭제 연결·안전모드 복구판 20260716-9 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -2158,6 +2158,9 @@ function confirmDeleteCommonPassword() {
     if (state.view === "dongs" && state.selectedRegion === region && state.selectedApartment === apartment) renderCommonPassword();
     showToast(navigator.onLine === false ? "공동비밀번호 삭제를 기기에 저장했습니다." : "공동비밀번호 삭제를 요청했습니다.");
 }
+/* 인라인 버튼과 이전 캐시 HTML 모두에서 공동비번 삭제 함수를 확실히 찾도록 전역에 등록합니다. */
+window.confirmDeleteCommonPassword = confirmDeleteCommonPassword;
+window.confirmDeleteCommonPassworld = confirmDeleteCommonPassword;
 /* ========================= 비밀번호 추가·수정·삭제 ========================= */
 function openAddPwdModal(rowId) {
     const record = findRecordByRowId(rowId);
@@ -3830,14 +3833,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v33",
+    app: "gimpo-b-app-v34",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-8", "./script.js?v=20260716-8", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-9", "./script.js?v=20260716-9", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4017,7 +4020,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-8", serviceWorkerVersion: "v33" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-9", serviceWorkerVersion: "v34" });
+const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
+(function clearStaleSafeModeAfterBuildUpdate() {
+    try {
+        const previousBuild = localStorage.getItem(SAFE_MODE_BUILD_KEY);
+        if (previousBuild !== FINAL_BUILD_INFO.fileVersion) {
+            localStorage.removeItem(LONGTERM_CONFIG.SAFE_MODE_KEY);
+            localStorage.removeItem("gimpoB_boot_error_state_v1");
+            sessionStorage.removeItem(LONGTERM_CONFIG.BOOT_FAILURE_KEY);
+            longtermState.safeMode = false;
+            localStorage.setItem(SAFE_MODE_BUILD_KEY, FINAL_BUILD_INFO.fileVersion);
+        }
+    } catch (error) {}
+})();
 const FINAL_DIAGNOSTIC_CONFIG = Object.freeze({
     GPS_FRESH_MS: 3 * 60 * 1000,
     GPS_STALE_MS: 10 * 60 * 1000,
@@ -4383,8 +4399,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-8",
-    serviceWorkerVersion: "v33",
+    fileVersion: "20260716-9",
+    serviceWorkerVersion: "v34",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
