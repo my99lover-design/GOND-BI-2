@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-13">
+    <link rel="stylesheet" href="style.css?v=20260716-14">
 </head>
 <body>
 <div class="container">
@@ -47,6 +47,16 @@
     <section id="commonPwdStandalone" class="common-pwd-area"></section>
     <section id="stepContainer" class="step-container"><div id="buttonGrid" class="btn-grid">데이터를 불러오는 중... ⏳</div></section>
     <section id="cardList" class="card-list"></section>
+    <section id="homeDataStatusCard" class="home-data-status-card" data-level="checking" aria-live="polite">
+        <div class="home-data-status-copy">
+            <div class="home-data-status-heading">
+                <span id="homeDataStatusDot" class="home-data-status-dot" aria-hidden="true"></span>
+                <strong id="homeDataStatusTitle">데이터 확인 중</strong>
+            </div>
+            <div id="homeDataStatusDetail" class="home-data-status-detail">저장 데이터를 확인하고 있습니다.</div>
+        </div>
+        <button id="homeDataRefreshBtn" class="home-data-refresh-btn" type="button" disabled>확인 중…</button>
+    </section>
     <div class="admin-bottom-actions">
         <button id="adminBtn" class="admin-btn" type="button">
             <span class="admin-btn-label">🔒 관리자점검</span>
@@ -263,6 +273,6 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-13"></script>
+<script src="script.js?v=20260716-14"></script>
 </body>
 </html>

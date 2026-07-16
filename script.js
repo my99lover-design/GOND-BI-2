@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 관리자 기기 서버 상태등 보정판 20260716-13 */
+/* 넘버원 김포B 공비 - 홈 데이터 상태 카드 통합판 20260716-14 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -21,13 +21,13 @@ const PERFORMANCE_RULES = Object.freeze({
     dataSync: { label: "전체 데이터 동기화", category: "서버 통신", good: 5000, warning: 10000 }
 });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), homeDataStatusCard: document.getElementById("homeDataStatusCard"), homeDataStatusDot: document.getElementById("homeDataStatusDot"), homeDataStatusTitle: document.getElementById("homeDataStatusTitle"), homeDataStatusDetail: document.getElementById("homeDataStatusDetail"), homeDataRefreshBtn: document.getElementById("homeDataRefreshBtn"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
     gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
-    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, usageHeartbeatPromise: null
+    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, usageHeartbeatPromise: null, homeDataStatusTimer: null
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
@@ -36,6 +36,7 @@ async function initializeApp() {
     initializeGpsEvents();
     initializeHistoryButton();
     initializeAdminButton();
+    initializeHomeDataStatusCard();
     initializeModalEvents();
     initializePerformanceTracking();
     initializeViewStatePersistence();
@@ -183,15 +184,102 @@ function initializeFreshnessChecks() {
 function updateDataSyncStatus(status, timestamp = 0) {
     state.dataSyncState = status;
     const target = elements.dataSyncStatus;
-    if (!target) return;
-    const timeText = timestamp ? formatClockTime(timestamp) : "";
-    let text = "데이터 확인 중…";
-    if (status === "current") text = `데이터 최신${timeText ? ` · ${timeText}` : ""}`;
-    else if (status === "cached") text = `저장 데이터${timeText ? ` · ${timeText}` : ""}`;
-    else if (status === "offline") text = `오프라인 데이터${timeText ? ` · ${timeText}` : ""}`;
-    else if (status === "error") text = `동기화 지연${timeText ? ` · ${timeText}` : ""}`;
-    target.textContent = text;
-    target.dataset.status = status;
+    if (target) {
+        const timeText = timestamp ? formatClockTime(timestamp) : "";
+        let text = "데이터 확인 중…";
+        if (status === "current") text = `데이터 최신${timeText ? ` · ${timeText}` : ""}`;
+        else if (status === "cached") text = `저장 데이터${timeText ? ` · ${timeText}` : ""}`;
+        else if (status === "offline") text = `오프라인 데이터${timeText ? ` · ${timeText}` : ""}`;
+        else if (status === "error") text = `동기화 지연${timeText ? ` · ${timeText}` : ""}`;
+        target.textContent = text;
+        target.dataset.status = status;
+    }
+    updateHomeDataStatusCard(timestamp);
+}
+function initializeHomeDataStatusCard() {
+    const button = elements.homeDataRefreshBtn;
+    if (button && !button.dataset.bound) {
+        button.dataset.bound = "true";
+        button.addEventListener("click", handleHomeDataRefresh);
+    }
+    if (state.homeDataStatusTimer) window.clearInterval(state.homeDataStatusTimer);
+    state.homeDataStatusTimer = window.setInterval(() => updateHomeDataStatusCard(), 15000);
+    updateHomeDataStatusCard();
+}
+async function handleHomeDataRefresh() {
+    if (navigator.onLine === false) {
+        updateDataSyncStatus("offline", state.lastSuccessfulSyncAt);
+        showToast("인터넷 연결 후 다시 확인해주세요.");
+        return;
+    }
+    if (state.networkLoading) return;
+    await refreshRecordsFromServer(false);
+    if (state.dataSyncState === "current") showToast("✅ 최신 데이터를 확인했습니다.");
+    else if (state.dataSyncState === "error") showToast("⚠ 데이터 확인이 지연되고 있습니다.");
+}
+function updateHomeDataStatusCard(timestamp = 0) {
+    const card = elements.homeDataStatusCard;
+    const title = elements.homeDataStatusTitle;
+    const detail = elements.homeDataStatusDetail;
+    const button = elements.homeDataRefreshBtn;
+    if (!card || !title || !detail || !button) return;
+
+    const count = Array.isArray(state.records) ? state.records.length : 0;
+    const countText = `${count.toLocaleString("ko-KR")}건`;
+    const checkedAt = Number(timestamp) || Number(state.lastDataCheckAt) || Number(state.lastSuccessfulSyncAt) || Number(localStorage.getItem(APP_CONFIG.CACHE_TIME_KEY)) || 0;
+    const ageText = formatHomeDataAge(checkedAt);
+    const status = navigator.onLine === false ? "offline" : (cleanText(state.dataSyncState) || "checking");
+
+    let level = "checking";
+    let titleText = "데이터 확인 중";
+    let detailText = count > 0 ? `저장 데이터 ${countText} · 서버 확인 중` : "저장 데이터를 확인하고 있습니다.";
+    let buttonText = "확인 중…";
+    let disabled = true;
+
+    if (status === "current") {
+        level = "good";
+        titleText = "데이터 최신";
+        detailText = `${countText}${ageText ? ` · ${ageText} 확인` : ""}`;
+        buttonText = "새로고침";
+        disabled = false;
+    } else if (status === "cached") {
+        level = "warning";
+        titleText = "저장 데이터 사용 중";
+        detailText = `저장 데이터 ${countText}${ageText ? ` · ${ageText} 저장` : ""}`;
+        buttonText = "새로고침";
+        disabled = false;
+    } else if (status === "offline") {
+        level = "offline";
+        titleText = "오프라인 사용 중";
+        detailText = `저장 데이터 ${countText}${ageText ? ` · 마지막 확인 ${ageText}` : ""}`;
+        buttonText = "오프라인";
+        disabled = true;
+    } else if (status === "error") {
+        level = "danger";
+        titleText = "데이터 확인 지연";
+        detailText = count > 0 ? `저장 데이터 ${countText}${ageText ? ` · 마지막 확인 ${ageText}` : ""}` : "서버 데이터를 확인하지 못했습니다.";
+        buttonText = "다시 시도";
+        disabled = false;
+    }
+
+    card.dataset.level = level;
+    title.textContent = titleText;
+    detail.textContent = detailText;
+    button.textContent = buttonText;
+    button.disabled = disabled;
+    button.classList.toggle("is-processing", status === "checking");
+}
+function formatHomeDataAge(timestamp) {
+    const value = Number(timestamp);
+    if (!Number.isFinite(value) || value <= 0) return "";
+    const seconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
+    if (seconds < 10) return "방금 전";
+    if (seconds < 60) return `${seconds}초 전`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}분 전`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}시간 전`;
+    return new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric" }).format(new Date(value));
 }
 function formatClockTime(value) {
     const date = new Date(Number(value));
@@ -204,7 +292,7 @@ function createEmptyIndexes() {
     };
 }
 function makeKey(...parts) { return parts.map(part => cleanText(part).normalize("NFC")).join("\u0000"); }
-function setRecords(records) { state.records = Array.isArray(records) ? records : []; rebuildDataIndexes(); invalidateGpsCache(); }
+function setRecords(records) { state.records = Array.isArray(records) ? records : []; rebuildDataIndexes(); invalidateGpsCache(); updateHomeDataStatusCard(); }
 function compareRecordDisplayOrder(a, b) {
     const lineCompare = naturalCompare(a.line, b.line);
     return lineCompare !== 0 ? lineCompare : Number(a.rowId) - Number(b.rowId);
@@ -904,6 +992,8 @@ function updateHeaderAndNavigation() {
     updateInstallButtonVisibility();
     if (elements.historyBtn) elements.historyBtn.hidden = !isHome;
     if (elements.adminBtn) elements.adminBtn.hidden = !isHome;
+    if (elements.homeDataStatusCard) elements.homeDataStatusCard.hidden = !isHome;
+    if (isHome) updateHomeDataStatusCard();
     syncGpsWatch();
 }
 function renderRegionButtons() {
@@ -3840,14 +3930,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v38",
+    app: "gimpo-b-app-v39",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-13", "./script.js?v=20260716-13", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-14", "./script.js?v=20260716-14", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4027,7 +4117,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-13", serviceWorkerVersion: "v38" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-14", serviceWorkerVersion: "v39" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4408,8 +4498,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-13",
-    serviceWorkerVersion: "v38",
+    fileVersion: "20260716-14",
+    serviceWorkerVersion: "v39",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
