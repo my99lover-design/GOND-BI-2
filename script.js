@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 사용 현황 즉시 집계 보정판 20260716-12 */
+/* 넘버원 김포B 공비 - 관리자 기기 서버 상태등 보정판 20260716-13 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -1549,7 +1549,7 @@ async function authenticateAdmin(pin) {
         state.adminAuthenticating = false;
         if (elements.adminBtn) {
             elements.adminBtn.disabled = false;
-            elements.adminBtn.textContent = "🔒 관리자만";
+            ensureAdminButtonStructureV38("🔒 관리자점검");
         }
         if (elements.adminPinSubmitBtn) {
             elements.adminPinSubmitBtn.disabled = false;
@@ -3840,14 +3840,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v37",
+    app: "gimpo-b-app-v38",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-12", "./script.js?v=20260716-12", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-13", "./script.js?v=20260716-13", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4027,7 +4027,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-12", serviceWorkerVersion: "v37" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-13", serviceWorkerVersion: "v38" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4408,8 +4408,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-12",
-    serviceWorkerVersion: "v37",
+    fileVersion: "20260716-13",
+    serviceWorkerVersion: "v38",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -4655,4 +4655,108 @@ document.addEventListener("DOMContentLoaded", () => {
         badge.removeAttribute("aria-label");
         badge.removeAttribute("title");
     }
+}, { once: true });
+
+/* v38 관리자 기기 전용 서버 상태등 */
+const ADMIN_DEVICE_MARKER_KEY_V38 = "gimpoB_admin_device_registered_v1";
+const ADMIN_SERVER_TONE_KEY_V38 = "gimpoB_admin_server_tone_v1";
+const ADMIN_SERVER_TONE_TIME_KEY_V38 = "gimpoB_admin_server_tone_time_v1";
+
+function isRegisteredAdminDeviceV38() {
+    try { return localStorage.getItem(ADMIN_DEVICE_MARKER_KEY_V38) === "1"; }
+    catch (error) { return false; }
+}
+function registerAdminDeviceV38() {
+    try { localStorage.setItem(ADMIN_DEVICE_MARKER_KEY_V38, "1"); }
+    catch (error) { console.warn("관리자 기기 등록 실패:", error); }
+}
+function ensureAdminButtonStructureV38(labelText = "🔒 관리자점검") {
+    const button = elements.adminBtn;
+    if (!button) return;
+    let label = button.querySelector(".admin-btn-label");
+    let badge = button.querySelector("#adminPerformanceAlertBadge");
+    if (!label) {
+        label = document.createElement("span");
+        label.className = "admin-btn-label";
+        button.replaceChildren(label);
+    }
+    label.textContent = labelText;
+    if (!badge) {
+        badge = document.createElement("span");
+        badge.id = "adminPerformanceAlertBadge";
+        badge.className = "admin-performance-alert-badge";
+        badge.hidden = true;
+        badge.setAttribute("aria-hidden", "true");
+        button.appendChild(badge);
+        elements.adminPerformanceAlertBadge = badge;
+    }
+    return { label, badge };
+}
+function getAdminServerToneV38(dashboard) {
+    if (!dashboard || typeof dashboard !== "object") return "warning";
+    if (!dashboard.totalRows || dashboard.totalRows < 1) return "danger";
+    if (dashboard.autoBackup?.needsAttention || dashboard.autoBackup?.healthy === false) return "danger";
+    const severeQuality = Array.isArray(dashboard.dataQuality?.categories)
+        && dashboard.dataQuality.categories.some(item => Number(item?.count) > 0 && cleanText(item?.severity).toLowerCase() === "error");
+    if (severeQuality) return "danger";
+    if (Number(dashboard.dataQuality?.totalIssues) > 0) return "warning";
+    if (!dashboard.autoBackup?.enabled || dashboard.autoBackup?.status === "waiting") return "warning";
+    if (Number(dashboard.usage?.todayUsers) < 1 || Number(dashboard.usage?.activeUsers) < 1) return "warning";
+    return "good";
+}
+function saveAdminServerToneV38(tone) {
+    const normalized = ["good", "warning", "danger"].includes(tone) ? tone : "warning";
+    try {
+        localStorage.setItem(ADMIN_SERVER_TONE_KEY_V38, normalized);
+        localStorage.setItem(ADMIN_SERVER_TONE_TIME_KEY_V38, String(Date.now()));
+    } catch (error) {}
+    return normalized;
+}
+function loadAdminServerToneV38() {
+    try {
+        const tone = localStorage.getItem(ADMIN_SERVER_TONE_KEY_V38);
+        return ["good", "warning", "danger"].includes(tone) ? tone : "warning";
+    } catch (error) { return "warning"; }
+}
+function renderAdminServerStatusLightV38() {
+    const structure = ensureAdminButtonStructureV38();
+    const badge = structure?.badge;
+    if (!badge) return;
+    const visible = isRegisteredAdminDeviceV38();
+    badge.hidden = !visible;
+    if (!visible) return;
+    const tone = state.adminDashboard ? saveAdminServerToneV38(getAdminServerToneV38(state.adminDashboard)) : loadAdminServerToneV38();
+    badge.className = `admin-performance-alert-badge ${tone}`;
+    badge.textContent = "";
+    badge.setAttribute("aria-hidden", "true");
+    badge.removeAttribute("title");
+    badge.removeAttribute("aria-label");
+}
+
+/* 공개 화면 상태등은 로컬 성능이 아니라 등록된 관리자 기기의 최근 서버 점검 상태만 표시합니다. */
+updateAdminPerformanceAlertBadge = function updateAdminPerformanceAlertBadgeV38() {
+    renderAdminServerStatusLightV38();
+};
+
+const authenticateAdminBeforeV38 = authenticateAdmin;
+authenticateAdmin = async function authenticateAdminV38(pin) {
+    ensureAdminButtonStructureV38("🔐 확인 중...");
+    const authenticated = await authenticateAdminBeforeV38(pin);
+    ensureAdminButtonStructureV38("🔒 관리자점검");
+    if (authenticated) registerAdminDeviceV38();
+    renderAdminServerStatusLightV38();
+    return authenticated;
+};
+
+const loadAdminDashboardBeforeV38 = loadAdminDashboard;
+loadAdminDashboard = async function loadAdminDashboardV38(showLoading = true) {
+    const result = await loadAdminDashboardBeforeV38(showLoading);
+    if (state.adminDashboard) saveAdminServerToneV38(getAdminServerToneV38(state.adminDashboard));
+    renderAdminServerStatusLightV38();
+    return result;
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+    ensureAdminButtonStructureV38("🔒 관리자점검");
+    renderAdminServerStatusLightV38();
 }, { once: true });
