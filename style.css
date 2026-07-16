@@ -336,7 +336,7 @@ button.is-processing::after { content:""; display:inline-block; width:.75em; hei
 @media (max-width:390px) { .modal-buttons { bottom:-14px; } }
 
 
-/* ========================= v39 홈 데이터 상태 카드 ========================= */
+/* ========================= v39 첫 화면 데이터 상태 영역 ========================= */
 .home-data-status-card { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:68px; margin:0; padding:12px 13px; border:1px solid var(--border); border-radius:15px; background:var(--card-bg); box-shadow:0 3px 9px rgba(0,0,0,.045); }
 .home-data-status-card[hidden] { display:none!important; }
 .home-data-status-copy { min-width:0; flex:1 1 auto; }
