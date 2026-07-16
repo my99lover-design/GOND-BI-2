@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 사용 현황 즉시 집계 보정판 20260716-11 */
+/* 넘버원 김포B 공비 - 사용 현황 즉시 집계 보정판 20260716-12 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -27,7 +27,7 @@ const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
     gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
-    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false
+    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, usageHeartbeatPromise: null
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
@@ -142,17 +142,24 @@ function initializeUsageHeartbeat() {
 }
 async function sendUsageHeartbeat(force = false) {
     const now = Date.now();
-    if (document.hidden || !navigator.onLine || state.usageHeartbeatInFlight) return;
-    if (!force && now - state.lastUsageHeartbeatAt < APP_CONFIG.USAGE_HEARTBEAT_MIN_GAP) return;
+    if (document.hidden || !navigator.onLine) return false;
+    if (state.usageHeartbeatPromise) return state.usageHeartbeatPromise;
+    if (!force && now - state.lastUsageHeartbeatAt < APP_CONFIG.USAGE_HEARTBEAT_MIN_GAP) return true;
     state.usageHeartbeatInFlight = true;
-    try {
-        await requestApi("recordUsage", { clientId: getUsageClientId() });
-        state.lastUsageHeartbeatAt = Date.now();
-    } catch (error) {
-        console.warn("익명 사용 현황 기록 실패:", error?.message || error);
-    } finally {
-        state.usageHeartbeatInFlight = false;
-    }
+    state.usageHeartbeatPromise = (async () => {
+        try {
+            await requestApi("recordUsage", { clientId: getUsageClientId() });
+            state.lastUsageHeartbeatAt = Date.now();
+            return true;
+        } catch (error) {
+            console.warn("익명 사용 현황 기록 실패:", error?.message || error);
+            return false;
+        } finally {
+            state.usageHeartbeatInFlight = false;
+            state.usageHeartbeatPromise = null;
+        }
+    })();
+    return state.usageHeartbeatPromise;
 }
 
 /* ========================= 데이터 로딩 ========================= */
@@ -3833,14 +3840,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v36",
+    app: "gimpo-b-app-v37",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-11", "./script.js?v=20260716-11", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-12", "./script.js?v=20260716-12", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4020,7 +4027,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-11", serviceWorkerVersion: "v36" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-12", serviceWorkerVersion: "v37" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4401,8 +4408,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-11",
-    serviceWorkerVersion: "v36",
+    fileVersion: "20260716-12",
+    serviceWorkerVersion: "v37",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
