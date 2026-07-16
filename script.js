@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 익명 사용 현황 통합판 20260716-2 */
+/* 넘버원 김포B 공비 - 관리자 상태등 비공개 표시판 20260716-3 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -2007,17 +2007,18 @@ function updateAdminPerformanceAlertBadge() {
         }
     }
     badge.hidden = false;
+    badge.textContent = "";
     if (dangerCount) {
         badge.className = "admin-performance-alert-badge danger";
-        badge.textContent = `느림 ${dangerCount}${warningCount ? ` · 주의 ${warningCount}` : ""}`;
+        badge.setAttribute("aria-label", "관리자 상태 빨강");
     } else if (warningCount) {
         badge.className = "admin-performance-alert-badge warning";
-        badge.textContent = `주의 ${warningCount}`;
+        badge.setAttribute("aria-label", "관리자 상태 주황");
     } else {
         badge.className = "admin-performance-alert-badge good";
-        badge.textContent = measuredCount ? "정상" : "측정중";
+        badge.setAttribute("aria-label", measuredCount ? "관리자 상태 초록" : "관리자 상태 확인 중");
     }
-    badge.title = details.length ? details.join("\n") : measuredCount ? "최근 성능 측정이 정상 범위입니다." : "성능 측정 중입니다.";
+    badge.removeAttribute("title");
 }
 function renderAdminPerformanceReport() {
     if (!elements.adminPerformanceList || !elements.adminPerformanceStatus) return;
@@ -3791,14 +3792,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v27",
+    app: "gimpo-b-app-v28",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-2", "./script.js?v=20260716-2", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-3", "./script.js?v=20260716-3", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -3978,7 +3979,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-2", serviceWorkerVersion: "v27" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-3", serviceWorkerVersion: "v28" });
 const FINAL_DIAGNOSTIC_CONFIG = Object.freeze({
     GPS_FRESH_MS: 3 * 60 * 1000,
     GPS_STALE_MS: 10 * 60 * 1000,
@@ -4344,8 +4345,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-2",
-    serviceWorkerVersion: "v27",
+    fileVersion: "20260716-3",
+    serviceWorkerVersion: "v28",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
