@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 홈 전용버튼 표시 수정 20260716-21 */
+/* 넘버원 김포B 공비 - 축약 GPS·동 4열 20260716-22 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -21,7 +21,7 @@ const PERFORMANCE_RULES = Object.freeze({
     dataSync: { label: "전체 데이터 동기화", category: "서버 통신", good: 5000, warning: 10000 }
 });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), homeBottomActions: document.getElementById("homeBottomActions"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), homeDataStatusCard: document.getElementById("homeDataStatusCard"), homeDataStatusDot: document.getElementById("homeDataStatusDot"), homeDataStatusTitle: document.getElementById("homeDataStatusTitle"), homeDataStatusDetail: document.getElementById("homeDataStatusDetail"), homeDataRefreshBtn: document.getElementById("homeDataRefreshBtn"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), homeBottomActions: document.getElementById("homeBottomActions"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), compactGpsSection: document.getElementById("compactGpsSection"), compactGpsButtons: document.getElementById("compactGpsButtons"), compactGpsRefreshBtn: document.getElementById("compactGpsRefreshBtn"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), homeDataStatusCard: document.getElementById("homeDataStatusCard"), homeDataStatusDot: document.getElementById("homeDataStatusDot"), homeDataStatusTitle: document.getElementById("homeDataStatusTitle"), homeDataStatusDetail: document.getElementById("homeDataStatusDetail"), homeDataRefreshBtn: document.getElementById("homeDataRefreshBtn"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
@@ -907,6 +907,7 @@ function validateCurrentSelection() {
 /* ========================= 화면 렌더링 ========================= */
 function renderCurrentView() {
     updateHeaderAndNavigation();
+    elements.buttonGrid.classList.toggle("dong-grid", state.view === "dongs");
     elements.buttonGrid.replaceChildren();
     elements.cardList.replaceChildren();
     hideCommonPassword();
@@ -934,6 +935,7 @@ function renderCurrentView() {
             renderRegionButtons();
             break;
     }
+    renderCompactGpsButtons();
     finalizeViewRender();
 }
 function finalizeViewRender() {
@@ -975,12 +977,14 @@ function updateHeaderAndNavigation() {
         elements.themeToggle.style.display = "";
         elements.navContainer.style.display = "none";
         elements.gpsSection.style.display = "block";
+        if (elements.compactGpsSection) elements.compactGpsSection.hidden = true;
     } else {
         elements.titleMain.textContent = "넘버원🥇 김포B 공비";
         elements.titleSub.textContent = "";
         elements.themeToggle.style.display = "none";
         elements.navContainer.style.display = "grid";
         elements.gpsSection.style.display = "none";
+        if (elements.compactGpsSection) elements.compactGpsSection.hidden = !["apartments", "dongs", "cards"].includes(state.view);
     }
     updateInstallButtonVisibility();
     if (elements.homeBottomActions) elements.homeBottomActions.hidden = !isHome;
@@ -2726,6 +2730,7 @@ function normalizeNumericText(value) {
 /* ========================= GPS ========================= */
 function initializeGpsEvents() {
     if (elements.gpsRefreshBtn) elements.gpsRefreshBtn.addEventListener("click", requestManualGpsRefresh);
+    if (elements.compactGpsRefreshBtn) elements.compactGpsRefreshBtn.addEventListener("click", requestManualGpsRefresh);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) scheduleGpsResumeRefresh(); });
     window.addEventListener("pageshow", event => { if (event.persisted) scheduleGpsResumeRefresh(); });
     clearInterval(state.gpsMetaTimer);
@@ -2770,11 +2775,17 @@ function finishGpsRefresh() {
     updateGpsRefreshButton();
 }
 function updateGpsRefreshButton() {
-    if (!elements.gpsRefreshBtn) return;
-    elements.gpsRefreshBtn.disabled = state.gpsRefreshInProgress;
-    elements.gpsRefreshBtn.classList.toggle("loading", state.gpsRefreshInProgress);
-    elements.gpsRefreshBtn.textContent = state.gpsRefreshInProgress ? "🔄 GPS 갱신 중…" : "🔄 GPS 갱신";
-    elements.gpsRefreshBtn.setAttribute("aria-busy", state.gpsRefreshInProgress ? "true" : "false");
+    if (elements.gpsRefreshBtn) {
+        elements.gpsRefreshBtn.disabled = state.gpsRefreshInProgress;
+        elements.gpsRefreshBtn.classList.toggle("loading", state.gpsRefreshInProgress);
+        elements.gpsRefreshBtn.textContent = state.gpsRefreshInProgress ? "🔄 GPS 갱신 중…" : "🔄 GPS 갱신";
+        elements.gpsRefreshBtn.setAttribute("aria-busy", state.gpsRefreshInProgress ? "true" : "false");
+    }
+    if (elements.compactGpsRefreshBtn) {
+        elements.compactGpsRefreshBtn.disabled = state.gpsRefreshInProgress;
+        elements.compactGpsRefreshBtn.textContent = state.gpsRefreshInProgress ? "갱신 중…" : "갱신";
+        elements.compactGpsRefreshBtn.setAttribute("aria-busy", state.gpsRefreshInProgress ? "true" : "false");
+    }
 }
 function startGps(options = {}) {
     const force = options.force === true;
@@ -2949,11 +2960,13 @@ function renderGpsButtons() {
         state.gpsButtonItems = [];
         elements.gpsButtons.replaceChildren();
         for (let index = 0; index < APP_CONFIG.GPS_BUTTON_COUNT; index += 1) elements.gpsButtons.appendChild(createGpsPlaceholderButton(placeholderText));
+        renderCompactGpsButtons();
         return;
     }
     const listSignature = nearbyApartments.map(item => [item.region, item.apartment, item.dong].join("|")).join("::");
     if (listSignature === state.gpsLastListSignature) {
         updateGpsButtonDistances(nearbyApartments);
+        renderCompactGpsButtons();
         return;
     }
     state.gpsLastPlaceholder = "";
@@ -2962,6 +2975,50 @@ function renderGpsButtons() {
     elements.gpsButtons.replaceChildren();
     for (const item of nearbyApartments) elements.gpsButtons.appendChild(createGpsPlaceButton(item));
     while (elements.gpsButtons.children.length < APP_CONFIG.GPS_BUTTON_COUNT) elements.gpsButtons.appendChild(createGpsPlaceholderButton(""));
+    renderCompactGpsButtons();
+}
+function renderCompactGpsButtons() {
+    if (!elements.compactGpsSection || !elements.compactGpsButtons || elements.compactGpsSection.hidden) return;
+    const container = elements.compactGpsButtons;
+    container.replaceChildren();
+    let placeholder = "";
+    let items = [];
+    if (!state.currentLocation) placeholder = "위치 확인 중";
+    else if (state.records.length === 0) placeholder = "데이터 확인 중";
+    else if (!state.locationsLoaded) placeholder = "좌표 확인 중";
+    else if (state.locationsError || state.locationMap.size === 0) placeholder = "좌표 오류";
+    else {
+        items = getNearbyApartments(state.currentLocation.latitude, state.currentLocation.longitude, APP_CONFIG.GPS_BUTTON_COUNT);
+        if (!items.length) placeholder = "근처 정보 없음";
+    }
+    if (placeholder) {
+        for (let index = 0; index < APP_CONFIG.GPS_BUTTON_COUNT; index += 1) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "compact-gps-btn";
+            button.disabled = true;
+            button.textContent = placeholder;
+            container.appendChild(button);
+        }
+        return;
+    }
+    for (const item of items) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "compact-gps-btn";
+        button.textContent = `${item.displayName} · ${formatDistance(item.distance)}`;
+        button.title = item.isOffice ? `${item.region} · ${item.apartment} · ${item.dong}` : `${item.region} · ${item.apartment}`;
+        button.addEventListener("click", () => openApartmentFromGps(item));
+        container.appendChild(button);
+    }
+    while (container.children.length < APP_CONFIG.GPS_BUTTON_COUNT) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "compact-gps-btn";
+        button.disabled = true;
+        button.textContent = "";
+        container.appendChild(button);
+    }
 }
 function createGpsPlaceButton(item) {
     const button = document.createElement("button");
@@ -4014,14 +4071,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v46",
+    app: "gimpo-b-app-v47",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-21", "./number-one.css?v=20260716-21", "./script.js?v=20260716-21", "./number-one.js?v=20260716-21", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-22", "./number-one.css?v=20260716-22", "./script.js?v=20260716-22", "./number-one.js?v=20260716-22", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4201,7 +4258,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-21", serviceWorkerVersion: "v46" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-22", serviceWorkerVersion: "v47" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4582,8 +4639,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-21",
-    serviceWorkerVersion: "v46",
+    fileVersion: "20260716-22",
+    serviceWorkerVersion: "v47",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });

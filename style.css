@@ -363,3 +363,17 @@ button.is-processing::after { content:""; display:inline-block; width:.75em; hei
     .home-data-status-detail { font-size:.67rem; }
     .home-data-refresh-btn { min-height:36px; padding:0 9px; font-size:.71rem; }
 }
+
+/* v20260716-22: 하위 화면 축약형 GPS + 동 선택 4열 */
+.compact-gps-section { width:100%; margin:0 0 10px; padding:9px; border:1px solid var(--border); border-radius:14px; background:var(--card-bg); box-shadow:0 3px 8px rgba(0,0,0,.04); }
+.compact-gps-section[hidden] { display:none!important; }
+.compact-gps-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
+.compact-gps-title { color:var(--text-sub); font-size:.82rem; font-weight:900; }
+.compact-gps-refresh-btn { flex:0 0 auto; min-width:48px; padding:5px 9px; border:1px solid var(--border); border-radius:9px; background:var(--step-bg); color:var(--text-main); font-size:.72rem; font-weight:850; cursor:pointer; }
+.compact-gps-buttons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.compact-gps-btn { min-width:0; min-height:38px; padding:6px 8px; overflow:hidden; border:0; border-radius:10px; background:var(--gps-btn-bg); color:var(--gps-btn-text); font-size:.72rem; font-weight:850; line-height:1.2; text-align:left; white-space:nowrap; text-overflow:ellipsis; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.compact-gps-btn:disabled { opacity:.62; cursor:default; text-align:center; }
+.compact-gps-btn:active,.compact-gps-refresh-btn:active { transform:scale(.97); }
+.btn-grid.dong-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+.btn-grid.dong-grid .select-btn { min-height:46px; padding:10px 2px; font-size:clamp(.78rem,3.3vw,.94rem); white-space:normal; overflow-wrap:anywhere; word-break:keep-all; }
+@media (max-width:340px) { .btn-grid.dong-grid { gap:5px; } .btn-grid.dong-grid .select-btn { font-size:.76rem; padding-left:1px; padding-right:1px; } }

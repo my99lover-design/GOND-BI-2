@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-21">
-    <link rel="stylesheet" href="number-one.css?v=20260716-21">
+    <link rel="stylesheet" href="style.css?v=20260716-22">
+    <link rel="stylesheet" href="number-one.css?v=20260716-22">
 </head>
 <body>
 <div class="container">
@@ -117,6 +117,14 @@
     </nav>
 
     <div id="viewContextBar" class="view-context-bar" hidden></div>
+
+    <section id="compactGpsSection" class="compact-gps-section" hidden>
+        <div class="compact-gps-head">
+            <div class="compact-gps-title">📍 근처</div>
+            <button id="compactGpsRefreshBtn" class="compact-gps-refresh-btn" type="button" aria-label="GPS 위치 갱신">갱신</button>
+        </div>
+        <div id="compactGpsButtons" class="compact-gps-buttons"></div>
+    </section>
 
     <section id="gpsSection" class="gps-section">
         <div class="gps-header-row">
@@ -420,7 +428,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-21"></script>
-<script src="number-one.js?v=20260716-21"></script>
+<script src="script.js?v=20260716-22"></script>
+<script src="number-one.js?v=20260716-22"></script>
 </body>
 </html>
