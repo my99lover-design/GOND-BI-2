@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - GPS 성능 측정 보정판 20260716-19 */
+/* 넘버원 김포B 공비 - 최종 성능 최적화판 20260716-20 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -196,7 +196,7 @@ function initializeHomeDataStatusCard() {
         button.addEventListener("click", handleHomeDataRefresh);
     }
     if (state.homeDataStatusTimer) window.clearInterval(state.homeDataStatusTimer);
-    state.homeDataStatusTimer = window.setInterval(() => updateHomeDataStatusCard(), 15000);
+    state.homeDataStatusTimer = window.setInterval(() => { if (!document.hidden) updateHomeDataStatusCard(); }, 15000);
     updateHomeDataStatusCard();
 }
 async function handleHomeDataRefresh() {
@@ -2727,7 +2727,7 @@ function initializeGpsEvents() {
     document.addEventListener("visibilitychange", () => { if (!document.hidden) scheduleGpsResumeRefresh(); });
     window.addEventListener("pageshow", event => { if (event.persisted) scheduleGpsResumeRefresh(); });
     clearInterval(state.gpsMetaTimer);
-    state.gpsMetaTimer = window.setInterval(renderGpsMeta, APP_CONFIG.GPS_META_REFRESH_INTERVAL);
+    state.gpsMetaTimer = window.setInterval(() => { if (!document.hidden) renderGpsMeta(); }, APP_CONFIG.GPS_META_REFRESH_INTERVAL);
     renderGpsMeta();
 }
 function syncGpsWatch() { if (state.gpsWatchId === null) startGps({ reason: "startup", useFastPosition: true }); }
@@ -4012,14 +4012,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v43",
+    app: "gimpo-b-app-v45",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-18", "./number-one.css?v=20260716-18", "./script.js?v=20260716-18", "./number-one.js?v=20260716-18", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-20", "./number-one.css?v=20260716-20", "./script.js?v=20260716-20", "./number-one.js?v=20260716-20", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4199,7 +4199,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-18", serviceWorkerVersion: "v43" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-20", serviceWorkerVersion: "v45" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4580,8 +4580,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-18",
-    serviceWorkerVersion: "v43",
+    fileVersion: "20260716-20",
+    serviceWorkerVersion: "v45",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -4724,7 +4724,14 @@ function decorateEmptyStates() {
         node.setAttribute("role", "status");
     });
 }
-const v25EmptyObserver = new MutationObserver(decorateEmptyStates);
+let v25EmptyStateFrame = 0;
+const v25EmptyObserver = new MutationObserver(() => {
+    if (v25EmptyStateFrame) return;
+    v25EmptyStateFrame = window.requestAnimationFrame(() => {
+        v25EmptyStateFrame = 0;
+        decorateEmptyStates();
+    });
+});
 document.addEventListener("DOMContentLoaded", () => {
     decorateEmptyStates();
     v25EmptyObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
