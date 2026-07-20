@@ -1,6 +1,6 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-17 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-18 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_KEYS = Object.freeze({
     TOKEN: "gimpoB_number_one_prod_account_token_v2",
@@ -8,7 +8,8 @@ const NUMBER_ONE_KEYS = Object.freeze({
     USER_ID: "gimpoB_number_one_prod_user_id_v2",
     CLIENT_ID: "gimpoB_number_one_prod_client_id_v2",
     CACHE_PREFIX: "gimpoB_number_one_prod_week_cache_v2_",
-    PENDING_PREFIX: "gimpoB_number_one_prod_pending_v2_"
+    PENDING_PREFIX: "gimpoB_number_one_prod_pending_v2_",
+    REGISTER_REQUEST_ID: "gimpoB_number_one_prod_register_request_v1"
 });
 const numberOneState = {
     token: "",
@@ -26,6 +27,7 @@ const numberOneState = {
     accessToken: "",
     accessExpiresAt: 0,
     issuedUserId: "",
+    registerRequestId: "",
     saveButtonTimer: 0
 };
 const numberOneElements = {};
@@ -194,18 +196,67 @@ function cryptoRandomText(length) {
     return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
 }
 
-async function numberOneRequest(action, payload = {}) {
-    const response = await fetch(NUMBER_ONE_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action, ...payload }),
-        cache: "no-store",
-        redirect: "follow"
-    });
-    if (!response.ok) throw new Error(`서버 연결 실패 (${response.status})`);
-    const result = await response.json();
-    if (!result?.success) throw new Error(result?.message || "요청을 처리하지 못했습니다.");
-    return result;
+function waitNumberOne(milliseconds) {
+    return new Promise(resolve => window.setTimeout(resolve, Math.max(0, Number(milliseconds) || 0)));
+}
+
+function isNumberOneRetryableError(error) {
+    const message = String(error?.message || error || "");
+    return error?.name === "AbortError"
+        || error instanceof TypeError
+        || /Failed to fetch|NetworkError|Load failed|서버 연결 실패 \((?:429|5\d\d)\)/i.test(message);
+}
+
+async function numberOneRequest(action, payload = {}, retryCount = 0) {
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const timeoutId = controller ? window.setTimeout(() => controller.abort(), 35000) : 0;
+    try {
+        const response = await fetch(NUMBER_ONE_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action, ...payload }),
+            cache: "no-store",
+            redirect: "follow",
+            signal: controller?.signal
+        });
+        if (!response.ok) throw new Error(`서버 연결 실패 (${response.status})`);
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (error) {
+            throw new Error("서버 응답 형식이 올바르지 않습니다. Apps Script 배포 상태를 확인해주세요.");
+        }
+        if (!result?.success) throw new Error(result?.message || "요청을 처리하지 못했습니다.");
+        return result;
+    } catch (error) {
+        if (retryCount < 1 && isNumberOneRetryableError(error)) {
+            await waitNumberOne(800);
+            return numberOneRequest(action, payload, retryCount + 1);
+        }
+        if (error?.name === "AbortError") throw new Error("서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
+        if (error instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(String(error?.message || error))) {
+            throw new Error("서버 연결에 실패했습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.");
+        }
+        throw error;
+    } finally {
+        if (timeoutId) window.clearTimeout(timeoutId);
+    }
+}
+
+function getNumberOneRegisterRequestId() {
+    let requestId = numberOneState.registerRequestId || localStorage.getItem(NUMBER_ONE_KEYS.REGISTER_REQUEST_ID) || "";
+    if (!/^reg_[A-Za-z0-9_-]{16,100}$/.test(requestId)) {
+        requestId = `reg_${Date.now()}_${cryptoRandomText(28)}`;
+    }
+    numberOneState.registerRequestId = requestId;
+    localStorage.setItem(NUMBER_ONE_KEYS.REGISTER_REQUEST_ID, requestId);
+    return requestId;
+}
+
+function clearNumberOneRegisterRequestId() {
+    numberOneState.registerRequestId = "";
+    localStorage.removeItem(NUMBER_ONE_KEYS.REGISTER_REQUEST_ID);
 }
 
 function renderNumberOneLocked(message = "") {
@@ -516,9 +567,12 @@ async function submitNumberOneRegistration() {
     try {
         const result = await numberOneRequest("numberOneRegister", {
             accessToken: numberOneState.accessToken,
-            personalPin, clientId: getNumberOneClientId()
+            personalPin,
+            clientId: getNumberOneClientId(),
+            requestId: getNumberOneRegisterRequestId()
         });
         completeNumberOneAccountAuth(result);
+        clearNumberOneRegisterRequestId();
         numberOneState.issuedUserId = result.userId || result.data?.userCode || "";
         numberOneElements.numberOneIssuedUserId.textContent = numberOneState.issuedUserId;
         numberOneElements.numberOneAccessGatePanel.hidden = true;
