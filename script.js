@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - GPS·데이터 갱신 명칭 구분판 20260716-18 */
+/* 넘버원 김포B 공비 - GPS 성능 측정 보정판 20260716-19 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -15,8 +15,8 @@ const PERFORMANCE_RULES = Object.freeze({
     indexBuild: { label: "탐색 인덱스 생성", category: "기기 처리", good: 200, warning: 500 },
     firstScreen: { label: "첫 화면 표시", category: "기기 처리", good: 800, warning: 1800 },
     cachedGps: { label: "저장 GPS 표시", category: "GPS", good: 200, warning: 500 },
-    firstGps: { label: "첫 기기 위치 수신", category: "GPS", good: 4000, warning: 8000 },
-    highAccuracyGps: { label: "고정밀 위치 수신", category: "GPS", good: 8000, warning: 15000 },
+    firstGps: { label: "첫 기기 위치 수신", category: "GPS", good: 6000, warning: 12000 },
+    highAccuracyGps: { label: "고정밀 위치 수신", category: "GPS", good: 12000, warning: 25000 },
     versionCheck: { label: "데이터 버전 확인", category: "서버 통신", good: 2500, warning: 5000 },
     dataSync: { label: "전체 데이터 동기화", category: "서버 통신", good: 5000, warning: 10000 }
 });
@@ -25,7 +25,7 @@ const elements = {
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
-    gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
+    gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, gpsFirstRequestStartedAt: 0, gpsHighRequestStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
     performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, homeDataStatusTimer: null
 };
@@ -2041,8 +2041,25 @@ async function runPasswordCleanup(mode) {
 
 function initializePerformanceTracking() {
     state.performanceHistory = loadPerformanceHistory();
+    migrateGpsPerformanceMetricsV19();
     savePerformanceSnapshot();
     updateAdminPerformanceAlertBadge();
+}
+function migrateGpsPerformanceMetricsV19() {
+    const migrationKey = "gimpoB_gps_metric_request_start_v1";
+    if (localStorage.getItem(migrationKey) === "done") return;
+    state.performanceHistory = (Array.isArray(state.performanceHistory) ? state.performanceHistory : []).map(item => {
+        const metrics = { ...(item?.metrics || {}) };
+        delete metrics.firstGps;
+        delete metrics.highAccuracyGps;
+        return { ...item, metrics };
+    });
+    try {
+        localStorage.setItem(APP_CONFIG.PERFORMANCE_HISTORY_KEY, JSON.stringify(state.performanceHistory));
+        localStorage.setItem(migrationKey, "done");
+    } catch (error) {
+        console.warn("GPS 성능 기록 기준 변경 저장 실패:", error);
+    }
 }
 function loadPerformanceHistory() {
     try {
@@ -2112,11 +2129,30 @@ function getPerformanceStatistics(key, rule) {
     const hasDanger = tones.includes("danger");
     const latestTone = tones[0];
     const medianTone = getPerformanceTone(median, rule);
-    const currentTone = latestTone === "danger" || medianTone === "danger"
-        ? "danger"
-        : latestTone === "warn" || medianTone === "warn"
-            ? "warn"
-            : "good";
+    let consecutiveIssues = 0;
+    for (const tone of tones) {
+        if (tone === "good" || tone === "pending") break;
+        consecutiveIssues += 1;
+    }
+    let currentTone;
+    if (rule.category === "GPS") {
+        const recentThree = tones.slice(0, 3);
+        const threeIssues = recentThree.length === 3 && recentThree.every(tone => tone === "warn" || tone === "danger");
+        const threeDangers = recentThree.length === 3 && recentThree.every(tone => tone === "danger");
+        const stableMedianDanger = values.length >= 5 && medianTone === "danger";
+        const stableMedianWarning = values.length >= 5 && medianTone === "warn";
+        currentTone = threeDangers || stableMedianDanger
+            ? "danger"
+            : threeIssues || stableMedianWarning
+                ? "warn"
+                : "good";
+    } else {
+        currentTone = latestTone === "danger" || medianTone === "danger"
+            ? "danger"
+            : latestTone === "warn" || medianTone === "warn"
+                ? "warn"
+                : "good";
+    }
     return {
         values,
         latest: values[0],
@@ -2126,7 +2162,7 @@ function getPerformanceStatistics(key, rule) {
         latestTone,
         medianTone,
         currentTone,
-        consecutiveWarnings,
+        consecutiveWarnings: rule.category === "GPS" ? consecutiveIssues : consecutiveWarnings,
         hasDanger
     };
 }
@@ -2755,6 +2791,9 @@ function startGps(options = {}) {
     if (force) stopGpsWatch();
     if (state.gpsWatchId !== null) return;
     const generation = ++state.gpsRequestGeneration;
+    const gpsRequestStartedAt = performance.now();
+    if (!state.firstDeviceGpsRecorded) state.gpsFirstRequestStartedAt = gpsRequestStartedAt;
+    if (!state.highAccuracyGpsRecorded) state.gpsHighRequestStartedAt = gpsRequestStartedAt;
     updateGpsStatus(state.currentLocation ? "🟡 위치 갱신 중" : "📡 위치 확인 중", "loading");
     if (useFastPosition) {
         navigator.geolocation.getCurrentPosition(
@@ -2789,11 +2828,13 @@ function handleGpsSuccess(position, context = {}) {
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
     if (!state.firstDeviceGpsRecorded) {
         state.firstDeviceGpsRecorded = true;
-        recordPerformanceMetric("firstGps", performance.now() - APP_BOOT_STARTED_AT);
+        const startedAt = Number(state.gpsFirstRequestStartedAt) || APP_BOOT_STARTED_AT;
+        recordPerformanceMetric("firstGps", performance.now() - startedAt);
     }
     if (!state.highAccuracyGpsRecorded && Number.isFinite(accuracy) && accuracy <= APP_CONFIG.GPS_HIGH_ACCURACY_TARGET) {
         state.highAccuracyGpsRecorded = true;
-        recordPerformanceMetric("highAccuracyGps", performance.now() - APP_BOOT_STARTED_AT);
+        const startedAt = Number(state.gpsHighRequestStartedAt) || Number(state.gpsFirstRequestStartedAt) || APP_BOOT_STARTED_AT;
+        recordPerformanceMetric("highAccuracyGps", performance.now() - startedAt);
     }
     const newLocation = { latitude, longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null, timestamp: Number(position.timestamp) || Date.now(), source: context.source || "gps" };
     const locationAccepted = shouldUseNewLocation(state.currentLocation, newLocation);
