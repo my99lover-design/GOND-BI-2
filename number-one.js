@@ -1,6 +1,6 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-20 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-21 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_KEYS = Object.freeze({
     TOKEN: "gimpoB_number_one_prod_account_token_v2",
