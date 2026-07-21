@@ -120,7 +120,7 @@ button { touch-action:manipulation; }
 .admin-pin-error[hidden] { display:none!important; }
 .admin-modal-content { width:min(94vw,460px); max-width:460px; max-height:84vh; padding:17px; overflow:hidden; border-radius:18px; }
 .admin-modal-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
-.admin-modal-header h3 { margin:0; font-size:1.15rem; }
+.admin-modal-header h3 { min-width:0; margin:0; font-size:1rem; white-space:nowrap; }
 .admin-modal-actions { display:flex; align-items:center; gap:7px; }
 .admin-refresh-btn { flex:0 0 auto; padding:7px 10px; border:1px solid var(--border); border-radius:9px; background:var(--step-bg); color:var(--text-main); font-size:.8rem; font-weight:800; cursor:pointer; }
 .admin-close-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border:1px solid var(--border); border-radius:50%; background:var(--step-bg); color:var(--text-main); font-size:1.45rem; font-weight:700; line-height:1; cursor:pointer; }
@@ -291,6 +291,29 @@ button { touch-action:manipulation; }
 .admin-view-tab { min-height:38px; border:0; border-radius:9px; background:transparent; color:var(--text-sub); font-size:.82rem; font-weight:900; cursor:pointer; }
 .admin-view-tab.active { background:var(--primary); color:#fff; box-shadow:0 2px 7px rgba(0,0,0,.14); }
 .admin-view-panel[hidden] { display:none!important; }
+
+/* ========================= v30 관리자 6개 메뉴 분리 ========================= */
+.admin-menu-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:2px; }
+.admin-menu-grid[hidden] { display:none!important; }
+.admin-menu-button { display:flex; min-width:0; min-height:104px; padding:13px 10px; border:1px solid var(--border); border-radius:14px; background:var(--step-bg); color:var(--text-main); flex-direction:column; align-items:center; justify-content:center; gap:5px; text-align:center; cursor:pointer; box-shadow:0 2px 7px rgba(0,0,0,.04); }
+.admin-menu-button:active { transform:scale(.98); }
+.admin-menu-button:focus-visible { outline:3px solid rgba(59,130,246,.28); outline-offset:2px; }
+.admin-menu-icon { font-size:1.55rem; line-height:1; }
+.admin-menu-label { font-size:.88rem; font-weight:950; line-height:1.2; }
+.admin-menu-description { color:var(--text-sub); font-size:.66rem; font-weight:750; line-height:1.35; word-break:keep-all; }
+.admin-menu-back-btn { min-height:36px; padding:7px 9px; border:1px solid rgba(59,130,246,.4); border-radius:9px; background:rgba(59,130,246,.09); color:var(--primary); font-size:.74rem; font-weight:900; cursor:pointer; white-space:nowrap; }
+.admin-menu-back-btn[hidden] { display:none!important; }
+.admin-menu-back-btn:active { transform:scale(.97); }
+.admin-view-panel > .admin-section { margin-bottom:0; }
+@media (max-width:360px) {
+    .admin-menu-grid { gap:7px; }
+    .admin-menu-button { min-height:96px; padding:11px 7px; }
+    .admin-menu-label { font-size:.82rem; }
+    .admin-menu-description { font-size:.61rem; }
+    .admin-modal-actions { gap:4px; }
+    .admin-menu-back-btn,.admin-refresh-btn { padding-left:7px; padding-right:7px; font-size:.69rem; }
+}
+
 .admin-stats-metrics { margin-top:10px; }
 .admin-stats-list { display:grid; gap:7px; margin-top:9px; }
 .admin-stats-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; padding:10px 11px; border:1px solid var(--border); border-radius:11px; background:var(--card-bg); }
@@ -523,7 +546,7 @@ button.is-processing::after { content:""; display:inline-block; width:.75em; hei
 }
 [data-theme="dark"] .common-edit-btn { color:var(--primary); }
 
-/* v20260716-29: 첫 화면 중앙 하단 수락률·세로 버튼 카운터 */
+/* v20260716-30: 첫 화면 중앙 하단 수락률·세로 버튼 카운터 */
 .acceptance-counter {
   width:100%;
   margin:12px auto 0;

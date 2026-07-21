@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-29">
-    <link rel="stylesheet" href="number-one.css?v=20260716-29">
+    <link rel="stylesheet" href="style.css?v=20260716-30">
+    <link rel="stylesheet" href="number-one.css?v=20260716-30">
 </head>
 <body>
 <div class="container">
@@ -337,69 +337,112 @@
 <div id="adminModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
     <div class="modal-content admin-modal-content">
         <div class="admin-modal-header">
-            <h3 id="adminModalTitle">🛠 관리자 점검·백업</h3>
+            <h3 id="adminModalTitle">🛠 관리자 메뉴</h3>
             <div class="admin-modal-actions">
+                <button id="adminMenuBackBtn" class="admin-menu-back-btn" type="button" hidden>← 메뉴</button>
                 <button id="adminRefreshBtn" class="admin-refresh-btn" type="button">새로고침</button>
                 <button class="admin-close-btn" type="button" aria-label="관리자 화면 닫기" onclick="closeAdminModal()">×</button>
             </div>
         </div>
         <div id="adminStatus" aria-live="polite" class="admin-status">점검 정보를 불러오는 중입니다...</div>
         <div id="adminContent" class="admin-content" hidden>
-            <div class="admin-view-tabs" role="tablist" aria-label="관리자 보기 선택">
-                <button id="adminCurrentTab" class="admin-view-tab active" type="button" role="tab" aria-selected="true" data-admin-view="current">현재상태</button>
-                <button id="adminStatsTab" class="admin-view-tab" type="button" role="tab" aria-selected="false" data-admin-view="stats">통계</button>
+            <div id="adminMenu" class="admin-menu-grid" aria-label="관리자 기능 선택">
+                <button class="admin-menu-button" type="button" data-admin-view="current">
+                    <span class="admin-menu-icon">📊</span>
+                    <span class="admin-menu-label">현재 상태</span>
+                    <span class="admin-menu-description">데이터·GPS·사용 기기 현황</span>
+                </button>
+                <button class="admin-menu-button" type="button" data-admin-view="performance">
+                    <span class="admin-menu-icon">⚡</span>
+                    <span class="admin-menu-label">앱 성능 측정</span>
+                    <span class="admin-menu-description">로딩·GPS·서버 통신 속도</span>
+                </button>
+                <button class="admin-menu-button" type="button" data-admin-view="quality">
+                    <span class="admin-menu-icon">🔎</span>
+                    <span class="admin-menu-label">데이터 오류 점검</span>
+                    <span class="admin-menu-description">정렬·중복·데이터 이상 확인</span>
+                </button>
+                <button class="admin-menu-button" type="button" data-admin-view="diagnostics">
+                    <span class="admin-menu-icon">🩺</span>
+                    <span class="admin-menu-label">앱 진단 보고서</span>
+                    <span class="admin-menu-description">캐시·서비스워커·동기화 진단</span>
+                </button>
+                <button class="admin-menu-button" type="button" data-admin-view="backup">
+                    <span class="admin-menu-icon">💾</span>
+                    <span class="admin-menu-label">백업·복구</span>
+                    <span class="admin-menu-description">자동 백업·수동 백업·복구</span>
+                </button>
+                <button class="admin-menu-button" type="button" data-admin-view="stats">
+                    <span class="admin-menu-icon">📈</span>
+                    <span class="admin-menu-label">통계</span>
+                    <span class="admin-menu-description">전체 데이터·수정 기록 통계</span>
+                </button>
             </div>
-            <div id="adminCurrentPanel" class="admin-view-panel" role="tabpanel">
-            <section class="admin-section">
-                <div class="admin-section-title">📊 현재 상태</div>
-                <div id="adminMetrics" class="admin-metrics"></div>
-                <div id="adminGpsWarning" class="admin-warning" hidden></div>
-            </section>
-            <section class="admin-section">
-                <div class="admin-section-head">
-                    <div>⚡ 앱 성능 측정</div>
-                    <div id="adminPerformanceStatus" aria-live="polite" class="admin-data-quality-status">측정 중</div>
-                </div>
-                <div class="admin-help">최근 실행값과 최근 5회 평균을 표시합니다. 표준 범위는 이 앱의 실사용 기준이며 GPS·통신 환경에 따라 달라질 수 있습니다.</div>
-                <div id="adminPerformanceList" class="admin-performance-list"></div>
-            </section>
-            <section class="admin-section">
-                <div class="admin-section-head">
-                    <div>🔎 데이터 오류 점검</div>
-                    <div id="adminDataQualityStatus" aria-live="polite" class="admin-data-quality-status">확인 중</div>
-                </div>
-                <div class="admin-help">동·라인 중복, 중복 비밀번호, 구분기호와 우선순위·호수 정렬 이상, GPS 좌표 미연결을 점검합니다.</div>
-                <div class="admin-cleanup-actions">
-                    <button id="sortPasswordsBtn" class="admin-cleanup-btn" type="button">쉬운 번호 우선 정렬</button>
-                    <button id="deduplicatePasswordsBtn" class="admin-cleanup-btn danger" type="button">중복 제거</button>
-                </div>
-                <div class="admin-cleanup-help">정상 구분기호로 저장된 비밀번호만 처리합니다. 비밀번호 열 외의 데이터는 변경하지 않으며, 변경 대상이 있으면 실행 전 자동 백업됩니다.</div>
-                <div id="adminDataQualityList" class="admin-data-quality-list"></div>
-            </section>
-            <section class="admin-section">
-                <div class="admin-section-head">
-                    <div>🩺 앱 진단 보고서</div>
-                    <button id="adminDiagnosticsRefreshBtn" class="admin-cleanup-btn" type="button">다시 점검</button>
-                </div>
-                <div class="admin-help">현재 기기의 캐시·GPS·서비스워커·동기화·오류 상태를 점검합니다.</div>
-                <div id="adminDiagnosticsStatus" aria-live="polite" class="admin-data-quality-status">확인 중</div>
-                <div id="adminDiagnosticsList" class="admin-diagnostics-list"></div>
-            </section>
-            <section class="admin-section">
-                <div class="admin-section-head">
-                    <div>💾 백업·복구</div>
-                    <button id="createBackupBtn" class="create-backup-btn" type="button">지금 백업</button>
-                </div>
-                <div class="admin-help">매일 새벽 6시경 자동 백업하며 최근 백업 5개만 보관합니다. 복구 전에는 현재 데이터가 자동으로 한 번 더 백업됩니다.</div>
-                <div class="admin-auto-backup-row">
-                    <div id="autoBackupStatus" aria-live="polite" class="admin-auto-backup-status">자동 백업 상태 확인 중</div>
-                    <button id="setupAutoBackupBtn" class="setup-auto-backup-btn" type="button">자동백업 재설정</button>
-                </div>
-                <div id="autoBackupWarning" class="admin-backup-warning" hidden></div>
-                <div id="backupList" class="backup-list"></div>
-            </section>
+
+            <div id="adminCurrentPanel" class="admin-view-panel" role="region" aria-label="현재 상태" hidden>
+                <section class="admin-section">
+                    <div class="admin-section-title">📊 현재 상태</div>
+                    <div id="adminMetrics" class="admin-metrics"></div>
+                    <div id="adminGpsWarning" class="admin-warning" hidden></div>
+                </section>
             </div>
-            <div id="adminStatsPanel" class="admin-view-panel" role="tabpanel" hidden>
+
+            <div id="adminPerformancePanel" class="admin-view-panel" role="region" aria-label="앱 성능 측정" hidden>
+                <section class="admin-section">
+                    <div class="admin-section-head">
+                        <div>⚡ 앱 성능 측정</div>
+                        <div id="adminPerformanceStatus" aria-live="polite" class="admin-data-quality-status">측정 중</div>
+                    </div>
+                    <div class="admin-help">최근 실행값과 최근 5회 평균을 표시합니다. 표준 범위는 이 앱의 실사용 기준이며 GPS·통신 환경에 따라 달라질 수 있습니다.</div>
+                    <div id="adminPerformanceList" class="admin-performance-list"></div>
+                </section>
+            </div>
+
+            <div id="adminDataQualityPanel" class="admin-view-panel" role="region" aria-label="데이터 오류 점검" hidden>
+                <section class="admin-section">
+                    <div class="admin-section-head">
+                        <div>🔎 데이터 오류 점검</div>
+                        <div id="adminDataQualityStatus" aria-live="polite" class="admin-data-quality-status">확인 중</div>
+                    </div>
+                    <div class="admin-help">동·라인 중복, 중복 비밀번호, 구분기호와 우선순위·호수 정렬 이상, GPS 좌표 미연결을 점검합니다.</div>
+                    <div class="admin-cleanup-actions">
+                        <button id="sortPasswordsBtn" class="admin-cleanup-btn" type="button">쉬운 번호 우선 정렬</button>
+                        <button id="deduplicatePasswordsBtn" class="admin-cleanup-btn danger" type="button">중복 제거</button>
+                    </div>
+                    <div class="admin-cleanup-help">정상 구분기호로 저장된 비밀번호만 처리합니다. 비밀번호 열 외의 데이터는 변경하지 않으며, 변경 대상이 있으면 실행 전 자동 백업됩니다.</div>
+                    <div id="adminDataQualityList" class="admin-data-quality-list"></div>
+                </section>
+            </div>
+
+            <div id="adminDiagnosticsPanel" class="admin-view-panel" role="region" aria-label="앱 진단 보고서" hidden>
+                <section class="admin-section">
+                    <div class="admin-section-head">
+                        <div>🩺 앱 진단 보고서</div>
+                        <button id="adminDiagnosticsRefreshBtn" class="admin-cleanup-btn" type="button">다시 점검</button>
+                    </div>
+                    <div class="admin-help">현재 기기의 캐시·GPS·서비스워커·동기화·오류 상태를 점검합니다.</div>
+                    <div id="adminDiagnosticsStatus" aria-live="polite" class="admin-data-quality-status">확인 중</div>
+                    <div id="adminDiagnosticsList" class="admin-diagnostics-list"></div>
+                </section>
+            </div>
+
+            <div id="adminBackupPanel" class="admin-view-panel" role="region" aria-label="백업 복구" hidden>
+                <section class="admin-section">
+                    <div class="admin-section-head">
+                        <div>💾 백업·복구</div>
+                        <button id="createBackupBtn" class="create-backup-btn" type="button">지금 백업</button>
+                    </div>
+                    <div class="admin-help">매일 새벽 6시경 자동 백업하며 최근 백업 5개만 보관합니다. 복구 전에는 현재 데이터가 자동으로 한 번 더 백업됩니다.</div>
+                    <div class="admin-auto-backup-row">
+                        <div id="autoBackupStatus" aria-live="polite" class="admin-auto-backup-status">자동 백업 상태 확인 중</div>
+                        <button id="setupAutoBackupBtn" class="setup-auto-backup-btn" type="button">자동백업 재설정</button>
+                    </div>
+                    <div id="autoBackupWarning" class="admin-backup-warning" hidden></div>
+                    <div id="backupList" class="backup-list"></div>
+                </section>
+            </div>
+
+            <div id="adminStatsPanel" class="admin-view-panel" role="region" aria-label="통계" hidden>
                 <section class="admin-section">
                     <div class="admin-section-head">
                         <div>📈 데이터 통계</div>
@@ -445,7 +488,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-29"></script>
-<script src="number-one.js?v=20260716-29"></script>
+<script src="script.js?v=20260716-30"></script>
+<script src="number-one.js?v=20260716-30"></script>
 </body>
 </html>
