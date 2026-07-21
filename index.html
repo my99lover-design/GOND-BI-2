@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-27">
-    <link rel="stylesheet" href="number-one.css?v=20260716-27">
+    <link rel="stylesheet" href="style.css?v=20260716-29">
+    <link rel="stylesheet" href="number-one.css?v=20260716-29">
 </head>
 <body>
 <div class="container">
@@ -161,6 +161,40 @@
             <span id="adminPerformanceAlertBadge" class="admin-performance-alert-badge" hidden></span>
         </button>
     </div>
+    <section id="acceptanceCounter" class="acceptance-counter" aria-label="수락 거절 카운터" hidden>
+        <div class="acceptance-counter-head">
+            <span class="acceptance-current-rate">현재 수락률 <b id="acceptanceAcceptRate">0.0%</b></span>
+        </div>
+        <div class="acceptance-metrics" aria-live="polite">
+            <div class="acceptance-metric">
+                <span class="acceptance-metric-label">수락</span>
+                <strong id="acceptanceAcceptedValue" class="acceptance-metric-value">0건</strong>
+            </div>
+            <div class="acceptance-metric">
+                <span class="acceptance-metric-label">거절</span>
+                <strong id="acceptanceRejectedValue" class="acceptance-metric-value">0건</strong>
+            </div>
+            <div class="acceptance-metric">
+                <span class="acceptance-metric-label">거절가능</span>
+                <strong id="acceptanceRejectAvailable" class="acceptance-metric-value">0건</strong>
+            </div>
+            <div class="acceptance-metric">
+                <span class="acceptance-metric-label">80%까지</span>
+                <strong id="acceptanceTargetAccepted" class="acceptance-metric-value">-</strong>
+            </div>
+        </div>
+        <div class="acceptance-controls">
+            <div class="acceptance-control-pair" aria-label="수락 건수 조절">
+                <button id="acceptanceAcceptAdd" class="acceptance-count-btn acceptance-plus accept" type="button" aria-label="수락 1건 추가">+</button>
+                <button id="acceptanceAcceptSubtract" class="acceptance-count-btn acceptance-minus" type="button" aria-label="수락 1건 감소">−</button>
+            </div>
+            <div class="acceptance-control-pair" aria-label="거절 건수 조절">
+                <button id="acceptanceRejectAdd" class="acceptance-count-btn acceptance-plus reject" type="button" aria-label="거절 1건 추가">+</button>
+                <button id="acceptanceRejectSubtract" class="acceptance-count-btn acceptance-minus" type="button" aria-label="거절 1건 감소">−</button>
+            </div>
+            <button id="acceptanceResetBtn" class="acceptance-reset-btn" type="button">리셋</button>
+        </div>
+    </section>
 </div>
 
 
@@ -411,7 +445,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-27"></script>
-<script src="number-one.js?v=20260716-27"></script>
+<script src="script.js?v=20260716-29"></script>
+<script src="number-one.js?v=20260716-29"></script>
 </body>
 </html>

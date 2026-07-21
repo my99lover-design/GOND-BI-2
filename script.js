@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 관리자 상태·통계 정리 20260716-27 */
+/* 넘버원 김포B 공비 - 수락률·세로 버튼 카운터 20260716-29 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -9,7 +9,7 @@ const GATE_IMAGES = Object.freeze({
     "럭스B": { src: "./gate-images/럭스B.webp", label: "럭스B" },
     "루체뷰1": { src: "./gate-images/루체뷰1.webp", label: "루체뷰1" }
 });
-const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", ADMIN_DEVICE_VISIBLE_KEY: "gimpoB_admin_device_visible_v1", USAGE_CLIENT_ID_KEY: "gimpoB_usage_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, USAGE_HEARTBEAT_INTERVAL: 2 * 60 * 1000, USAGE_HEARTBEAT_MIN_GAP: 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
+const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", ADMIN_DEVICE_VISIBLE_KEY: "gimpoB_admin_device_visible_v1", USAGE_CLIENT_ID_KEY: "gimpoB_usage_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", ACCEPTANCE_COUNTER_KEY: "gimpoB_acceptance_counter_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, USAGE_HEARTBEAT_INTERVAL: 2 * 60 * 1000, USAGE_HEARTBEAT_MIN_GAP: 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const PERFORMANCE_RULES = Object.freeze({
     cacheLoad: { label: "캐시 데이터 로딩", category: "기기 처리", good: 250, warning: 600 },
     indexBuild: { label: "탐색 인덱스 생성", category: "기기 처리", good: 200, warning: 500 },
@@ -21,7 +21,7 @@ const PERFORMANCE_RULES = Object.freeze({
     dataSync: { label: "전체 데이터 동기화", category: "서버 통신", good: 5000, warning: 10000 }
 });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), homeBottomActions: document.getElementById("homeBottomActions"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), compactGpsSection: document.getElementById("compactGpsSection"), compactGpsButtons: document.getElementById("compactGpsButtons"), compactGpsRefreshBtn: document.getElementById("compactGpsRefreshBtn"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), homeDataStatusCard: document.getElementById("homeDataStatusCard"), homeDataStatusDot: document.getElementById("homeDataStatusDot"), homeDataStatusTitle: document.getElementById("homeDataStatusTitle"), homeDataStatusDetail: document.getElementById("homeDataStatusDetail"), homeDataRefreshBtn: document.getElementById("homeDataRefreshBtn"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), installAppBtn: document.getElementById("installAppBtn"), homeBottomActions: document.getElementById("homeBottomActions"), acceptanceCounter: document.getElementById("acceptanceCounter"), acceptanceAcceptedValue: document.getElementById("acceptanceAcceptedValue"), acceptanceRejectedValue: document.getElementById("acceptanceRejectedValue"), acceptanceAcceptRate: document.getElementById("acceptanceAcceptRate"), acceptanceRejectAvailable: document.getElementById("acceptanceRejectAvailable"), acceptanceTargetAccepted: document.getElementById("acceptanceTargetAccepted"), acceptanceAcceptAdd: document.getElementById("acceptanceAcceptAdd"), acceptanceAcceptSubtract: document.getElementById("acceptanceAcceptSubtract"), acceptanceRejectAdd: document.getElementById("acceptanceRejectAdd"), acceptanceRejectSubtract: document.getElementById("acceptanceRejectSubtract"), acceptanceResetBtn: document.getElementById("acceptanceResetBtn"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), compactGpsSection: document.getElementById("compactGpsSection"), compactGpsButtons: document.getElementById("compactGpsButtons"), compactGpsRefreshBtn: document.getElementById("compactGpsRefreshBtn"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), homeDataStatusCard: document.getElementById("homeDataStatusCard"), homeDataStatusDot: document.getElementById("homeDataStatusDot"), homeDataStatusTitle: document.getElementById("homeDataStatusTitle"), homeDataStatusDetail: document.getElementById("homeDataStatusDetail"), homeDataRefreshBtn: document.getElementById("homeDataRefreshBtn"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
@@ -29,9 +29,11 @@ const state = {
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
     performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, networkResumeTimer: null, homeDataStatusTimer: null
 };
+const acceptanceCounterState = { accepted: 0, rejected: 0 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
     initializeTheme();
+    initializeAcceptanceCounter();
     initializePendingSync();
     initializeGpsEvents();
     initializeHistoryButton();
@@ -89,6 +91,91 @@ function markFirstScreenRendered() {
 function initializeTheme() { const savedTheme = localStorage.getItem(APP_CONFIG.THEME_KEY) || "light"; applyTheme(savedTheme); elements.themeToggle.addEventListener("click", toggleTheme); }
 function toggleTheme() { const currentTheme = document.documentElement.getAttribute("data-theme"); const nextTheme = currentTheme === "dark" ? "light" : "dark"; localStorage.setItem(APP_CONFIG.THEME_KEY, nextTheme); applyTheme(nextTheme); }
 function applyTheme(theme) { const normalizedTheme = theme === "dark" ? "dark" : "light"; document.documentElement.setAttribute("data-theme", normalizedTheme); elements.themeToggle.textContent = normalizedTheme === "dark" ? "☀️ 밝기" : "🌙 밝기"; }
+
+/* ========================= 수락·거절 카운터 ========================= */
+function initializeAcceptanceCounter() {
+    if (!elements.acceptanceCounter) return;
+    const saved = loadAcceptanceCounter();
+    acceptanceCounterState.accepted = normalizeAcceptanceCount(saved.accepted);
+    acceptanceCounterState.rejected = normalizeAcceptanceCount(saved.rejected);
+    elements.acceptanceAcceptAdd?.addEventListener("click", () => changeAcceptanceCount("accepted", 1));
+    elements.acceptanceAcceptSubtract?.addEventListener("click", () => changeAcceptanceCount("accepted", -1));
+    elements.acceptanceRejectAdd?.addEventListener("click", () => changeAcceptanceCount("rejected", 1));
+    elements.acceptanceRejectSubtract?.addEventListener("click", () => changeAcceptanceCount("rejected", -1));
+    elements.acceptanceResetBtn?.addEventListener("click", resetAcceptanceCounter);
+    elements.acceptanceCounter.hidden = state.view !== "regions";
+    renderAcceptanceCounter();
+}
+function normalizeAcceptanceCount(value) {
+    return Math.min(99999, Math.max(0, Math.floor(Number(value) || 0)));
+}
+function loadAcceptanceCounter() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(APP_CONFIG.ACCEPTANCE_COUNTER_KEY) || "{}");
+        return { accepted: saved?.accepted, rejected: saved?.rejected };
+    } catch (error) {
+        console.warn("수락률 카운터 불러오기 실패:", error);
+        return { accepted: 0, rejected: 0 };
+    }
+}
+function saveAcceptanceCounter() {
+    try {
+        localStorage.setItem(APP_CONFIG.ACCEPTANCE_COUNTER_KEY, JSON.stringify({
+            accepted: acceptanceCounterState.accepted,
+            rejected: acceptanceCounterState.rejected,
+            updatedAt: Date.now()
+        }));
+    } catch (error) {
+        console.warn("수락률 카운터 저장 실패:", error);
+    }
+}
+function changeAcceptanceCount(type, delta) {
+    const key = type === "rejected" ? "rejected" : "accepted";
+    const current = normalizeAcceptanceCount(acceptanceCounterState[key]);
+    const next = normalizeAcceptanceCount(current + Number(delta || 0));
+    if (next === current) {
+        if (delta < 0) showToast("0건 아래로 줄일 수 없습니다.");
+        return;
+    }
+    acceptanceCounterState[key] = next;
+    saveAcceptanceCounter();
+    renderAcceptanceCounter();
+}
+function resetAcceptanceCounter() {
+    if (acceptanceCounterState.accepted === 0 && acceptanceCounterState.rejected === 0) {
+        showToast("이미 0건입니다.");
+        return;
+    }
+    if (!window.confirm("수락·거절 카운터를 모두 0건으로 초기화할까요?")) return;
+    acceptanceCounterState.accepted = 0;
+    acceptanceCounterState.rejected = 0;
+    saveAcceptanceCounter();
+    renderAcceptanceCounter();
+    showToast("✅ 수락·거절 카운터를 초기화했습니다.");
+}
+function calculateAcceptanceCounter(accepted, rejected) {
+    const safeAccepted = normalizeAcceptanceCount(accepted);
+    const safeRejected = normalizeAcceptanceCount(rejected);
+    const total = safeAccepted + safeRejected;
+    const acceptRate = total > 0 ? (safeAccepted / total) * 100 : 0;
+    const rejectAvailable = Math.max(0, Math.floor(safeAccepted / 4) - safeRejected);
+    const acceptedNeeded = Math.max(0, safeRejected * 4 - safeAccepted);
+    return { total, acceptRate, rejectAvailable, acceptedNeeded };
+}
+function renderAcceptanceCounter() {
+    if (!elements.acceptanceCounter) return;
+    const accepted = normalizeAcceptanceCount(acceptanceCounterState.accepted);
+    const rejected = normalizeAcceptanceCount(acceptanceCounterState.rejected);
+    const calculated = calculateAcceptanceCounter(accepted, rejected);
+    elements.acceptanceAcceptedValue.textContent = `${accepted}건`;
+    elements.acceptanceRejectedValue.textContent = `${rejected}건`;
+    elements.acceptanceAcceptRate.textContent = `${calculated.acceptRate.toFixed(1)}%`;
+    elements.acceptanceRejectAvailable.textContent = `${calculated.rejectAvailable}건`;
+    elements.acceptanceTargetAccepted.textContent = calculated.total === 0 ? "-" : calculated.acceptedNeeded > 0 ? `+${calculated.acceptedNeeded}건` : "달성";
+    if (elements.acceptanceAcceptSubtract) elements.acceptanceAcceptSubtract.disabled = accepted <= 0;
+    if (elements.acceptanceRejectSubtract) elements.acceptanceRejectSubtract.disabled = rejected <= 0;
+    elements.acceptanceCounter.setAttribute("aria-label", `수락 ${accepted}건, 거절 ${rejected}건, 수락률 ${calculated.acceptRate.toFixed(1)}퍼센트, 추가 거절 가능 ${calculated.rejectAvailable}건`);
+}
 /* ========================= 앱 설치 ========================= */
 function initializeInstallButton() { if (!elements.installAppBtn) return; if (isAppRunningStandalone()) markAppInstalled(); window.addEventListener("beforeinstallprompt", event => { event.preventDefault(); state.deferredInstallPrompt = event; updateInstallButtonVisibility(); }); window.addEventListener("appinstalled", () => { markAppInstalled(); showToast("✅ 앱 설치 완료"); }); elements.installAppBtn.addEventListener("click", handleInstallApp); updateInstallButtonVisibility(); }
 function isIosDevice() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
@@ -1004,6 +1091,7 @@ function updateHeaderAndNavigation() {
     }
     updateInstallButtonVisibility();
     if (elements.homeBottomActions) elements.homeBottomActions.hidden = !isHome;
+    if (elements.acceptanceCounter) elements.acceptanceCounter.hidden = !isHome;
     if (elements.numberOneOpenBtn) elements.numberOneOpenBtn.hidden = !isHome;
     if (elements.historyBtn) elements.historyBtn.hidden = !isHome;
     updateAdminButtonVisibility();
@@ -4133,14 +4221,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v52",
+    app: "gimpo-b-app-v54",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-27", "./number-one.css?v=20260716-27", "./script.js?v=20260716-27", "./number-one.js?v=20260716-27", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-29", "./number-one.css?v=20260716-29", "./script.js?v=20260716-29", "./number-one.js?v=20260716-29", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4323,7 +4411,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-27", serviceWorkerVersion: "v52" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-29", serviceWorkerVersion: "v54" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4704,8 +4792,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-27",
-    serviceWorkerVersion: "v52",
+    fileVersion: "20260716-29",
+    serviceWorkerVersion: "v54",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
