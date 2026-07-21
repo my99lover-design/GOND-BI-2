@@ -1,6 +1,6 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-25 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-26 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_KEYS = Object.freeze({
     TOKEN: "gimpoB_number_one_prod_account_token_v2",
@@ -21,6 +21,7 @@ const numberOneState = {
     saving: false,
     detailsOpen: false,
     previousDetailsOpen: false,
+    previousEditMode: false,
     pendingSync: false,
     screenOpen: false,
     authMode: "login",
@@ -41,8 +42,8 @@ function initializeNumberOne() {
         "numberOneCondition150", "numberOneConditionPeak", "numberOneStartPart", "numberOneStartCurrent", "numberOneWeekCurrent",
         "numberOnePeakPart", "numberOnePeakCurrent", "numberOneStandardCurrent", "numberOnePremiumCurrent", "numberOneInputTitle",
         "numberOneDayStatus", "numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input",
-        "numberOneInputGuide", "numberOneSaveBtn", "numberOneDeleteBtn",
-        "numberOneDetailsToggle", "numberOneDetails", "numberOneSyncNote", "numberOnePreviousWeek", "numberOnePreviousToggle", "numberOnePreviousDetails",
+        "numberOneInputCard", "numberOneInputGuide", "numberOneSaveBtn", "numberOneDeleteBtn",
+        "numberOneDetailsToggle", "numberOneDetails", "numberOneSyncNote", "numberOnePreviousWeek", "numberOnePreviousToggle", "numberOnePreviousEditBtn", "numberOnePreviousDetails",
         "numberOneAuthModal", "numberOneAccessGatePanel", "numberOneAccessPin", "numberOneAccessSubmitBtn", "numberOneAuthTabs", "numberOneAuthLoginTab", "numberOneAuthRegisterTab", "numberOneLoginPanel", "numberOneRegisterPanel",
         "numberOneLoginUserId", "numberOneLoginPersonalPin", "numberOneLoginSubmitBtn", "numberOneRegisterPersonalPin",
         "numberOneRegisterPersonalPinConfirm", "numberOneRegisterSubmitBtn", "numberOneIssuedPanel", "numberOneIssuedUserId", "numberOneIssuedCopyBtn",
@@ -84,6 +85,7 @@ function initializeNumberOne() {
     numberOneElements.numberOneDeleteBtn?.addEventListener("click", deleteNumberOneDay);
     numberOneElements.numberOneDetailsToggle?.addEventListener("click", toggleNumberOneDetails);
     numberOneElements.numberOnePreviousToggle?.addEventListener("click", toggleNumberOnePreviousDetails);
+    numberOneElements.numberOnePreviousEditBtn?.addEventListener("click", toggleNumberOnePreviousEditMode);
     numberOneElements.numberOneUserCode?.addEventListener("click", copyNumberOneUserCode);
     ["numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input"].forEach(id => {
         numberOneElements[id]?.addEventListener("input", validateNumberOneInputs);
@@ -162,6 +164,7 @@ function clearNumberOneSession() {
     numberOneState.selectedWorkDate = "";
     numberOneState.detailsOpen = false;
     numberOneState.previousDetailsOpen = false;
+    numberOneState.previousEditMode = false;
     localStorage.removeItem(NUMBER_ONE_KEYS.TOKEN);
     localStorage.removeItem(NUMBER_ONE_KEYS.TOKEN_EXPIRES);
     localStorage.removeItem(NUMBER_ONE_KEYS.USER_ID);
@@ -325,9 +328,13 @@ function renderNumberOneSelectedDay() {
     const data = numberOneState.data;
     if (!data) return;
     const workDate = numberOneState.selectedWorkDate || data.context?.currentWorkDate;
-    const day = (data.days || []).find(item => item.workDate === workDate) || { workDate };
+    const bucket = getNumberOneDataBucketForWorkDate(workDate) || data;
+    const isPrevious = bucket === data.previousWeek;
+    const day = (bucket.days || []).find(item => item.workDate === workDate) || { workDate };
     const isToday = workDate === data.context?.currentWorkDate;
-    numberOneElements.numberOneInputTitle.textContent = `${isToday ? "오늘" : getNumberOneWeekday(workDate)} · ${formatNumberOneDate(workDate)} 수행`;
+    const dateLabel = isToday ? "오늘" : getNumberOneWeekday(workDate);
+    numberOneElements.numberOneInputTitle.textContent = `${isPrevious ? "직전주 · " : ""}${dateLabel} · ${formatNumberOneDate(workDate)} 수행`;
+    numberOneElements.numberOneInputCard?.classList.toggle("previous-editing", isPrevious);
     setNumberInput(numberOneElements.numberOneTotalInput, day.totalCount);
     setNumberInput(numberOneElements.numberOneTen17Input, day.tenToSeventeen);
     setNumberInput(numberOneElements.numberOneSeventeen24Input, getNumberOneSeventeenToTwentyFour(day));
@@ -337,7 +344,13 @@ function renderNumberOneSelectedDay() {
         .every(value => value !== null && value !== undefined);
     numberOneElements.numberOneDayStatus.textContent = complete ? "입력 완료" : (hasAny ? "입력 중" : "미입력");
     numberOneElements.numberOneDayStatus.className = `number-one-day-status ${complete ? "complete" : (hasAny ? "partial" : "")}`;
-    if (numberOneElements.numberOneDeleteBtn) numberOneElements.numberOneDeleteBtn.disabled = !hasAny;
+    if (numberOneElements.numberOneDeleteBtn) {
+        numberOneElements.numberOneDeleteBtn.disabled = !hasAny || (isPrevious && !numberOneState.previousEditMode);
+        numberOneElements.numberOneDeleteBtn.textContent = isPrevious ? "직전주 기록 삭제" : "입력기록 삭제";
+    }
+    if (numberOneElements.numberOneSaveBtn && !numberOneElements.numberOneSaveBtn.classList.contains("saved")) {
+        numberOneElements.numberOneSaveBtn.textContent = isPrevious ? "직전주 저장" : "저장";
+    }
     validateNumberOneInputs();
 }
 
@@ -377,11 +390,18 @@ function validateNumberOneInputs() {
         message = "10~17시와 17~24시 합계가 총건수를 초과합니다.";
         level = "error";
     } else {
-        message = `기타시간 ${formatNumber(total - ten24)}건 자동 반영 · 공란은 0건`;
+        const workDate = numberOneState.selectedWorkDate || numberOneState.data?.context?.currentWorkDate || "";
+        const isPrevious = getNumberOneDataBucketForWorkDate(workDate) === numberOneState.data?.previousWeek;
+        message = isPrevious
+            ? `직전주 수정 중 · 기타시간 ${formatNumber(total - ten24)}건 자동 반영 · 저장 전 확인`
+            : `기타시간 ${formatNumber(total - ten24)}건 자동 반영 · 공란은 0건`;
+        if (isPrevious && !numberOneState.previousEditMode) level = "warning";
     }
     numberOneElements.numberOneInputGuide.textContent = message;
     numberOneElements.numberOneInputGuide.className = `number-one-input-guide ${level}`;
-    numberOneElements.numberOneSaveBtn.disabled = numberOneState.saving || level === "error";
+    const selectedDate = numberOneState.selectedWorkDate || numberOneState.data?.context?.currentWorkDate || "";
+    const selectedPrevious = getNumberOneDataBucketForWorkDate(selectedDate) === numberOneState.data?.previousWeek;
+    numberOneElements.numberOneSaveBtn.disabled = numberOneState.saving || level === "error" || (selectedPrevious && !numberOneState.previousEditMode);
     return level !== "error";
 }
 
@@ -647,6 +667,11 @@ async function saveNumberOneDay() {
     const values = getNumberOneStoredValues(inputValues);
     const workDate = numberOneState.selectedWorkDate || numberOneState.data.context?.currentWorkDate;
     if (!workDate) return;
+    const bucket = getNumberOneDataBucketForWorkDate(workDate);
+    const isPrevious = bucket === numberOneState.data.previousWeek;
+    if (!bucket) return numberOneToast("수정할 수 없는 주차입니다.");
+    if (isPrevious && !numberOneState.previousEditMode) return numberOneToast("직전주 수정 버튼을 먼저 눌러주세요.");
+    if (isPrevious && !window.confirm(`직전주 ${formatNumberOneDate(workDate)} 기록을 저장할까요?\n저장하면 직전주 합계와 추가금이 다시 계산됩니다.`)) return;
 
     numberOneState.saving = true;
     queueNumberOnePending("save", workDate, values);
@@ -666,20 +691,26 @@ function showNumberOneSavedButton() {
     button.textContent = "저장됨";
     button.classList.add("saved");
     numberOneState.saveButtonTimer = window.setTimeout(() => {
-        button.textContent = "저장";
         button.classList.remove("saved");
+        const workDate = numberOneState.selectedWorkDate || numberOneState.data?.context?.currentWorkDate || "";
+        button.textContent = getNumberOneDataBucketForWorkDate(workDate) === numberOneState.data?.previousWeek ? "직전주 저장" : "저장";
     }, 900);
 }
 
 function deleteNumberOneDay() {
     if (!numberOneState.token || !numberOneState.data) return;
     const workDate = numberOneState.selectedWorkDate || numberOneState.data.context?.currentWorkDate;
-    const day = (numberOneState.data.days || []).find(item => item.workDate === workDate);
+    const bucket = getNumberOneDataBucketForWorkDate(workDate);
+    const isPrevious = bucket === numberOneState.data.previousWeek;
+    if (!bucket) return numberOneToast("삭제할 수 없는 주차입니다.");
+    if (isPrevious && !numberOneState.previousEditMode) return numberOneToast("직전주 수정 버튼을 먼저 눌러주세요.");
+    const day = (bucket.days || []).find(item => item.workDate === workDate);
     if (!day || !hasNumberOneDayValues(day)) {
         numberOneToast("삭제할 입력기록이 없습니다.");
         return;
     }
-    if (!window.confirm(`${formatNumberOneDate(workDate)} 입력기록을 전부 삭제할까요?`)) return;
+    const label = isPrevious ? "직전주 " : "";
+    if (!window.confirm(`${label}${formatNumberOneDate(workDate)} 입력기록을 전부 삭제할까요?`)) return;
     queueNumberOnePending("delete", workDate, null);
     applyNumberOneLocalDelete(workDate);
     renderNumberOneApp();
@@ -726,7 +757,28 @@ function renderNumberOneDetails() {
 
 function toggleNumberOnePreviousDetails() {
     numberOneState.previousDetailsOpen = !numberOneState.previousDetailsOpen;
+    if (!numberOneState.previousDetailsOpen && numberOneState.previousEditMode) exitNumberOnePreviousEditMode();
+    else renderNumberOnePreviousWeek();
+}
+
+function toggleNumberOnePreviousEditMode() {
+    if (!numberOneState.data?.previousWeek?.context) return;
+    if (numberOneState.previousEditMode) {
+        exitNumberOnePreviousEditMode();
+        numberOneToast("직전주 수정 모드를 종료했습니다.");
+        return;
+    }
+    if (!window.confirm("직전주 기록 수정 모드를 시작할까요?\n변경사항은 저장 버튼을 눌러야 반영됩니다.")) return;
+    numberOneState.previousEditMode = true;
+    numberOneState.previousDetailsOpen = true;
     renderNumberOnePreviousWeek();
+    numberOneToast("수정할 직전주 날짜를 선택해주세요.");
+}
+
+function exitNumberOnePreviousEditMode() {
+    numberOneState.previousEditMode = false;
+    numberOneState.selectedWorkDate = numberOneState.data?.context?.currentWorkDate || "";
+    renderNumberOneApp();
 }
 
 function renderNumberOnePreviousWeek() {
@@ -737,9 +789,16 @@ function renderNumberOnePreviousWeek() {
     const previous = numberOneState.data?.previousWeek;
     if (!previous || !previous.context) {
         section.hidden = true;
+        numberOneState.previousEditMode = false;
+        if (numberOneElements.numberOnePreviousEditBtn) numberOneElements.numberOnePreviousEditBtn.hidden = true;
         return;
     }
     section.hidden = false;
+    if (numberOneElements.numberOnePreviousEditBtn) {
+        numberOneElements.numberOnePreviousEditBtn.hidden = false;
+        numberOneElements.numberOnePreviousEditBtn.textContent = numberOneState.previousEditMode ? "수정 종료" : "직전주 수정";
+        numberOneElements.numberOnePreviousEditBtn.classList.toggle("active", numberOneState.previousEditMode);
+    }
     const context = previous.context || {};
     const summary = previous.summary || calculateNumberOneLocalSummary(previous.days || []);
     const range = `${formatNumberOneDate(context.weekStart)} 06시 ~ ${formatNumberOneDate(context.weekEnd)} 05시`;
@@ -754,6 +813,7 @@ function renderNumberOnePreviousWeek() {
     const daysMap = new Map((previous.days || []).map(day => [day.workDate, day]));
     const dates = makeNumberOneWeekDates(context.weekStart);
     details.innerHTML = `
+        ${numberOneState.previousEditMode ? '<div class="number-one-previous-edit-notice">직전주 수정 중 · 날짜를 눌러 위 입력칸에서 수정하세요.</div>' : ''}
         <div class="number-one-previous-summary">
             <div><span>총건수</span><b>${formatNumber(summary.totalCount)}건</b></div>
             <div><span>10~17시</span><b>${formatNumber(summary.tenToSeventeenCount)}건</b></div>
@@ -764,6 +824,16 @@ function renderNumberOnePreviousWeek() {
         <div class="number-one-details-head"><span>요일</span><span>총</span><span>10~17</span><span>17~24</span><span></span></div>
         ${dates.map(workDate => {
             const day = daysMap.get(workDate) || {};
+            const selected = workDate === numberOneState.selectedWorkDate;
+            if (numberOneState.previousEditMode) {
+                return `<button class="number-one-day-row number-one-previous-day-row editable${selected ? " selected" : ""}" type="button" data-previous-work-date="${workDate}">
+                    <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
+                    <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
+                    <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
+                    <span class="number-one-day-value">${displayDayValue(getNumberOneSeventeenToTwentyFour(day))}</span>
+                    <span class="number-one-day-edit">수정</span>
+                </button>`;
+            }
             return `<div class="number-one-day-row number-one-previous-day-row">
                 <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
                 <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
@@ -772,6 +842,14 @@ function renderNumberOnePreviousWeek() {
                 <span class="number-one-day-edit"></span>
             </div>`;
         }).join("")}`;
+    details.querySelectorAll("[data-previous-work-date]").forEach(button => {
+        button.addEventListener("click", () => {
+            numberOneState.selectedWorkDate = button.dataset.previousWorkDate || "";
+            renderNumberOneSelectedDay();
+            renderNumberOnePreviousWeek();
+            numberOneElements.numberOneInputTitle?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+    });
 }
 
 function displayDayValue(value) {

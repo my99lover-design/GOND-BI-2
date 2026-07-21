@@ -386,7 +386,7 @@ button.is-processing::after { content:""; display:inline-block; width:.75em; hei
 .btn-grid.dong-grid .select-btn { min-height:46px; padding:10px 2px; font-size:clamp(.78rem,3.3vw,.94rem); white-space:normal; overflow-wrap:anywhere; word-break:keep-all; }
 @media (max-width:340px) { .btn-grid.dong-grid { gap:5px; } .btn-grid.dong-grid .select-btn { font-size:.76rem; padding-left:1px; padding-right:1px; } }
 
-/* v20260716-25: 전체 가시성 개선 */
+/* v20260716-26: 전체 가시성 개선 */
 .nav-buttons-container {
   position:sticky;
   top:max(0px,env(safe-area-inset-top));

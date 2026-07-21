@@ -180,7 +180,7 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
 .number-one-access-gate-panel { display:grid; gap:2px; }
 .number-one-gate-note { margin:9px 2px 0; color:var(--text-sub); font-size:.65rem; font-weight:750; line-height:1.45; text-align:center; }
 
-/* v20260716-25: 넘버원 현황 숫자 가시성 개선 */
+/* v20260716-26: 넘버원 현황 숫자 가시성 개선 */
 .number-one-condition-status { gap:7px; margin-top:8px; }
 .number-one-condition-line {
   display:grid;
@@ -244,4 +244,25 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
   .number-one-summary-label { font-size:.62rem; }
   .number-one-summary-value { font-size:.98rem; }
   .number-one-summary-value.bonus { font-size:.88rem; }
+}
+
+
+/* v20260716-26: 직전주 기록 안전 수정 */
+.number-one-previous-actions { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; margin-top:8px; }
+.number-one-previous-actions .number-one-details-toggle { min-width:0; margin-top:0; }
+.number-one-previous-edit-btn { min-width:82px; min-height:38px; padding:0 10px; border:1px solid rgba(245,158,11,.45); border-radius:10px; background:rgba(245,158,11,.09); color:#b45309; font-size:.71rem; font-weight:950; cursor:pointer; }
+.number-one-previous-edit-btn.active { border-color:#f59e0b; background:#f59e0b; color:#fff; }
+.number-one-previous-edit-btn:active { transform:scale(.97); }
+.number-one-previous-edit-notice { padding:8px 9px; border:1px solid rgba(245,158,11,.36); border-radius:9px; background:rgba(245,158,11,.09); color:#b45309; font-size:.65rem; font-weight:850; line-height:1.35; text-align:center; }
+.number-one-input-card.previous-editing { border-color:rgba(245,158,11,.62); background:color-mix(in srgb,var(--card-bg) 92%,#f59e0b 8%); box-shadow:0 0 0 2px rgba(245,158,11,.08); }
+.number-one-input-card.previous-editing .number-one-input-title { color:#b45309; }
+.number-one-previous-day-row.editable { cursor:pointer; }
+.number-one-previous-day-row.editable:active { transform:scale(.985); }
+[data-theme="dark"] .number-one-previous-edit-btn,
+[data-theme="dark"] .number-one-previous-edit-notice,
+[data-theme="dark"] .number-one-input-card.previous-editing .number-one-input-title { color:#fbbf24; }
+[data-theme="dark"] .number-one-previous-edit-btn.active { color:#1f2937; }
+@media (max-width:360px) {
+  .number-one-previous-actions { gap:4px; }
+  .number-one-previous-edit-btn { min-width:74px; padding:0 7px; font-size:.66rem; }
 }

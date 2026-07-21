@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-25">
-    <link rel="stylesheet" href="number-one.css?v=20260716-25">
+    <link rel="stylesheet" href="style.css?v=20260716-26">
+    <link rel="stylesheet" href="number-one.css?v=20260716-26">
 </head>
 <body>
 <div class="container">
@@ -84,7 +84,7 @@
                         </span>
                     </div>
                 </div>
-                <div class="number-one-input-card">
+                <div id="numberOneInputCard" class="number-one-input-card">
                     <div class="number-one-input-head">
                         <div id="numberOneInputTitle" class="number-one-input-title">오늘 수행</div>
                         <div id="numberOneDayStatus" class="number-one-day-status">미입력</div>
@@ -104,7 +104,10 @@
                 <div id="numberOneDetails" class="number-one-details" hidden></div>
                 <div id="numberOneSyncNote" class="number-one-sync-note"></div>
                 <section id="numberOnePreviousWeek" class="number-one-previous-week">
-                    <button id="numberOnePreviousToggle" class="number-one-details-toggle number-one-previous-toggle" type="button">직전주 기록 보기</button>
+                    <div class="number-one-previous-actions">
+                        <button id="numberOnePreviousToggle" class="number-one-details-toggle number-one-previous-toggle" type="button">직전주 기록 보기</button>
+                        <button id="numberOnePreviousEditBtn" class="number-one-previous-edit-btn" type="button" hidden>직전주 수정</button>
+                    </div>
                     <div id="numberOnePreviousDetails" class="number-one-previous-details" hidden></div>
                 </section>
             </div>
@@ -427,7 +430,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-25"></script>
-<script src="number-one.js?v=20260716-25"></script>
+<script src="script.js?v=20260716-26"></script>
+<script src="number-one.js?v=20260716-26"></script>
 </body>
 </html>
