@@ -12,7 +12,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
     <link rel="stylesheet" href="style.css?v=20260716-35">
-    <link rel="stylesheet" href="number-one.css?v=20260716-35">
+    <link rel="stylesheet" href="number-one.css?v=20260716-36">
 </head>
 <body>
 <div class="container">
@@ -54,10 +54,10 @@
                         <button id="numberOneLogoutBtn" class="number-one-logout-btn" type="button">로그아웃</button>
                     </div>
                 </div>
-                <div class="number-one-summary">
-                    <div class="number-one-summary-item"><div class="number-one-summary-label">주간 총건수</div><div id="numberOneTotal" class="number-one-summary-value">0건</div></div>
-                    <div class="number-one-summary-item"><div class="number-one-summary-label">10~17시</div><div id="numberOnePeak" class="number-one-summary-value">0건</div></div>
-                    <div class="number-one-summary-item"><div class="number-one-summary-label">예상 추가금</div><div id="numberOneBonus" class="number-one-summary-value bonus">0원</div></div>
+                <div class="number-one-summary" aria-label="추가금 적용 현황">
+                    <div class="number-one-summary-item standard"><div class="number-one-summary-label">+1000원 적용</div><div class="number-one-summary-value"><span id="numberOneStandardCurrent">0</span>건</div></div>
+                    <div class="number-one-summary-item premium"><div class="number-one-summary-label">+1500원 적용</div><div class="number-one-summary-value"><span id="numberOnePremiumCurrent">0</span>건</div></div>
+                    <div class="number-one-summary-item bonus-item"><div class="number-one-summary-label">예상 추가금</div><div id="numberOneBonus" class="number-one-summary-value bonus">0원</div></div>
                 </div>
                 <div class="number-one-condition-status" aria-label="추가금 조건과 적용 현황">
                     <div id="numberOneCondition150" class="number-one-condition-line number-one-condition-line-first">
@@ -74,19 +74,11 @@
                             <span class="number-one-condition-value">(<b id="numberOnePeakCurrent">0</b>/100건)</span>
                         </span>
                     </div>
-                    <div id="numberOneConditionPeak" class="number-one-condition-line number-one-condition-line-second">
-                        <span class="number-one-condition-part standard">
-                            <span class="number-one-condition-label">+1000원 적용</span>
-                            <span class="number-one-condition-value">(<b id="numberOneStandardCurrent">0</b>건)</span>
-                        </span>
-                        <span class="number-one-condition-part premium">
-                            <span class="number-one-condition-label">+1500원 적용</span>
-                            <span class="number-one-condition-value">(<b id="numberOnePremiumCurrent">0</b>건)</span>
-                        </span>
+                    <div id="numberOneConditionPeak" class="number-one-condition-line number-one-condition-line-second number-one-condition-legend-line">
                         <span class="number-one-condition-part number-one-condition-legend" aria-label="조건 색상 안내">
-                            <span class="number-one-condition-legend-item unmet"><i aria-hidden="true"></i>조건미달</span>
-                            <span class="number-one-condition-legend-item near"><i aria-hidden="true"></i>달성임박</span>
-                            <span class="number-one-condition-legend-item done"><i aria-hidden="true"></i>달성</span>
+                            <span class="number-one-condition-legend-item unmet"><i aria-hidden="true"></i>회색 : 조건미달</span>
+                            <span class="number-one-condition-legend-item near"><i aria-hidden="true"></i>주황 : 달성임박</span>
+                            <span class="number-one-condition-legend-item done"><i aria-hidden="true"></i>초록 : 달성</span>
                         </span>
                     </div>
                 </div>
@@ -487,6 +479,6 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
 <script src="script.js?v=20260716-35"></script>
-<script src="number-one.js?v=20260716-35"></script>
+<script src="number-one.js?v=20260716-36"></script>
 </body>
 </html>

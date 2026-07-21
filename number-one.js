@@ -1,6 +1,6 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-35 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-36 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_KEYS = Object.freeze({
     TOKEN: "gimpoB_number_one_prod_account_token_v2",
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", initializeNumberOne, { once: true 
 function initializeNumberOne() {
     [
         "numberOneSection", "numberOneOpenBtn", "numberOneHomeBtn", "numberOneLocked", "numberOneLockedSub", "numberOneApp", "numberOneLoginBtn", "numberOneRetryBtn",
-        "numberOneWeekRange", "numberOneUserCode", "numberOneLogoutBtn", "numberOneTotal", "numberOnePeak", "numberOneBonus",
+        "numberOneWeekRange", "numberOneUserCode", "numberOneLogoutBtn", "numberOneBonus",
         "numberOneCondition150", "numberOneConditionPeak", "numberOneStartPart", "numberOneStartCurrent", "numberOnePremiumConditionPart", "numberOnePremiumConditionCurrent",
         "numberOnePeakPart", "numberOnePeakCurrent", "numberOneStandardCurrent", "numberOnePremiumCurrent", "numberOneInputTitle",
         "numberOneDayStatus", "numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input",
@@ -283,8 +283,6 @@ function renderNumberOneApp() {
     numberOneElements.numberOneWeekRange.textContent = `${formatNumberOneDate(context.weekStart)} 06시 ~ ${formatNumberOneDate(context.weekEnd)} 05시`;
     numberOneElements.numberOneUserCode.textContent = data.userCode || numberOneState.userId || "사용자ID";
     numberOneElements.numberOneUserCode.title = "눌러서 사용자ID 복사";
-    numberOneElements.numberOneTotal.textContent = `${formatNumber(summary.totalCount)}건`;
-    numberOneElements.numberOnePeak.textContent = `${formatNumber(summary.tenToSeventeenCount)}건`;
     numberOneElements.numberOneBonus.textContent = formatMoney(summary.totalBonus);
 
     renderNumberOneConditionStatus(summary);
@@ -744,15 +742,15 @@ function renderNumberOneDetails() {
     const daysMap = new Map((numberOneState.data.days || []).map(day => [day.workDate, day]));
     const dates = makeNumberOneWeekDates(context.weekStart);
     numberOneElements.numberOneDetails.innerHTML = `
-        <div class="number-one-details-head"><span>요일</span><span>총</span><span>10~17</span><span>17~24</span><span></span></div>
+        <div class="number-one-details-head"><span>요일</span><span>10~17</span><span>17~24</span><span>총</span><span></span></div>
         ${dates.map(workDate => {
             const day = daysMap.get(workDate) || {};
             const selected = workDate === numberOneState.selectedWorkDate;
             return `<button class="number-one-day-row${selected ? " selected" : ""}" type="button" data-work-date="${workDate}">
                 <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
-                <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
                 <span class="number-one-day-value">${displayDayValue(getNumberOneSeventeenToTwentyFour(day))}</span>
+                <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-edit">수정</span>
             </button>`;
         }).join("")}`;
@@ -832,24 +830,24 @@ function renderNumberOnePreviousWeek() {
             <div><span>+1500</span><b>${formatNumber(summary.premiumEligibleCount)}건</b></div>
             <div class="bonus"><span>추가금</span><b>${formatMoney(summary.totalBonus)}</b></div>
         </div>
-        <div class="number-one-details-head"><span>요일</span><span>총</span><span>10~17</span><span>17~24</span><span></span></div>
+        <div class="number-one-details-head"><span>요일</span><span>10~17</span><span>17~24</span><span>총</span><span></span></div>
         ${dates.map(workDate => {
             const day = daysMap.get(workDate) || {};
             const selected = workDate === numberOneState.selectedWorkDate;
             if (numberOneState.previousEditMode) {
                 return `<button class="number-one-day-row number-one-previous-day-row editable${selected ? " selected" : ""}" type="button" data-previous-work-date="${workDate}">
                     <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
-                    <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                     <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
                     <span class="number-one-day-value">${displayDayValue(getNumberOneSeventeenToTwentyFour(day))}</span>
+                    <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                     <span class="number-one-day-edit">수정</span>
                 </button>`;
             }
             return `<div class="number-one-day-row number-one-previous-day-row">
                 <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
-                <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
                 <span class="number-one-day-value">${displayDayValue(getNumberOneSeventeenToTwentyFour(day))}</span>
+                <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-edit"></span>
             </div>`;
         }).join("")}`;

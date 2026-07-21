@@ -380,3 +380,28 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
   .number-one-condition-legend-item { gap:3px; font-size:.50rem; }
   .number-one-condition-legend-item i { width:6px; height:6px; }
 }
+
+
+/* v20260716-36: 적용 현황 → 조건 현황 → 색상 안내 순서 */
+.number-one-summary-item.standard { background:rgba(37,99,235,.055); }
+.number-one-summary-item.premium { background:rgba(234,88,12,.055); }
+.number-one-summary-item.standard .number-one-summary-value { color:#2563eb; }
+.number-one-summary-item.premium .number-one-summary-value { color:#ea580c; }
+.number-one-condition-legend-line { display:block; }
+.number-one-condition-legend {
+  width:100%;
+  min-height:34px;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(7px,3vw,14px);
+  padding:7px 6px;
+}
+.number-one-condition-legend-item { font-size:clamp(.55rem,2.55vw,.66rem); }
+[data-theme="dark"] .number-one-summary-item.standard .number-one-summary-value { color:#93c5fd; }
+[data-theme="dark"] .number-one-summary-item.premium .number-one-summary-value { color:#fdba74; }
+@media (max-width:350px) {
+  .number-one-condition-legend { gap:5px; padding-left:3px; padding-right:3px; }
+  .number-one-condition-legend-item { gap:2px; font-size:.49rem; letter-spacing:-.035em; }
+}
