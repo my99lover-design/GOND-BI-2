@@ -1,4 +1,4 @@
-/* 넘버원 전용 주간 수행 계산기 */
+/* 넘버원 전용 주간 수행 계산기 · 입력순서 개선 v20260716-32 */
 .number-one-section { width:100%; margin:0 0 14px; }
 .number-one-section[hidden],.number-one-locked[hidden],.number-one-app[hidden],.number-one-details[hidden],.number-one-pin-error[hidden] { display:none!important; }
 .number-one-shell { overflow:hidden; border:1px solid rgba(59,130,246,.30); border-radius:17px; background:var(--card-bg); box-shadow:0 4px 12px rgba(0,0,0,.055); }
@@ -292,3 +292,13 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
 [data-theme="dark"] .number-one-previous-edit-btn.active { background:#f59e0b; color:#172033; }
 [data-theme="dark"] .number-one-issued-panel { background:rgba(74,222,128,.10); border-color:rgba(74,222,128,.34); }
 [data-theme="dark"] .number-one-delete-btn,.number-one-logout-btn { color:var(--danger); }
+
+
+/* v20260716-32: 입력 순서 안내를 한 줄로 압축해 화면 높이 유지 */
+.number-one-input-guide.compact-order-guide:not(.warning):not(.error) {
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  letter-spacing:-.025em;
+  font-size:clamp(.55rem,2.45vw,.62rem);
+}

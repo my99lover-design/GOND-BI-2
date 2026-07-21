@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-31">
-    <link rel="stylesheet" href="number-one.css?v=20260716-31">
+    <link rel="stylesheet" href="style.css?v=20260716-32">
+    <link rel="stylesheet" href="number-one.css?v=20260716-32">
 </head>
 <body>
 <div class="container">
@@ -94,11 +94,11 @@
                         <div id="numberOneDayStatus" class="number-one-day-status">미입력</div>
                     </div>
                     <div class="number-one-input-grid">
-                        <div class="number-one-field"><label for="numberOneTotalInput">총건수</label><input id="numberOneTotalInput" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
                         <div class="number-one-field"><label for="numberOneTen17Input">10~17시</label><input id="numberOneTen17Input" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
                         <div class="number-one-field"><label for="numberOneSeventeen24Input">17~24시</label><input id="numberOneSeventeen24Input" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
+                        <div class="number-one-field"><label for="numberOneTotalInput">총건수</label><input id="numberOneTotalInput" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
                     </div>
-                    <div id="numberOneInputGuide" class="number-one-input-guide">기타시간(06~10시 + 00~05시)은 자동 계산됩니다. 공란은 0건입니다.</div>
+                    <div id="numberOneInputGuide" class="number-one-input-guide compact-order-guide">10~17시 → 17~24시 → 총건수 · 이외시간 자동계산</div>
                     <div class="number-one-action-row">
                         <button id="numberOneSaveBtn" class="number-one-save-btn" type="button">저장</button>
                         <button id="numberOneDeleteBtn" class="number-one-delete-btn" type="button" disabled>입력기록 삭제</button>
@@ -484,7 +484,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-31"></script>
-<script src="number-one.js?v=20260716-31"></script>
+<script src="script.js?v=20260716-32"></script>
+<script src="number-one.js?v=20260716-32"></script>
 </body>
 </html>
