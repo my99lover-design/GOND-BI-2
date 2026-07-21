@@ -180,7 +180,7 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
 .number-one-access-gate-panel { display:grid; gap:2px; }
 .number-one-gate-note { margin:9px 2px 0; color:var(--text-sub); font-size:.65rem; font-weight:750; line-height:1.45; text-align:center; }
 
-/* v20260716-24: 넘버원 현황 숫자 가시성 개선 */
+/* v20260716-25: 넘버원 현황 숫자 가시성 개선 */
 .number-one-condition-status { gap:7px; margin-top:8px; }
 .number-one-condition-line {
   display:grid;

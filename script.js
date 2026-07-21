@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 가시성 개선 20260716-24 */
+/* 넘버원 김포B 공비 - 네트워크 오류 기록 보정 20260716-25 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -27,7 +27,7 @@ const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
     gpsWatchId: null, gpsStopTimer: null, gpsRestartTimer: null, gpsResumeTimer: null, gpsRefreshUnlockTimer: null, gpsMetaTimer: null, gpsRequestGeneration: 0, gpsRefreshInProgress: false, gpsRefreshStartedAt: 0, gpsFirstRequestStartedAt: 0, gpsHighRequestStartedAt: 0, lastGpsResumeAt: 0, gpsNearbyCache: [], gpsCacheLocation: null, gpsCacheGeneration: -1, gpsLastListSignature: "", gpsLastPlaceholder: "", gpsButtonItems: [],
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
-    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, homeDataStatusTimer: null
+    performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, networkResumeTimer: null, homeDataStatusTimer: null
 };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
@@ -135,7 +135,7 @@ function getUsageClientId() {
 }
 function initializeUsageHeartbeat() {
     // 초기 데이터 확인과 Apps Script 요청이 겹치지 않도록 첫 익명 활동 신호만 잠시 늦춥니다.
-    window.setTimeout(() => sendUsageHeartbeat(true), 2500);
+    window.setTimeout(() => sendUsageHeartbeat(true), 4500);
     if (state.usageHeartbeatTimer) window.clearInterval(state.usageHeartbeatTimer);
     state.usageHeartbeatTimer = window.setInterval(() => {
         if (!document.hidden) sendUsageHeartbeat(false);
@@ -160,19 +160,35 @@ async function sendUsageHeartbeat(force = false) {
 function initializeFreshnessChecks() {
     window.addEventListener("online", () => {
         updateDataSyncStatus("checking");
-        refreshRecordsFromServer(false).catch(() => {});
-        loadLocations().catch(() => {});
+        scheduleNetworkResumeTasks(1400);
     });
-    window.addEventListener("offline", () => updateDataSyncStatus("offline", state.lastSuccessfulSyncAt));
+    window.addEventListener("offline", () => {
+        if (state.networkResumeTimer) window.clearTimeout(state.networkResumeTimer);
+        state.networkResumeTimer = null;
+        updateDataSyncStatus("offline", state.lastSuccessfulSyncAt);
+    });
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
+            if (state.networkResumeTimer) window.clearTimeout(state.networkResumeTimer);
+            state.networkResumeTimer = null;
             flushRecordsCache();
             return;
         }
-        sendUsageHeartbeat(false);
-        if (Date.now() - state.lastDataCheckAt >= APP_CONFIG.DATA_CHECK_INTERVAL) refreshRecordsFromServer(false).catch(() => {});
-        if (!isLocationCacheFresh()) loadLocations().catch(() => {});
+        scheduleNetworkResumeTasks(1600);
     });
+}
+
+function scheduleNetworkResumeTasks(delay = 1500) {
+    if (state.networkResumeTimer) window.clearTimeout(state.networkResumeTimer);
+    state.networkResumeTimer = window.setTimeout(() => {
+        state.networkResumeTimer = null;
+        if (document.hidden || navigator.onLine === false) return;
+        sendUsageHeartbeat(false);
+        if (Date.now() - state.lastDataCheckAt >= APP_CONFIG.DATA_CHECK_INTERVAL) {
+            refreshRecordsFromServer(false).catch(() => {});
+        }
+        if (!isLocationCacheFresh()) loadLocations().catch(() => {});
+    }, Math.max(500, Number(delay) || 1500));
 }
 function updateDataSyncStatus(status, timestamp = 0) {
     state.dataSyncState = status;
@@ -3183,12 +3199,14 @@ const LONGTERM_CONFIG = Object.freeze({
     SAFE_MODE_KEY: "gimpoB_safe_mode_v1",
     BOOT_FAILURE_KEY: "gimpoB_boot_failure_v1",
     REQUEST_TIMEOUT: 20000,
+    API_READ_RETRY_DELAY: 900,
+    API_FAILURE_WARNING_THRESHOLD: 3,
     GPS_JUMP_MAX_SPEED_MPS: 80,
     GPS_JUMP_MIN_DISTANCE: 300,
     GPS_RANK_HYSTERESIS_METERS: 10,
     INTEGRITY_INTERVAL: 5 * 60 * 1000,
     DATA_INTEGRITY_INTERVAL: 24 * 60 * 60 * 1000,
-    DATA_INTEGRITY_RETRY_DELAY: 60 * 1000,
+    DATA_INTEGRITY_RETRY_DELAY: 5 * 60 * 1000,
     DATA_INTEGRITY_TIME_KEY: "gimpoB_data_integrity_time_v1",
     DATA_INTEGRITY_STATUS_KEY: "gimpoB_data_integrity_status_v1",
     UNDO_VISIBLE_MS: 10000
@@ -3197,6 +3215,8 @@ const LONGTERM_CONFIG = Object.freeze({
 const longtermState = {
     inFlightRequests: new Map(),
     requestSequence: new Map(),
+    apiFailureCounts: new Map(),
+    lastTransientErrorCleanupAt: 0,
     lastUndo: null,
     undoTimer: null,
     backupToRestore: null,
@@ -3362,6 +3382,8 @@ function isTransientNetworkErrorMessage(value) {
         message.includes("networkerror") ||
         message.includes("load failed") ||
         message.includes("서버 응답 시간이 초과") ||
+        message.includes("서버 연결에 실패") ||
+        message.includes("네트워크 상태를 확인") ||
         message.includes("the internet connection appears to be offline");
 }
 
@@ -3390,40 +3412,99 @@ window.addEventListener("error", event => logLocalError("javascript", event.erro
 // Promise 오류는 아래 사용자 오류 분류 리스너 한 곳에서만 기록합니다.
 
 const originalRequestApiLongterm = requestApi;
+
+function waitForApiTransportRetry(milliseconds) {
+    return new Promise(resolve => window.setTimeout(resolve, Math.max(0, Number(milliseconds) || 0)));
+}
+
+async function performTimedApiRequest(action, payload, readOnly) {
+    const controller = readOnly && typeof AbortController === "function" ? new AbortController() : null;
+    let timeoutId = null;
+    try {
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = window.setTimeout(() => {
+                if (controller) controller.abort();
+                reject(new Error("서버 응답 시간이 초과되었습니다."));
+            }, LONGTERM_CONFIG.REQUEST_TIMEOUT);
+        });
+        return await Promise.race([
+            originalRequestApiLongterm(action, payload, { signal: controller?.signal }),
+            timeoutPromise
+        ]);
+    } catch (error) {
+        if (error?.name === "AbortError") throw new Error("서버 응답 시간이 초과되었습니다.");
+        throw error;
+    } finally {
+        if (timeoutId !== null) window.clearTimeout(timeoutId);
+    }
+}
+
+function markApiTransportSuccess(action) {
+    longtermState.apiFailureCounts.delete(action);
+    const now = Date.now();
+    if (now - longtermState.lastTransientErrorCleanupAt < 30000) return;
+    longtermState.lastTransientErrorCleanupAt = now;
+    clearResolvedTransientNetworkErrors();
+}
+
+function recordConsecutiveApiTransportFailure(action, error) {
+    const silentActions = new Set(["recordUsage"]);
+    if (silentActions.has(action)) return;
+    const count = (longtermState.apiFailureCounts.get(action) || 0) + 1;
+    longtermState.apiFailureCounts.set(action, count);
+    if (count < LONGTERM_CONFIG.API_FAILURE_WARNING_THRESHOLD) return;
+    logLocalError("network", error, { action, consecutiveFailures: count });
+}
+
 requestApi = function requestApiLongterm(action, payload = {}) {
     const readOnly = ["getData", "getDataVersion", "getDataIntegrity", "getChangeHistory", "getAdminDashboard", "compareBackup"].includes(action);
     const requestKey = readOnly ? `${action}:${JSON.stringify(payload || {})}` : "";
     if (readOnly && longtermState.inFlightRequests.has(requestKey)) return longtermState.inFlightRequests.get(requestKey);
+
     const sequence = (longtermState.requestSequence.get(action) || 0) + 1;
     longtermState.requestSequence.set(action, sequence);
-    const controller = readOnly && typeof AbortController === "function" ? new AbortController() : null;
-    let timeoutId = null;
-    const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = window.setTimeout(() => {
-            if (controller) controller.abort();
-            reject(new Error("서버 응답 시간이 초과되었습니다."));
-        }, LONGTERM_CONFIG.REQUEST_TIMEOUT);
-    });
-    const promise = Promise.race([originalRequestApiLongterm(action, payload, { signal: controller?.signal }), timeoutPromise])
-        .then(result => {
-            if (readOnly && sequence < (longtermState.requestSequence.get(action) || 0)) {
-                const staleError = new Error("더 최신 요청이 완료되어 오래된 응답을 무시했습니다.");
-                staleError.staleResponse = true;
-                throw staleError;
+
+    const promise = (async () => {
+        const maxAttempts = readOnly ? 2 : 1;
+        let lastError = null;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+            try {
+                const result = await performTimedApiRequest(action, payload, readOnly);
+                if (readOnly && sequence < (longtermState.requestSequence.get(action) || 0)) {
+                    const staleError = new Error("더 최신 요청이 완료되어 오래된 응답을 무시했습니다.");
+                    staleError.staleResponse = true;
+                    throw staleError;
+                }
+                markApiTransportSuccess(action);
+                return result;
+            } catch (error) {
+                const normalizedError = error?.name === "AbortError"
+                    ? new Error("서버 응답 시간이 초과되었습니다.")
+                    : error;
+                lastError = normalizedError;
+                const retryable = !normalizedError?.staleResponse && shouldRecordApiTransportError(normalizedError);
+                if (attempt + 1 < maxAttempts && retryable && navigator.onLine !== false) {
+                    await waitForApiTransportRetry(LONGTERM_CONFIG.API_READ_RETRY_DELAY);
+                    continue;
+                }
+                throw normalizedError;
             }
-            return result;
-        })
+        }
+        throw lastError || new Error("서버 요청에 실패했습니다.");
+    })()
         .catch(error => {
-            const normalizedError = error?.name === "AbortError" ? new Error("서버 응답 시간이 초과되었습니다.") : error;
-            if (!normalizedError?.staleResponse && shouldRecordApiTransportError(normalizedError)) {
-                logLocalError("network", normalizedError, { action });
+            if (!error?.staleResponse && shouldRecordApiTransportError(error)) {
+                error.apiTransportHandled = true;
+                recordConsecutiveApiTransportFailure(action, error);
             }
-            throw normalizedError;
+            throw error;
         })
         .finally(() => {
-            if (timeoutId !== null) window.clearTimeout(timeoutId);
-            if (readOnly && longtermState.inFlightRequests.get(requestKey) === promise) longtermState.inFlightRequests.delete(requestKey);
+            if (readOnly && longtermState.inFlightRequests.get(requestKey) === promise) {
+                longtermState.inFlightRequests.delete(requestKey);
+            }
         });
+
     if (readOnly) longtermState.inFlightRequests.set(requestKey, promise);
     return promise;
 };
@@ -4077,14 +4158,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v49",
+    app: "gimpo-b-app-v50",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-24", "./number-one.css?v=20260716-24", "./script.js?v=20260716-24", "./number-one.js?v=20260716-24", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-25", "./number-one.css?v=20260716-25", "./script.js?v=20260716-25", "./number-one.js?v=20260716-25", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4180,9 +4261,12 @@ async function collectDiagnostics() {
     const integrityResult = loadDataIntegrityResult();
     const integrityStatus = integrityResult?.status === "recovered" ? "자동 복구" : integrityResult?.status === "ok" ? "정상" : integrityResult?.status === "failed" ? "확인 필요" : "검사 전";
     const integrityLevel = integrityResult?.status === "failed" ? "warning" : integrityResult ? "good" : "warning";
-    const activeErrorLogs = errorLogs.filter(item =>
-        Date.now() - Number(item?.at) < 60 * 60 * 1000 &&
-        !isTransientNetworkErrorMessage(item?.message)
+    const reportableErrorLogs = errorLogs.filter(item => {
+        if (!isTransientNetworkErrorMessage(item?.message)) return true;
+        return Number(item?.context?.consecutiveFailures) >= LONGTERM_CONFIG.API_FAILURE_WARNING_THRESHOLD;
+    });
+    const activeErrorLogs = reportableErrorLogs.filter(item =>
+        Date.now() - Number(item?.at) < 60 * 60 * 1000
     );
 
     const diagnostics = [
@@ -4205,7 +4289,7 @@ async function collectDiagnostics() {
             ? { label: "최근 동기화", status: "정상", level: "good", detail: formatLocalDateTime(state.lastSuccessfulSyncAt), actions: [] }
             : diagnosticItem("최근 동기화", "확인 전", "warning", "현재 실행에서 서버 데이터 동기화 성공 기록이 없습니다.", "full-sync", "지금 전체 동기화", "동기화중…"),
         activeErrorLogs.length === 0
-            ? { label: "로컬 오류 기록", status: errorLogs.length ? `과거 기록 ${errorLogs.length}건` : "정상", level: "good", detail: errorLogs[0] ? `${formatLocalDateTime(errorLogs[0].at)} · ${errorLogs[0].type} · ${errorLogs[0].message}` : "최근 오류가 없습니다.", actions: errorLogs.length ? [{ key: "clear-errors", label: "기록 지우기", busyLabel: "삭제중…" }] : [] }
+            ? { label: "로컬 오류 기록", status: reportableErrorLogs.length ? `과거 기록 ${reportableErrorLogs.length}건` : "정상", level: "good", detail: reportableErrorLogs[0] ? `${formatLocalDateTime(reportableErrorLogs[0].at)} · ${reportableErrorLogs[0].type} · ${reportableErrorLogs[0].message}` : "일시적인 네트워크 전환 오류는 표시하지 않습니다.", actions: reportableErrorLogs.length ? [{ key: "clear-errors", label: "기록 지우기", busyLabel: "삭제중…" }] : [] }
             : diagnosticItem("로컬 오류 기록", `주의 ${activeErrorLogs.length}건`, "warning", `${formatLocalDateTime(activeErrorLogs[0].at)} · ${activeErrorLogs[0].type} · ${activeErrorLogs[0].message}`, "clear-errors", "오류 기록 지우기", "삭제중…", true),
         longtermState.safeMode
             ? diagnosticItem("안전모드", "사용 중", "warning", "반복 실행 오류가 감지되어 일부 복원 기능이 제한됐습니다.", "exit-safe-mode", "정상모드 복구", "복구중…")
@@ -4264,7 +4348,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-24", serviceWorkerVersion: "v49" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-25", serviceWorkerVersion: "v50" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4645,8 +4729,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-24",
-    serviceWorkerVersion: "v49",
+    fileVersion: "20260716-25",
+    serviceWorkerVersion: "v50",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -4827,7 +4911,9 @@ function classifyUserFacingError(error) {
 }
 
 window.addEventListener("unhandledrejection", event => {
+    if (event.reason?.apiTransportHandled) return;
     const info = classifyUserFacingError(event.reason);
+    if (info.type === "네트워크") return;
     logLocalError(`unhandled-${info.type}`, event.reason || new Error("비동기 작업 오류"), { advice: info.advice });
 });
 
