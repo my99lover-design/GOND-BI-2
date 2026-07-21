@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 네트워크 오류 기록 보정 20260716-26 */
+/* 넘버원 김포B 공비 - 관리자 상태·통계 정리 20260716-27 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -1767,17 +1767,9 @@ function normalizeUsageStatistics(data) {
 }
 function normalizeAdminStatistics(data) {
     return {
-        dongCount: Number(data?.dongCount) || 0,
-        lineCount: Number(data?.lineCount) || 0,
-        passwordCount: Number(data?.passwordCount) || 0,
         commonPasswordPlaceCount: Number(data?.commonPasswordPlaceCount) || 0,
-        averagePasswordsPerLine: Number(data?.averagePasswordsPerLine) || 0,
         recent7Days: Number(data?.recent7Days) || 0,
-        recent30Days: Number(data?.recent30Days) || 0,
-        activitySampleLimited: data?.activitySampleLimited === true,
-        regionStats: Array.isArray(data?.regionStats) ? data.regionStats.map(item => ({ region: cleanText(item?.region), placeCount: Number(item?.placeCount) || 0, dongCount: Number(item?.dongCount) || 0, lineCount: Number(item?.lineCount) || 0, passwordCount: Number(item?.passwordCount) || 0 })).filter(item => item.region) : [],
-        changeTypes: Array.isArray(data?.changeTypes) ? data.changeTypes.map(item => ({ type: cleanText(item?.type), count: Number(item?.count) || 0 })).filter(item => item.type) : [],
-        topApartments: Array.isArray(data?.topApartments) ? data.topApartments.map(item => ({ region: cleanText(item?.region), apartment: cleanText(item?.apartment), count: Number(item?.count) || 0 })).filter(item => item.apartment) : []
+        recent30Days: Number(data?.recent30Days) || 0
     };
 }
 function normalizeDataQualityCategory(item) {
@@ -1793,6 +1785,7 @@ function normalizeDataQualityCategory(item) {
 function normalizeBackupInfo(item) { return { name: cleanText(item?.name), createdAt: cleanText(item?.createdAt), rowCount: Number(item?.rowCount) || 0, kind: cleanText(item?.kind) || "수동 백업" }; } function renderAdminDashboard() {
     const dashboard = state.adminDashboard;
     if (!dashboard) return;
+    const stats = dashboard.statistics || normalizeAdminStatistics(null);
     const gpsTotal = state.indexes.gpsPlaces.length;
     const gpsMissingItems = state.indexes.gpsPlaces
         .filter(item => !findLocationEntryForPlace(item))
@@ -1800,27 +1793,26 @@ function normalizeBackupInfo(item) { return { name: cleanText(item?.name), creat
         .filter((value, index, array) => value && array.indexOf(value) === index)
         .sort(naturalCompare);
     const gpsMatched = Math.max(0, gpsTotal - gpsMissingItems.length);
+    const gpsRate = gpsTotal ? Math.round((gpsMatched / gpsTotal) * 1000) / 10 : 0;
+    const totalPlaces = dashboard.apartmentCount + dashboard.officeBuildingCount;
+    const commonRate = totalPlaces ? Math.round((stats.commonPasswordPlaceCount / totalPlaces) * 1000) / 10 : 0;
     const pendingCount = state.pendingOperations.length;
     const latestBackup = dashboard.backups[0]?.createdAt || "없음";
     const lastSync = state.lastDataCheckAt ? formatLocalDateTime(state.lastDataCheckAt) : "확인 전";
-    const totalDataIssues = dashboard.dataQuality.totalIssues + gpsMissingItems.length;
+    const totalDataIssues = dashboard.dataQuality.totalIssues;
 
     elements.adminStatus.style.display = "none";
     elements.adminContent.hidden = false;
     elements.adminMetrics.replaceChildren();
     const metrics = [
-        ["전체 데이터", `${dashboard.totalRows.toLocaleString()}건`, ""],
-        ["지역", `${dashboard.regionCount.toLocaleString()}곳`, ""],
-        ["아파트", `${dashboard.apartmentCount.toLocaleString()}곳`, ""],
-        ["오피 건물", `${dashboard.officeBuildingCount.toLocaleString()}곳`, ""],
         ["비밀번호 등록 행", `${dashboard.passwordRowCount.toLocaleString()}건`, "good"],
         ["비밀번호 빈 행", `${dashboard.blankPasswordRowCount.toLocaleString()}건`, dashboard.blankPasswordRowCount ? "warn" : "good"],
         ["데이터 오류", `${totalDataIssues.toLocaleString()}건`, totalDataIssues ? "danger" : "good"],
-        ["GPS 좌표 연결", `${gpsMatched.toLocaleString()} / ${gpsTotal.toLocaleString()}`, gpsMissingItems.length ? "warn" : "good"],
+        ["공동비번 등록", `${stats.commonPasswordPlaceCount.toLocaleString()}곳 · ${commonRate}%`, commonRate >= 90 ? "good" : ""],
+        ["GPS 연결률", `${gpsMatched.toLocaleString()}/${gpsTotal.toLocaleString()} · ${gpsRate}%`, gpsMissingItems.length ? "warn" : "good"],
         ["저장 대기", `${pendingCount.toLocaleString()}건`, pendingCount ? "danger" : "good"],
         ["오늘 사용 기기", `${dashboard.usage.todayUsers.toLocaleString()}명`, dashboard.usage.todayUsers ? "good" : ""],
         ["현재 활동 기기", `${dashboard.usage.activeUsers.toLocaleString()}명 · 최근 ${dashboard.usage.activeMinutes}분`, dashboard.usage.activeUsers ? "good" : ""],
-        ["수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""],
         ["자동 백업", getAutoBackupMetricText(dashboard.autoBackup), dashboard.autoBackup.needsAttention ? "danger" : "good"],
         ["보관 백업", `${dashboard.backups.length.toLocaleString()}개`, dashboard.backups.length ? "good" : "warn"],
         ["마지막 백업", latestBackup, dashboard.backups.length ? "good" : "warn"],
@@ -1828,13 +1820,14 @@ function normalizeBackupInfo(item) { return { name: cleanText(item?.name), creat
     ];
     for (const [label, value, tone] of metrics) elements.adminMetrics.appendChild(createAdminMetric(label, value, tone));
     renderAdminPerformanceReport();
-    renderAdminStatistics(dashboard, { gpsTotal, gpsMatched, gpsMissing: gpsMissingItems.length });
+    renderAdminStatistics(dashboard);
 
     if (gpsMissingItems.length > 0) {
         const preview = gpsMissingItems.slice(0, 10).join(", ");
         const extra = gpsMissingItems.length > 10 ? ` 외 ${gpsMissingItems.length - 10}곳` : "";
         elements.adminGpsWarning.hidden = false;
-        elements.adminGpsWarning.textContent = `⚠ GPS 좌표 미연결 ${gpsMissingItems.length}곳\n${preview}${extra}`;
+        elements.adminGpsWarning.textContent = `⚠ GPS 좌표 미연결 ${gpsMissingItems.length}곳
+${preview}${extra}`;
     } else {
         elements.adminGpsWarning.hidden = true;
         elements.adminGpsWarning.textContent = "";
@@ -1858,23 +1851,16 @@ function setAdminView(view) {
     if (elements.adminCurrentTab) { elements.adminCurrentTab.classList.toggle("active", !stats); elements.adminCurrentTab.setAttribute("aria-selected", String(!stats)); }
     if (elements.adminStatsTab) { elements.adminStatsTab.classList.toggle("active", stats); elements.adminStatsTab.setAttribute("aria-selected", String(stats)); }
 }
-function renderAdminStatistics(dashboard, gpsInfo) {
+function renderAdminStatistics(dashboard) {
     if (!elements.adminStatsMetrics) return;
     const stats = dashboard.statistics || normalizeAdminStatistics(null);
-    const totalPlaces = dashboard.apartmentCount + dashboard.officeBuildingCount;
-    const commonRate = totalPlaces ? Math.round((stats.commonPasswordPlaceCount / totalPlaces) * 1000) / 10 : 0;
-    const gpsRate = gpsInfo.gpsTotal ? Math.round((gpsInfo.gpsMatched / gpsInfo.gpsTotal) * 1000) / 10 : 0;
     const gateCount = Object.keys(GATE_IMAGES).length;
     const metrics = [
-        ["전체 동", `${stats.dongCount.toLocaleString()}개`, ""],
-        ["전체 라인", `${stats.lineCount.toLocaleString()}개`, ""],
-        ["개별 비밀번호", `${stats.passwordCount.toLocaleString()}개`, "good"],
-        ["라인당 평균", `${stats.averagePasswordsPerLine.toLocaleString()}개`, ""],
-        ["공동비번 등록", `${stats.commonPasswordPlaceCount.toLocaleString()}곳 · ${commonRate}%`, commonRate >= 90 ? "good" : ""],
-        ["GPS 연결률", `${gpsInfo.gpsMatched.toLocaleString()}/${gpsInfo.gpsTotal.toLocaleString()} · ${gpsRate}%`, gpsInfo.gpsMissing ? "warn" : "good"],
+        ["전체 데이터", `${dashboard.totalRows.toLocaleString()}건`, ""],
+        ["지역", `${dashboard.regionCount.toLocaleString()}곳`, ""],
+        ["아파트", `${dashboard.apartmentCount.toLocaleString()}곳`, ""],
+        ["오피 건물", `${dashboard.officeBuildingCount.toLocaleString()}곳`, ""],
         ["게이트 이미지", `${gateCount.toLocaleString()}개`, gateCount ? "good" : ""],
-        ["오늘 사용 기기", `${dashboard.usage.todayUsers.toLocaleString()}명`, dashboard.usage.todayUsers ? "good" : ""],
-        ["현재 활동 기기", `${dashboard.usage.activeUsers.toLocaleString()}명 · 최근 ${dashboard.usage.activeMinutes}분`, dashboard.usage.activeUsers ? "good" : ""],
         ["최근 7일 수정", `${stats.recent7Days.toLocaleString()}건`, ""],
         ["최근 30일 수정", `${stats.recent30Days.toLocaleString()}건`, ""],
         ["전체 수정기록", `${dashboard.historyCount.toLocaleString()}건`, ""]
@@ -1882,17 +1868,6 @@ function renderAdminStatistics(dashboard, gpsInfo) {
     elements.adminStatsMetrics.replaceChildren();
     for (const [label, value, tone] of metrics) elements.adminStatsMetrics.appendChild(createAdminMetric(label, value, tone));
     if (elements.adminStatsCheckedAt) elements.adminStatsCheckedAt.textContent = dashboard.checkedAt || "방금 확인";
-    renderAdminStatsRows(elements.adminRegionStats, stats.regionStats.map(item => ({ title: item.region, value: `건물 ${item.placeCount} · 동 ${item.dongCount} · 라인 ${item.lineCount} · 비번 ${item.passwordCount}` })));
-    renderAdminStatsRows(elements.adminChangeTypeStats, stats.changeTypes.map(item => ({ title: item.type, value: `${item.count.toLocaleString()}건` })), stats.activitySampleLimited ? "최근 5,000건 기준" : "수정기록 없음");
-    renderAdminStatsRows(elements.adminTopApartments, stats.topApartments.map((item, index) => ({ title: `${index + 1}. ${item.apartment}`, subtitle: item.region, value: `${item.count.toLocaleString()}회` })), "수정기록 없음");
-    const appCache = navigator.serviceWorker?.controller ? "활성" : "확인 중";
-    renderAdminStatsRows(elements.adminAppInfoStats, [
-        { title: "앱 파일 버전", value: FINAL_BUILD_INFO.fileVersion },
-        { title: "서비스워커", value: appCache },
-        { title: "데이터 버전", value: dashboard.dataVersion || "확인 전" },
-        { title: "데이터 시트", value: dashboard.dataSheetName || "확인 전" },
-        { title: "마지막 점검", value: dashboard.checkedAt || "확인 전" }
-    ]);
 }
 function renderAdminStatsRows(container, rows, emptyText = "표시할 통계가 없습니다.") {
     if (!container) return;
@@ -4158,14 +4133,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v51",
+    app: "gimpo-b-app-v52",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-26", "./number-one.css?v=20260716-26", "./script.js?v=20260716-26", "./number-one.js?v=20260716-26", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-27", "./number-one.css?v=20260716-27", "./script.js?v=20260716-27", "./number-one.js?v=20260716-27", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4348,7 +4323,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-26", serviceWorkerVersion: "v51" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-27", serviceWorkerVersion: "v52" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4729,8 +4704,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-26",
-    serviceWorkerVersion: "v51",
+    fileVersion: "20260716-27",
+    serviceWorkerVersion: "v52",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });

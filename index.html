@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-26">
-    <link rel="stylesheet" href="number-one.css?v=20260716-26">
+    <link rel="stylesheet" href="style.css?v=20260716-27">
+    <link rel="stylesheet" href="number-one.css?v=20260716-27">
 </head>
 <body>
 <div class="container">
@@ -84,7 +84,7 @@
                         </span>
                     </div>
                 </div>
-                <div id="numberOneInputCard" class="number-one-input-card">
+                <div class="number-one-input-card">
                     <div class="number-one-input-head">
                         <div id="numberOneInputTitle" class="number-one-input-title">오늘 수행</div>
                         <div id="numberOneDayStatus" class="number-one-day-status">미입력</div>
@@ -104,10 +104,7 @@
                 <div id="numberOneDetails" class="number-one-details" hidden></div>
                 <div id="numberOneSyncNote" class="number-one-sync-note"></div>
                 <section id="numberOnePreviousWeek" class="number-one-previous-week">
-                    <div class="number-one-previous-actions">
-                        <button id="numberOnePreviousToggle" class="number-one-details-toggle number-one-previous-toggle" type="button">직전주 기록 보기</button>
-                        <button id="numberOnePreviousEditBtn" class="number-one-previous-edit-btn" type="button" hidden>직전주 수정</button>
-                    </div>
+                    <button id="numberOnePreviousToggle" class="number-one-details-toggle number-one-previous-toggle" type="button">직전주 기록 보기</button>
                     <div id="numberOnePreviousDetails" class="number-one-previous-details" hidden></div>
                 </section>
             </div>
@@ -374,24 +371,8 @@
                         <div>📈 데이터 통계</div>
                         <div id="adminStatsCheckedAt" aria-live="polite" class="admin-data-quality-status">확인 중</div>
                     </div>
-                    <div class="admin-help">현재 구글시트 데이터와 수정기록을 기준으로 계산합니다. GPS·게이트 현황은 현재 기기의 연결 데이터를 함께 반영합니다.</div>
+                    <div class="admin-help">현재 구글시트 데이터와 수정기록을 기준으로 계산합니다. 게이트 이미지는 현재 앱에 등록된 파일을 기준으로 표시합니다.</div>
                     <div id="adminStatsMetrics" class="admin-metrics admin-stats-metrics"></div>
-                </section>
-                <section class="admin-section">
-                    <div class="admin-section-title">🗺 지역별 현황</div>
-                    <div id="adminRegionStats" class="admin-stats-list"></div>
-                </section>
-                <section class="admin-section">
-                    <div class="admin-section-title">📝 수정 활동</div>
-                    <div id="adminChangeTypeStats" class="admin-stats-list"></div>
-                </section>
-                <section class="admin-section">
-                    <div class="admin-section-title">🔥 자주 수정된 아파트</div>
-                    <div id="adminTopApartments" class="admin-stats-list"></div>
-                </section>
-                <section class="admin-section">
-                    <div class="admin-section-title">ℹ 앱 정보</div>
-                    <div id="adminAppInfoStats" class="admin-stats-list"></div>
                 </section>
             </div>
         </div>
@@ -430,7 +411,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-26"></script>
-<script src="number-one.js?v=20260716-26"></script>
+<script src="script.js?v=20260716-27"></script>
+<script src="number-one.js?v=20260716-27"></script>
 </body>
 </html>
