@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f1d3d">
+    <meta name="theme-color" content="#e9eef5">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="김포B 공비">
@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-30">
-    <link rel="stylesheet" href="number-one.css?v=20260716-30">
+    <link rel="stylesheet" href="style.css?v=20260716-31">
+    <link rel="stylesheet" href="number-one.css?v=20260716-31">
 </head>
 <body>
 <div class="container">
@@ -20,6 +20,10 @@
         <h1 id="appTitle"><span id="titleMain">넘버원🥇</span><span id="titleSub">김포B 공비</span></h1>
         <button id="themeToggle" class="theme-toggle" type="button">🌙 밝기</button>
     </header>
+
+    <div id="homeDataUpdateSlot" class="home-data-update-slot" hidden>
+        <button id="homeDataUpdateBtn" class="home-data-update-btn" type="button">⚠ 데이터 업데이트</button>
+    </div>
 
     <button id="installAppBtn" class="install-app-btn" type="button" hidden>📲 앱 설치</button>
 
@@ -135,7 +139,7 @@
         </div>
         <div class="gps-info-row">
             <div id="gpsLocationMeta" class="gps-location-meta">최근 위치 확인 중</div>
-            <div id="dataSyncStatus" aria-live="polite" class="data-sync-status">저장 데이터 확인 중</div>
+            <div id="dataSyncStatus" aria-live="polite" class="data-sync-status" hidden>저장 데이터 확인 중</div>
         </div>
         <div id="gpsButtons" class="gps-buttons"></div>
     </section>
@@ -143,57 +147,49 @@
     <section id="commonPwdStandalone" class="common-pwd-area"></section>
     <section id="stepContainer" class="step-container"><div id="buttonGrid" class="btn-grid">데이터를 불러오는 중... ⏳</div></section>
     <section id="cardList" class="card-list"></section>
-    <section id="homeDataStatusCard" class="home-data-status-card" data-level="checking" aria-live="polite">
-        <div class="home-data-status-copy">
-            <div class="home-data-status-heading">
-                <span id="homeDataStatusDot" class="home-data-status-dot" aria-hidden="true"></span>
-                <strong id="homeDataStatusTitle">데이터 확인 중</strong>
-            </div>
-            <div id="homeDataStatusDetail" class="home-data-status-detail">저장 데이터를 확인하고 있습니다.</div>
+    <section id="homeSupportSection" class="home-support-section" aria-label="보조 기능">
+        <div id="homeBottomActions" class="admin-bottom-actions">
+            <button id="numberOneOpenBtn" class="number-one-open-btn" type="button">🏅 넘버원 전용</button>
+            <button id="historyBtn" class="history-btn history-btn-bottom" type="button">🕘 수정기록</button>
+            <button id="adminBtn" class="admin-btn" type="button" hidden>
+                <span class="admin-btn-label">🔒 관리자</span>
+                <span id="adminPerformanceAlertBadge" class="admin-performance-alert-badge" hidden></span>
+            </button>
         </div>
-        <button id="homeDataRefreshBtn" class="home-data-refresh-btn" type="button" disabled>확인 중…</button>
-    </section>
-    <div id="homeBottomActions" class="admin-bottom-actions">
-        <button id="numberOneOpenBtn" class="number-one-open-btn" type="button">🏅 넘버원 전용</button>
-        <button id="historyBtn" class="history-btn history-btn-bottom" type="button">🕘 수정기록</button>
-        <button id="adminBtn" class="admin-btn" type="button" hidden>
-            <span class="admin-btn-label">🔒 관리자</span>
-            <span id="adminPerformanceAlertBadge" class="admin-performance-alert-badge" hidden></span>
-        </button>
-    </div>
-    <section id="acceptanceCounter" class="acceptance-counter" aria-label="수락 거절 카운터" hidden>
-        <div class="acceptance-counter-head">
-            <span class="acceptance-current-rate">현재 수락률 <b id="acceptanceAcceptRate">0.0%</b></span>
-        </div>
-        <div class="acceptance-metrics" aria-live="polite">
-            <div class="acceptance-metric">
-                <span class="acceptance-metric-label">수락</span>
-                <strong id="acceptanceAcceptedValue" class="acceptance-metric-value">0건</strong>
+        <section id="acceptanceCounter" class="acceptance-counter" aria-label="수락 거절 카운터" hidden>
+            <div class="acceptance-counter-head">
+                <span class="acceptance-current-rate">현재 수락률 <b id="acceptanceAcceptRate">0.0%</b></span>
             </div>
-            <div class="acceptance-metric">
-                <span class="acceptance-metric-label">거절</span>
-                <strong id="acceptanceRejectedValue" class="acceptance-metric-value">0건</strong>
+            <div class="acceptance-metrics" aria-live="polite">
+                <div class="acceptance-metric">
+                    <span class="acceptance-metric-label">수락</span>
+                    <strong id="acceptanceAcceptedValue" class="acceptance-metric-value">0건</strong>
+                </div>
+                <div class="acceptance-metric">
+                    <span class="acceptance-metric-label">거절</span>
+                    <strong id="acceptanceRejectedValue" class="acceptance-metric-value">0건</strong>
+                </div>
+                <div class="acceptance-metric">
+                    <span class="acceptance-metric-label">거절가능</span>
+                    <strong id="acceptanceRejectAvailable" class="acceptance-metric-value">0건</strong>
+                </div>
+                <div class="acceptance-metric">
+                    <span class="acceptance-metric-label">80%까지</span>
+                    <strong id="acceptanceTargetAccepted" class="acceptance-metric-value">-</strong>
+                </div>
             </div>
-            <div class="acceptance-metric">
-                <span class="acceptance-metric-label">거절가능</span>
-                <strong id="acceptanceRejectAvailable" class="acceptance-metric-value">0건</strong>
+            <div class="acceptance-controls">
+                <div class="acceptance-control-pair" aria-label="수락 건수 조절">
+                    <button id="acceptanceAcceptAdd" class="acceptance-count-btn acceptance-plus accept" type="button" aria-label="수락 1건 추가">+</button>
+                    <button id="acceptanceAcceptSubtract" class="acceptance-count-btn acceptance-minus" type="button" aria-label="수락 1건 감소">−</button>
+                </div>
+                <div class="acceptance-control-pair" aria-label="거절 건수 조절">
+                    <button id="acceptanceRejectAdd" class="acceptance-count-btn acceptance-plus reject" type="button" aria-label="거절 1건 추가">+</button>
+                    <button id="acceptanceRejectSubtract" class="acceptance-count-btn acceptance-minus" type="button" aria-label="거절 1건 감소">−</button>
+                </div>
+                <button id="acceptanceResetBtn" class="acceptance-reset-btn" type="button">리셋</button>
             </div>
-            <div class="acceptance-metric">
-                <span class="acceptance-metric-label">80%까지</span>
-                <strong id="acceptanceTargetAccepted" class="acceptance-metric-value">-</strong>
-            </div>
-        </div>
-        <div class="acceptance-controls">
-            <div class="acceptance-control-pair" aria-label="수락 건수 조절">
-                <button id="acceptanceAcceptAdd" class="acceptance-count-btn acceptance-plus accept" type="button" aria-label="수락 1건 추가">+</button>
-                <button id="acceptanceAcceptSubtract" class="acceptance-count-btn acceptance-minus" type="button" aria-label="수락 1건 감소">−</button>
-            </div>
-            <div class="acceptance-control-pair" aria-label="거절 건수 조절">
-                <button id="acceptanceRejectAdd" class="acceptance-count-btn acceptance-plus reject" type="button" aria-label="거절 1건 추가">+</button>
-                <button id="acceptanceRejectSubtract" class="acceptance-count-btn acceptance-minus" type="button" aria-label="거절 1건 감소">−</button>
-            </div>
-            <button id="acceptanceResetBtn" class="acceptance-reset-btn" type="button">리셋</button>
-        </div>
+        </section>
     </section>
 </div>
 
@@ -488,7 +484,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-30"></script>
-<script src="number-one.js?v=20260716-30"></script>
+<script src="script.js?v=20260716-31"></script>
+<script src="number-one.js?v=20260716-31"></script>
 </body>
 </html>

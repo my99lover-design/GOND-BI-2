@@ -1,5 +1,5 @@
-:root { --bg-color:#f0f2f5; --card-bg:#fff; --primary:#3b82f6; --primary-dark:#2563eb; --success:#22c55e; --danger:#ef4444; --text-main:#111827; --text-sub:#6b7280; --border:#e5e7eb; --gps-btn-bg:#e0e7ff; --gps-btn-text:#4f46e5; --step-bg:#f3f4f6; --modal-overlay:rgba(0,0,0,.55); }
-[data-theme="dark"] { --bg-color:#111827; --card-bg:#1f2937; --primary:#60a5fa; --primary-dark:#3b82f6; --success:#22c55e; --danger:#f87171; --text-main:#f9fafb; --text-sub:#9ca3af; --border:#374151; --gps-btn-bg:#312e81; --gps-btn-text:#c7d2fe; --step-bg:#374151; --modal-overlay:rgba(0,0,0,.72); }
+:root { --bg-color:#e9eef5; --card-bg:#ffffff; --primary:#2563eb; --primary-dark:#1d4ed8; --success:#15803d; --danger:#dc2626; --warning:#d97706; --text-main:#0f172a; --text-sub:#475569; --border:#cbd5e1; --gps-btn-bg:#e6edff; --gps-btn-text:#3730a3; --step-bg:#f1f5f9; --input-bg:#ffffff; --surface-muted:#eef2f7; --shadow-color:rgba(15,23,42,.12); --modal-overlay:rgba(2,6,23,.62); }
+[data-theme="dark"] { --bg-color:#08111f; --card-bg:#111c2e; --primary:#60a5fa; --primary-dark:#93c5fd; --success:#4ade80; --danger:#fca5a5; --warning:#fbbf24; --text-main:#f8fafc; --text-sub:#cbd5e1; --border:#42526a; --gps-btn-bg:#24345f; --gps-btn-text:#e0e7ff; --step-bg:#1c2a3d; --input-bg:#0d1728; --surface-muted:#17243a; --shadow-color:rgba(0,0,0,.34); --modal-overlay:rgba(0,0,0,.78); }
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html { min-height:100%; background:var(--bg-color); }
 body { min-height:100vh; margin:0; padding:15px; display:flex; flex-direction:column; align-items:center; overflow-x:hidden; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif; background:var(--bg-color); color:var(--text-main); transition:background-color .25s ease,color .25s ease; }
@@ -560,14 +560,14 @@ button.is-processing::after { content:""; display:inline-block; width:.75em; hei
 .acceptance-counter-head {
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
   margin-bottom:10px;
-  text-align:center;
+  text-align:left;
 }
 .acceptance-current-rate {
   display:inline-flex;
   align-items:baseline;
-  justify-content:center;
+  justify-content:flex-start;
   gap:5px;
   min-height:34px;
   padding:7px 14px;
@@ -677,3 +677,110 @@ button.is-processing::after { content:""; display:inline-block; width:.75em; hei
   .acceptance-count-btn { font-size:1.28rem; }
 }
 
+
+
+/* v20260716-31: 홈 재배치·문제 시 데이터 버튼·라이트/다크 전체 가시성 */
+html { color-scheme:light; }
+html[data-theme="dark"] { color-scheme:dark; }
+body { background:var(--bg-color); color:var(--text-main); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+::selection { background:color-mix(in srgb,var(--primary) 30%,transparent); color:var(--text-main); }
+button,input,textarea,select { color:var(--text-main); }
+input,textarea,select { background:var(--input-bg); border-color:var(--border); }
+input::placeholder,textarea::placeholder { color:color-mix(in srgb,var(--text-sub) 82%,transparent); opacity:1; }
+button:disabled { filter:saturate(.72); }
+
+.step-container,.card,.modal-content,.history-item,.admin-menu-button,.admin-performance-item,.admin-quality-item,.admin-diagnostic-row,.compact-gps-section,.acceptance-counter {
+  box-shadow:0 4px 12px var(--shadow-color);
+}
+.theme-toggle,.gps-status-badge,.gps-refresh-btn,.nav-btn,.view-context-bar,.select-btn,.common-edit-btn,.history-refresh-btn,.history-close-btn,.admin-refresh-btn,.compact-gps-refresh-btn {
+  border-color:var(--border);
+}
+[data-theme="dark"] .theme-toggle,
+[data-theme="dark"] .gps-status-badge,
+[data-theme="dark"] .gps-refresh-btn,
+[data-theme="dark"] .nav-btn,
+[data-theme="dark"] .view-context-bar,
+[data-theme="dark"] .select-btn,
+[data-theme="dark"] .common-edit-btn,
+[data-theme="dark"] .history-refresh-btn,
+[data-theme="dark"] .history-close-btn,
+[data-theme="dark"] .admin-menu-button,
+[data-theme="dark"] .admin-diagnostic-row,
+[data-theme="dark"] .compact-gps-refresh-btn,
+[data-theme="dark"] .acceptance-metric,
+[data-theme="dark"] .acceptance-minus,
+[data-theme="dark"] .acceptance-reset-btn { background:var(--step-bg); color:var(--text-main); }
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .modal-content input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select { background:var(--input-bg); color:var(--text-main); border-color:var(--border); }
+[data-theme="dark"] .btn-submit,
+[data-theme="dark"] .admin-view-tab.active,
+[data-theme="dark"] .history-undo-btn { background:#2563eb; color:#fff; }
+[data-theme="dark"] .add-btn { background:#15803d; color:#fff; }
+[data-theme="dark"] .delete-btn { background:#dc2626; color:#fff; }
+[data-theme="dark"] .gps-location-meta[data-status="aging"],
+[data-theme="dark"] .data-sync-status[data-status="cached"],
+[data-theme="dark"] .admin-performance-badge.warn,
+[data-theme="dark"] .admin-data-quality-status.warn,
+[data-theme="dark"] .admin-quality-item[data-severity="warning"] .admin-quality-count { color:var(--warning); }
+[data-theme="dark"] .admin-diagnostic-row[data-level="good"] .status { color:#86efac; }
+[data-theme="dark"] .admin-diagnostic-row[data-level="warning"] .status { color:#fbbf24; }
+[data-theme="dark"] .admin-diagnostic-row[data-level="error"] .status { color:#fca5a5; }
+[data-theme="dark"] .pending-operation-badge { background:#fbbf24; color:#172033; }
+[data-theme="dark"] .pwd-box { background:rgba(239,68,68,.10); }
+[data-theme="dark"] .toast { background:rgba(248,250,252,.96); color:#0f172a; }
+[data-theme="dark"] .toast-action-btn { background:#172033; color:#fff; }
+
+.home-data-update-slot {
+  width:100%;
+  display:flex;
+  justify-content:flex-end;
+  margin:-5px 0 9px;
+  padding-right:1px;
+}
+.home-data-update-slot[hidden] { display:none!important; }
+.home-data-update-btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:116px;
+  min-height:40px;
+  padding:0 12px;
+  border:1px solid color-mix(in srgb,var(--warning) 50%,var(--border));
+  border-radius:13px;
+  background:color-mix(in srgb,var(--card-bg) 86%,var(--warning) 14%);
+  color:var(--warning);
+  font-size:.78rem;
+  font-weight:950;
+  white-space:nowrap;
+  cursor:pointer;
+  box-shadow:0 3px 9px var(--shadow-color);
+}
+.home-data-update-btn.danger { border-color:color-mix(in srgb,var(--danger) 48%,var(--border)); background:color-mix(in srgb,var(--card-bg) 86%,var(--danger) 14%); color:var(--danger); }
+.home-data-update-btn:disabled { cursor:default; opacity:.72; }
+.home-data-update-btn:not(:disabled):active { transform:scale(.97); }
+
+.gps-info-row { justify-content:flex-start; }
+.gps-location-meta { width:100%; color:var(--text-sub); }
+.data-sync-status[hidden] { display:none!important; }
+
+.home-support-section {
+  width:100%;
+  margin:-7px 0 0;
+  padding-top:14px;
+  border-top:2px solid color-mix(in srgb,var(--border) 82%,var(--primary) 18%);
+}
+.home-support-section[hidden],body.number-one-screen-active .home-support-section { display:none!important; }
+.home-support-section .admin-bottom-actions { margin-top:0; }
+.home-support-section .acceptance-counter { margin-top:10px; }
+.acceptance-counter-head { justify-content:flex-start; text-align:left; }
+.acceptance-current-rate { justify-content:flex-start; }
+[data-theme="dark"] .acceptance-plus.accept { border-color:rgba(74,222,128,.44); background:rgba(74,222,128,.14); color:#86efac; }
+[data-theme="dark"] .acceptance-plus.reject { border-color:rgba(252,165,165,.42); background:rgba(248,113,113,.13); color:#fca5a5; }
+
+@media (max-width:390px) {
+  .home-data-update-slot { margin-top:-4px; margin-bottom:7px; }
+  .home-data-update-btn { min-width:108px; min-height:38px; padding:0 10px; font-size:.73rem; }
+  .home-support-section { margin-top:-9px; padding-top:12px; }
+}

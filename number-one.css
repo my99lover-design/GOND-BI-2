@@ -266,3 +266,29 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
   .number-one-previous-actions { gap:4px; }
   .number-one-previous-edit-btn { min-width:74px; padding:0 7px; font-size:.66rem; }
 }
+
+/* v20260716-31: 넘버원 전용 라이트/다크 가시성 보강 */
+.number-one-shell,.number-one-input-card,.number-one-summary-item,.number-one-condition-part,.number-one-day-row,.number-one-previous-summary > div {
+  border-color:var(--border);
+}
+.number-one-field input::placeholder,.number-one-auth-modal-content input::placeholder { color:color-mix(in srgb,var(--text-sub) 82%,transparent); opacity:1; }
+[data-theme="dark"] .number-one-shell { box-shadow:0 5px 16px rgba(0,0,0,.34); }
+[data-theme="dark"] .number-one-locked { background:linear-gradient(135deg,color-mix(in srgb,var(--card-bg) 86%,#2563eb 14%),color-mix(in srgb,var(--card-bg) 90%,#15803d 10%)); }
+[data-theme="dark"] .number-one-auth-btn,
+[data-theme="dark"] .number-one-save-btn,
+[data-theme="dark"] .number-one-auth-submit { background:#2563eb; color:#fff; }
+[data-theme="dark"] .number-one-save-btn.saved { background:#15803d; color:#fff; }
+[data-theme="dark"] .number-one-open-btn { border-color:rgba(251,191,36,.48); background:linear-gradient(135deg,rgba(245,158,11,.20),rgba(59,130,246,.18)); color:var(--text-main); }
+[data-theme="dark"] .number-one-field input,
+[data-theme="dark"] .number-one-auth-modal-content input { background:var(--input-bg); color:var(--text-main); border-color:var(--border); }
+[data-theme="dark"] .number-one-day-status.complete { background:rgba(74,222,128,.13); color:#86efac; }
+[data-theme="dark"] .number-one-day-status.partial,
+[data-theme="dark"] .number-one-input-guide.warning,
+[data-theme="dark"] .number-one-sync-note.warning,
+[data-theme="dark"] .number-one-previous-edit-btn,
+[data-theme="dark"] .number-one-previous-edit-notice,
+[data-theme="dark"] .number-one-input-card.previous-editing .number-one-input-title { color:#fbbf24; }
+[data-theme="dark"] .number-one-previous-edit-btn { border-color:rgba(251,191,36,.52); background:rgba(245,158,11,.14); }
+[data-theme="dark"] .number-one-previous-edit-btn.active { background:#f59e0b; color:#172033; }
+[data-theme="dark"] .number-one-issued-panel { background:rgba(74,222,128,.10); border-color:rgba(74,222,128,.34); }
+[data-theme="dark"] .number-one-delete-btn,.number-one-logout-btn { color:var(--danger); }
