@@ -317,3 +317,66 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
 @media (max-width:350px) {
   .number-one-input-guide.compact-order-guide { font-size:.70rem; letter-spacing:-.035em; }
 }
+
+
+/* v20260716-35: 프로모 조건 3칸 + 적용/상태 안내 3칸 */
+.number-one-condition-line-first,
+.number-one-condition-line-second { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.number-one-condition-part.condition-unmet {
+  border-color:rgba(107,114,128,.34);
+  background:rgba(107,114,128,.08);
+}
+.number-one-condition-part.condition-unmet .number-one-condition-label,
+.number-one-condition-part.condition-unmet .number-one-condition-value { color:#6b7280; }
+.number-one-condition-part.condition-near {
+  border-color:rgba(245,158,11,.58);
+  background:rgba(245,158,11,.12);
+  box-shadow:inset 0 0 0 1px rgba(245,158,11,.08);
+}
+.number-one-condition-part.condition-near .number-one-condition-label,
+.number-one-condition-part.condition-near .number-one-condition-value { color:#b45309; }
+.number-one-condition-part.condition-done {
+  border-color:rgba(34,197,94,.58);
+  background:rgba(34,197,94,.12);
+  box-shadow:inset 0 0 0 1px rgba(34,197,94,.08);
+}
+.number-one-condition-part.condition-done .number-one-condition-label,
+.number-one-condition-part.condition-done .number-one-condition-value { color:#15803d; }
+.number-one-condition-legend {
+  align-items:flex-start;
+  gap:2px;
+  padding-left:9px;
+  padding-right:5px;
+  background:var(--card-bg);
+}
+.number-one-condition-legend-item {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  color:var(--text-sub);
+  font-size:clamp(.53rem,2.45vw,.64rem);
+  font-weight:850;
+  line-height:1.12;
+  white-space:nowrap;
+}
+.number-one-condition-legend-item i {
+  width:7px;
+  height:7px;
+  flex:0 0 auto;
+  border-radius:50%;
+  background:#6b7280;
+  box-shadow:0 0 0 1px rgba(255,255,255,.22);
+}
+.number-one-condition-legend-item.near i { background:#f59e0b; }
+.number-one-condition-legend-item.done i { background:#22c55e; }
+[data-theme="dark"] .number-one-condition-part.condition-unmet .number-one-condition-label,
+[data-theme="dark"] .number-one-condition-part.condition-unmet .number-one-condition-value { color:#cbd5e1; }
+[data-theme="dark"] .number-one-condition-part.condition-near .number-one-condition-label,
+[data-theme="dark"] .number-one-condition-part.condition-near .number-one-condition-value { color:#fbbf24; }
+[data-theme="dark"] .number-one-condition-part.condition-done .number-one-condition-label,
+[data-theme="dark"] .number-one-condition-part.condition-done .number-one-condition-value { color:#86efac; }
+@media (max-width:350px) {
+  .number-one-condition-legend { padding-left:5px; }
+  .number-one-condition-legend-item { gap:3px; font-size:.50rem; }
+  .number-one-condition-legend-item i { width:6px; height:6px; }
+}

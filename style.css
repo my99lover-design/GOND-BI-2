@@ -814,3 +814,32 @@ button:disabled { filter:saturate(.72); }
   background:rgba(248,113,113,.19);
   color:#fecaca;
 }
+
+
+/* v20260716-35: 관리자 6개 메뉴 문제 위치 표시 */
+.admin-menu-button { position:relative; }
+.admin-menu-button.has-issue::after {
+  content:"!";
+  position:absolute;
+  top:8px;
+  right:8px;
+  display:flex;
+  width:23px;
+  height:23px;
+  align-items:center;
+  justify-content:center;
+  border:2px solid rgba(255,255,255,.96);
+  border-radius:50%;
+  background:#ef4444;
+  color:#fff;
+  font-size:.92rem;
+  font-weight:1000;
+  line-height:1;
+  box-shadow:0 2px 8px rgba(239,68,68,.42);
+}
+[data-theme="dark"] .admin-menu-button.has-issue::after {
+  border-color:#111827;
+  background:#f87171;
+  color:#111827;
+  box-shadow:0 2px 10px rgba(248,113,113,.44);
+}

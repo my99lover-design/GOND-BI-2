@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 넘버원 입력순서 개선 20260716-34 */
+/* 넘버원 김포B 공비 - 현황판·관리자 문제표시 20260716-35 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -4252,14 +4252,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v59",
+    app: "gimpo-b-app-v60",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-34", "./number-one.css?v=20260716-34", "./script.js?v=20260716-34", "./number-one.js?v=20260716-34", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-35", "./number-one.css?v=20260716-35", "./script.js?v=20260716-35", "./number-one.js?v=20260716-35", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4442,7 +4442,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-34", serviceWorkerVersion: "v59" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-35", serviceWorkerVersion: "v60" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4823,8 +4823,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-34",
-    serviceWorkerVersion: "v59",
+    fileVersion: "20260716-35",
+    serviceWorkerVersion: "v60",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -5080,3 +5080,83 @@ document.addEventListener("DOMContentLoaded", () => {
         badge.removeAttribute("title");
     }
 }, { once: true });
+
+
+/* v20260716-35: 관리자 메뉴에서 문제 발생 위치를 빨간 느낌표로 표시 */
+function setAdminMenuIssueIndicator(view, hasIssue, detail = "") {
+    const button = document.querySelector(`#adminMenu [data-admin-view="${view}"]`);
+    if (!button) return;
+    button.classList.toggle("has-issue", Boolean(hasIssue));
+    if (hasIssue) {
+        button.title = cleanText(detail) || "확인이 필요한 항목이 있습니다.";
+        button.dataset.issueDetail = button.title;
+    } else {
+        button.removeAttribute("title");
+        delete button.dataset.issueDetail;
+    }
+}
+
+function updateAdminMenuIssueIndicators() {
+    const dashboard = state.adminDashboard;
+    const gpsMissingCount = Array.isArray(state.indexes?.gpsPlaces)
+        ? state.indexes.gpsPlaces.filter(item => !findLocationEntryForPlace(item)).length
+        : 0;
+    const pendingCount = Array.isArray(state.pendingOperations) ? state.pendingOperations.length : 0;
+
+    const currentDetails = [];
+    if (dashboard?.blankPasswordRowCount > 0) currentDetails.push(`빈 비밀번호 ${dashboard.blankPasswordRowCount}건`);
+    if (gpsMissingCount > 0) currentDetails.push(`GPS 미연결 ${gpsMissingCount}곳`);
+    if (pendingCount > 0) currentDetails.push(`저장 대기 ${pendingCount}건`);
+    if (state.dataSyncState === "error") currentDetails.push("최근 데이터 동기화 오류");
+    setAdminMenuIssueIndicator("current", currentDetails.length > 0, currentDetails.join(" · "));
+
+    const performanceDetails = [];
+    for (const [key, rule] of Object.entries(PERFORMANCE_RULES)) {
+        const stats = getPerformanceStatistics(key, rule);
+        if (stats.currentTone === "danger") performanceDetails.push(`${rule.label} 느림`);
+        else if (stats.currentTone === "warn") performanceDetails.push(`${rule.label} 주의`);
+    }
+    setAdminMenuIssueIndicator("performance", performanceDetails.length > 0, performanceDetails.join(" · "));
+
+    const qualityCount = Number(dashboard?.dataQuality?.totalIssues) || 0;
+    const qualityCleanup = Number(dashboard?.dataQuality?.cleanup?.sortableCount) || Number(dashboard?.dataQuality?.cleanup?.duplicateCount) || 0;
+    const qualityHasIssue = qualityCount > 0 || qualityCleanup > 0 || gpsMissingCount > 0;
+    setAdminMenuIssueIndicator("quality", qualityHasIssue,
+        [qualityCount ? `데이터 오류 ${qualityCount}건` : "", qualityCleanup ? "정렬·중복 확인 필요" : "", gpsMissingCount ? `GPS 미연결 ${gpsMissingCount}곳` : ""].filter(Boolean).join(" · "));
+
+    const diagnosticsStatus = document.getElementById("adminDiagnosticsStatus");
+    const diagnosticsTone = cleanText(diagnosticsStatus?.dataset?.status);
+    const diagnosticsText = cleanText(diagnosticsStatus?.textContent);
+    const diagnosticsHasIssue = diagnosticsTone === "warning" || diagnosticsTone === "danger" || /오류|주의|실패|복구 필요/u.test(diagnosticsText);
+    setAdminMenuIssueIndicator("diagnostics", diagnosticsHasIssue, diagnosticsText);
+
+    const backupDetails = [];
+    if (dashboard) {
+        if (dashboard.autoBackup?.needsAttention || !dashboard.autoBackup?.enabled) backupDetails.push("자동백업 확인 필요");
+        if (!Array.isArray(dashboard.backups) || dashboard.backups.length === 0) backupDetails.push("보관 백업 없음");
+    }
+    setAdminMenuIssueIndicator("backup", backupDetails.length > 0, backupDetails.join(" · "));
+
+    const statsHasIssue = Boolean(dashboard && dashboard.totalRows <= 0);
+    setAdminMenuIssueIndicator("stats", statsHasIssue, statsHasIssue ? "통계 데이터 없음" : "");
+}
+
+const v35RenderAdminDashboard = renderAdminDashboard;
+renderAdminDashboard = function renderAdminDashboardV35() {
+    const result = v35RenderAdminDashboard();
+    window.setTimeout(updateAdminMenuIssueIndicators, 0);
+    return result;
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+    const targets = [
+        elements.adminPerformanceStatus,
+        elements.adminDataQualityStatus,
+        document.getElementById("adminDiagnosticsStatus"),
+        elements.autoBackupStatus,
+        elements.adminGpsWarning
+    ].filter(Boolean);
+    const observer = new MutationObserver(() => updateAdminMenuIssueIndicators());
+    for (const target of targets) observer.observe(target, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:["data-status", "class", "hidden"] });
+    updateAdminMenuIssueIndicators();
+}, { once:true });

@@ -1,6 +1,6 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-26 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-35 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_KEYS = Object.freeze({
     TOKEN: "gimpoB_number_one_prod_account_token_v2",
@@ -39,7 +39,7 @@ function initializeNumberOne() {
     [
         "numberOneSection", "numberOneOpenBtn", "numberOneHomeBtn", "numberOneLocked", "numberOneLockedSub", "numberOneApp", "numberOneLoginBtn", "numberOneRetryBtn",
         "numberOneWeekRange", "numberOneUserCode", "numberOneLogoutBtn", "numberOneTotal", "numberOnePeak", "numberOneBonus",
-        "numberOneCondition150", "numberOneConditionPeak", "numberOneStartPart", "numberOneStartCurrent", "numberOneWeekCurrent",
+        "numberOneCondition150", "numberOneConditionPeak", "numberOneStartPart", "numberOneStartCurrent", "numberOnePremiumConditionPart", "numberOnePremiumConditionCurrent",
         "numberOnePeakPart", "numberOnePeakCurrent", "numberOneStandardCurrent", "numberOnePremiumCurrent", "numberOneInputTitle",
         "numberOneDayStatus", "numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input",
         "numberOneInputCard", "numberOneInputGuide", "numberOneSaveBtn", "numberOneDeleteBtn",
@@ -308,8 +308,8 @@ function renderNumberOneConditionStatus(summary = {}) {
     if (numberOneElements.numberOneStartCurrent) {
         numberOneElements.numberOneStartCurrent.textContent = formatNumber(totalCount);
     }
-    if (numberOneElements.numberOneWeekCurrent) {
-        numberOneElements.numberOneWeekCurrent.textContent = formatNumber(totalCount);
+    if (numberOneElements.numberOnePremiumConditionCurrent) {
+        numberOneElements.numberOnePremiumConditionCurrent.textContent = formatNumber(totalCount);
     }
     if (numberOneElements.numberOnePeakCurrent) {
         numberOneElements.numberOnePeakCurrent.textContent = formatNumber(peakCount);
@@ -320,8 +320,19 @@ function renderNumberOneConditionStatus(summary = {}) {
     if (numberOneElements.numberOnePremiumCurrent) {
         numberOneElements.numberOnePremiumCurrent.textContent = formatNumber(premiumCount);
     }
-    numberOneElements.numberOneStartPart?.classList.toggle("done", totalCount >= 151);
-    numberOneElements.numberOnePeakPart?.classList.toggle("done", peakCount >= 100);
+
+    applyNumberOneConditionTone(numberOneElements.numberOneStartPart, totalCount, 151);
+    applyNumberOneConditionTone(numberOneElements.numberOnePremiumConditionPart, totalCount, 250);
+    applyNumberOneConditionTone(numberOneElements.numberOnePeakPart, peakCount, 100);
+}
+
+function applyNumberOneConditionTone(element, current, target) {
+    if (!element) return;
+    const progress = target > 0 ? current / target : 0;
+    element.classList.remove("condition-unmet", "condition-near", "condition-done", "done");
+    if (progress >= 1) element.classList.add("condition-done");
+    else if (progress >= 0.8) element.classList.add("condition-near");
+    else element.classList.add("condition-unmet");
 }
 
 function renderNumberOneSelectedDay() {

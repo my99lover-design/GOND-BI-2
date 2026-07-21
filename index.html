@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-34">
-    <link rel="stylesheet" href="number-one.css?v=20260716-34">
+    <link rel="stylesheet" href="style.css?v=20260716-35">
+    <link rel="stylesheet" href="number-one.css?v=20260716-35">
 </head>
 <body>
 <div class="container">
@@ -59,32 +59,34 @@
                     <div class="number-one-summary-item"><div class="number-one-summary-label">10~17시</div><div id="numberOnePeak" class="number-one-summary-value">0건</div></div>
                     <div class="number-one-summary-item"><div class="number-one-summary-label">예상 추가금</div><div id="numberOneBonus" class="number-one-summary-value bonus">0원</div></div>
                 </div>
-                <div class="number-one-condition-status" aria-label="추가금 적용 현황">
+                <div class="number-one-condition-status" aria-label="추가금 조건과 적용 현황">
                     <div id="numberOneCondition150" class="number-one-condition-line number-one-condition-line-first">
-                        <span id="numberOneStartPart" class="number-one-condition-part">
-                            <span class="number-one-condition-label">151건 추가 시작</span>
+                        <span id="numberOneStartPart" class="number-one-condition-part condition-unmet">
+                            <span class="number-one-condition-label">+1000원 조건</span>
                             <span class="number-one-condition-value">(<b id="numberOneStartCurrent">0</b>/151건)</span>
                         </span>
-                        <span class="number-one-condition-separator" aria-hidden="true">/</span>
-                        <span id="numberOnePeakPart" class="number-one-condition-part">
-                            <span class="number-one-condition-label">10~17시</span>
+                        <span id="numberOnePremiumConditionPart" class="number-one-condition-part condition-unmet">
+                            <span class="number-one-condition-label">+1500원 조건</span>
+                            <span class="number-one-condition-value">(<b id="numberOnePremiumConditionCurrent">0</b>/250건)</span>
+                        </span>
+                        <span id="numberOnePeakPart" class="number-one-condition-part condition-unmet">
+                            <span class="number-one-condition-label">10~17시 조건</span>
                             <span class="number-one-condition-value">(<b id="numberOnePeakCurrent">0</b>/100건)</span>
                         </span>
                     </div>
                     <div id="numberOneConditionPeak" class="number-one-condition-line number-one-condition-line-second">
-                        <span class="number-one-condition-part">
-                            <span class="number-one-condition-label">주간 누적</span>
-                            <span class="number-one-condition-value"><b id="numberOneWeekCurrent">0</b>건</span>
-                        </span>
-                        <span class="number-one-condition-separator" aria-hidden="true">/</span>
                         <span class="number-one-condition-part standard">
-                            <span class="number-one-condition-label">+1000 적용</span>
-                            <span class="number-one-condition-value"><b id="numberOneStandardCurrent">0</b>건</span>
+                            <span class="number-one-condition-label">+1000원 적용</span>
+                            <span class="number-one-condition-value">(<b id="numberOneStandardCurrent">0</b>건)</span>
                         </span>
-                        <span class="number-one-condition-separator" aria-hidden="true">/</span>
                         <span class="number-one-condition-part premium">
-                            <span class="number-one-condition-label">+1500 적용</span>
-                            <span class="number-one-condition-value"><b id="numberOnePremiumCurrent">0</b>건</span>
+                            <span class="number-one-condition-label">+1500원 적용</span>
+                            <span class="number-one-condition-value">(<b id="numberOnePremiumCurrent">0</b>건)</span>
+                        </span>
+                        <span class="number-one-condition-part number-one-condition-legend" aria-label="조건 색상 안내">
+                            <span class="number-one-condition-legend-item unmet"><i aria-hidden="true"></i>조건미달</span>
+                            <span class="number-one-condition-legend-item near"><i aria-hidden="true"></i>달성임박</span>
+                            <span class="number-one-condition-legend-item done"><i aria-hidden="true"></i>달성</span>
                         </span>
                     </div>
                 </div>
@@ -484,7 +486,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-34"></script>
-<script src="number-one.js?v=20260716-34"></script>
+<script src="script.js?v=20260716-35"></script>
+<script src="number-one.js?v=20260716-35"></script>
 </body>
 </html>
