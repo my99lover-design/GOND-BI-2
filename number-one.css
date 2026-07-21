@@ -179,3 +179,69 @@ body:not(.number-one-screen-active) #numberOneSection { display:none!important; 
 .number-one-access-gate-panel[hidden] { display:none!important; }
 .number-one-access-gate-panel { display:grid; gap:2px; }
 .number-one-gate-note { margin:9px 2px 0; color:var(--text-sub); font-size:.65rem; font-weight:750; line-height:1.45; text-align:center; }
+
+/* v20260716-24: 넘버원 현황 숫자 가시성 개선 */
+.number-one-condition-status { gap:7px; margin-top:8px; }
+.number-one-condition-line {
+  display:grid;
+  width:100%;
+  gap:6px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  overflow:visible;
+  white-space:normal;
+}
+.number-one-condition-line-first { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.number-one-condition-line-second { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.number-one-condition-separator { display:none; }
+.number-one-condition-part {
+  min-width:0;
+  min-height:49px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  padding:7px 4px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--card-bg);
+  text-align:center;
+}
+.number-one-condition-label {
+  width:100%;
+  overflow:hidden;
+  color:var(--text-sub);
+  font-size:clamp(.59rem,2.7vw,.69rem);
+  font-weight:850;
+  line-height:1.12;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.number-one-condition-value {
+  color:var(--text-main);
+  font-size:clamp(.79rem,3.6vw,.98rem);
+  font-weight:950;
+  line-height:1.08;
+  letter-spacing:-.025em;
+}
+.number-one-condition-value b { font-size:1.08em; }
+.number-one-condition-part.standard { background:rgba(37,99,235,.055); }
+.number-one-condition-part.premium { background:rgba(234,88,12,.055); }
+@media (max-width:350px) {
+  .number-one-condition-line { gap:4px; }
+  .number-one-condition-part { min-height:47px; padding-left:2px; padding-right:2px; }
+  .number-one-condition-label { font-size:.56rem; }
+  .number-one-condition-value { font-size:.76rem; }
+}
+.number-one-summary-item { min-height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 4px; }
+.number-one-summary-label { font-size:.68rem; line-height:1.2; }
+.number-one-summary-value { font-size:1.08rem; }
+.number-one-summary-value.bonus { font-size:.96rem; }
+@media (max-width:350px) {
+  .number-one-summary-label { font-size:.62rem; }
+  .number-one-summary-value { font-size:.98rem; }
+  .number-one-summary-value.bonus { font-size:.88rem; }
+}

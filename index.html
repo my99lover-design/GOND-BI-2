@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-23">
-    <link rel="stylesheet" href="number-one.css?v=20260716-23">
+    <link rel="stylesheet" href="style.css?v=20260716-24">
+    <link rel="stylesheet" href="number-one.css?v=20260716-24">
 </head>
 <body>
 <div class="container">
@@ -111,12 +111,11 @@
         </div>
     </section>
 
-    <nav id="navContainer" class="nav-buttons-container">
-        <button id="backBtn" class="nav-btn" type="button" onclick="goBack()">⬅️ 뒤로가기</button>
-        <button id="homeBtn" class="nav-btn" type="button" onclick="resetSteps()">🏠 홈으로</button>
+    <nav id="navContainer" class="nav-buttons-container" aria-label="화면 이동">
+        <button id="backBtn" class="nav-btn nav-icon-btn" type="button" onclick="goBack()" aria-label="뒤로가기" title="뒤로가기">←</button>
+        <div id="viewContextBar" class="view-context-bar" hidden></div>
+        <button id="homeBtn" class="nav-btn nav-icon-btn" type="button" onclick="resetSteps()" aria-label="홈으로" title="홈으로">🏠</button>
     </nav>
-
-    <div id="viewContextBar" class="view-context-bar" hidden></div>
 
     <section id="compactGpsSection" class="compact-gps-section" hidden>
         <div class="compact-gps-head">
@@ -428,7 +427,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-23"></script>
-<script src="number-one.js?v=20260716-23"></script>
+<script src="script.js?v=20260716-24"></script>
+<script src="number-one.js?v=20260716-24"></script>
 </body>
 </html>

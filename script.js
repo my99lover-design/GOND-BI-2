@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 축약 GPS·동 4열 20260716-23 */
+/* 넘버원 김포B 공비 - 가시성 개선 20260716-24 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -958,7 +958,7 @@ function updateViewContextBar() {
         return;
     }
     let label = "";
-    if (state.view === "apartments") label = `지역 · ${state.selectedRegion}`;
+    if (state.view === "apartments") label = `${state.selectedRegion} · 아파트 선택`;
     else if (state.view === "dongs") label = `${state.selectedRegion} · ${state.selectedApartment}`;
     else if (state.view === "cards") {
         if (isOfficeApartmentCategory(state.selectedApartment)) label = [state.selectedRegion, state.selectedDong && state.selectedDong !== "전체" ? state.selectedDong : state.selectedApartment].filter(Boolean).join(" · ");
@@ -1066,7 +1066,7 @@ function renderCommonPassword() {
     const commonValue = commonPasswords.length > 0 ? commonPasswords.join(" / ") : "등록된 공동비밀번호 없음";
     const title = document.createElement("div");
     title.className = "common-pwd-title";
-    title.textContent = "<공동비번>";
+    title.textContent = "공동비밀번호";
     const row = document.createElement("div");
     row.className = "common-pwd-row";
     const value = document.createElement("div");
@@ -3006,7 +3006,13 @@ function renderCompactGpsButtons() {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "compact-gps-btn";
-        button.textContent = `${item.displayName} · ${formatDistance(item.distance)}`;
+        const name = document.createElement("span");
+        name.className = "compact-gps-name";
+        name.textContent = item.displayName;
+        const distance = document.createElement("span");
+        distance.className = "compact-gps-distance";
+        distance.textContent = formatDistance(item.distance);
+        button.append(name, distance);
         button.title = item.isOffice ? `${item.region} · ${item.apartment} · ${item.dong}` : `${item.region} · ${item.apartment}`;
         button.addEventListener("click", () => openApartmentFromGps(item));
         container.appendChild(button);
@@ -4071,14 +4077,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v48",
+    app: "gimpo-b-app-v49",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-23", "./number-one.css?v=20260716-23", "./script.js?v=20260716-23", "./number-one.js?v=20260716-23", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-24", "./number-one.css?v=20260716-24", "./script.js?v=20260716-24", "./number-one.js?v=20260716-24", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4258,7 +4264,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-23", serviceWorkerVersion: "v48" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-24", serviceWorkerVersion: "v49" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4639,8 +4645,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-23",
-    serviceWorkerVersion: "v48",
+    fileVersion: "20260716-24",
+    serviceWorkerVersion: "v49",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
