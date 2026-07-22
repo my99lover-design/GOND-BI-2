@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 당일·주간 수락률 및 80% 거절가능 기준 20260716-39 */
+/* 넘버원 김포B 공비 - 주간기록 초기화·수락률 보드 가시성 조정 20260716-42 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -9,7 +9,7 @@ const GATE_IMAGES = Object.freeze({
     "럭스B": { src: "./gate-images/럭스B.webp", label: "럭스B" },
     "루체뷰1": { src: "./gate-images/루체뷰1.webp", label: "루체뷰1" }
 });
-const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", ADMIN_DEVICE_VISIBLE_KEY: "gimpoB_admin_device_visible_v1", USAGE_CLIENT_ID_KEY: "gimpoB_usage_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", ACCEPTANCE_COUNTER_KEY: "gimpoB_acceptance_counter_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, USAGE_HEARTBEAT_INTERVAL: 2 * 60 * 1000, USAGE_HEARTBEAT_MIN_GAP: 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
+const APP_CONFIG = Object.freeze({ CACHE_KEY: "gimpoB_common_password_v6", CACHE_TIME_KEY: "gimpoB_common_password_cache_time_v6", CACHE_VERSION_KEY: "gimpoB_data_version_v2", LOCATION_CACHE_KEY: "gimpoB_locations_cache_v1", LOCATION_CACHE_TIME_KEY: "gimpoB_locations_cache_time_v1", THEME_KEY: "gimpoB_theme_v2", LAST_LOCATION_KEY: "gimpoB_last_location_v2", SAVE_QUEUE_KEY: "gimpoB_save_queue_v2", INSTALLED_APP_KEY: "gimpoB_app_installed_v1", ADMIN_TOKEN_KEY: "gimpoB_admin_token_v1", ADMIN_TOKEN_EXPIRES_KEY: "gimpoB_admin_token_expires_v1", ADMIN_CLIENT_ID_KEY: "gimpoB_admin_client_id_v1", ADMIN_DEVICE_VISIBLE_KEY: "gimpoB_admin_device_visible_v1", USAGE_CLIENT_ID_KEY: "gimpoB_usage_client_id_v1", HISTORY_CACHE_KEY: "gimpoB_change_history_cache_v1", HISTORY_CACHE_TIME_KEY: "gimpoB_change_history_cache_time_v1", PERFORMANCE_HISTORY_KEY: "gimpoB_performance_history_v1", VIEW_STATE_KEY: "gimpoB_view_state_v1", ACCEPTANCE_COUNTER_KEY: "gimpoB_acceptance_counter_v2", ACCEPTANCE_COUNTER_LEGACY_KEY: "gimpoB_acceptance_counter_v1", CACHE_MAX_AGE: 7 * 24 * 60 * 60 * 1000, LOCATION_REFRESH_INTERVAL: 24 * 60 * 60 * 1000, LOCATION_CACHE_MAX_AGE: 30 * 24 * 60 * 60 * 1000, LAST_LOCATION_MAX_AGE: 24 * 60 * 60 * 1000, DATA_CHECK_INTERVAL: 5 * 60 * 1000, CACHE_WRITE_DELAY: 120, GPS_BUTTON_COUNT: 4, GPS_RECALC_DISTANCE: 10, GPS_FAST_MAX_AGE: 5 * 60 * 1000, GPS_FAST_TIMEOUT: 1500, GPS_HIGH_TIMEOUT: 15000, GPS_META_REFRESH_INTERVAL: 15000, GPS_REFRESH_TIMEOUT: 10000, GPS_REFRESH_MIN_DISPLAY: 1000, GPS_HIGH_ACCURACY_TARGET: 60, VIEW_STATE_MAX_AGE: 12 * 60 * 60 * 1000, VIEW_STATE_SAVE_DELAY: 300, PERFORMANCE_HISTORY_LIMIT: 5, HISTORY_LIMIT: 100, HISTORY_CACHE_MAX_AGE: 10 * 60 * 1000, ADMIN_SESSION_MS: 30 * 60 * 1000, USAGE_HEARTBEAT_INTERVAL: 2 * 60 * 1000, USAGE_HEARTBEAT_MIN_GAP: 60 * 1000, RETRY_DELAYS: [2000, 5000, 10000, 30000, 60000, 120000, 300000] });
 const PERFORMANCE_RULES = Object.freeze({
     cacheLoad: { label: "캐시 데이터 로딩", category: "기기 처리", good: 250, warning: 600 },
     indexBuild: { label: "탐색 인덱스 생성", category: "기기 처리", good: 200, warning: 500 },
@@ -21,7 +21,7 @@ const PERFORMANCE_RULES = Object.freeze({
     dataSync: { label: "전체 데이터 동기화", category: "서버 통신", good: 5000, warning: 10000 }
 });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), homeDataUpdateSlot: document.getElementById("homeDataUpdateSlot"), homeDataUpdateBtn: document.getElementById("homeDataUpdateBtn"), installAppBtn: document.getElementById("installAppBtn"), homeSupportSection: document.getElementById("homeSupportSection"), homeBottomActions: document.getElementById("homeBottomActions"), acceptanceCounter: document.getElementById("acceptanceCounter"), acceptanceAcceptedValue: document.getElementById("acceptanceAcceptedValue"), acceptanceRejectedValue: document.getElementById("acceptanceRejectedValue"), acceptanceAcceptRate: document.getElementById("acceptanceAcceptRate"), acceptanceRejectAvailable: document.getElementById("acceptanceRejectAvailable"), acceptanceTargetAccepted: document.getElementById("acceptanceTargetAccepted"), acceptanceAcceptAdd: document.getElementById("acceptanceAcceptAdd"), acceptanceAcceptSubtract: document.getElementById("acceptanceAcceptSubtract"), acceptanceRejectAdd: document.getElementById("acceptanceRejectAdd"), acceptanceRejectSubtract: document.getElementById("acceptanceRejectSubtract"), acceptanceResetBtn: document.getElementById("acceptanceResetBtn"), acceptanceDailyRateCard: document.getElementById("acceptanceDailyRateCard"), acceptanceWeeklyRateCard: document.getElementById("acceptanceWeeklyRateCard"), acceptanceWeeklyRate: document.getElementById("acceptanceWeeklyRate"), acceptanceWeeklyBtn: document.getElementById("acceptanceWeeklyBtn"), acceptanceWeeklyHistory: document.getElementById("acceptanceWeeklyHistory"), acceptanceWeeklyHistoryList: document.getElementById("acceptanceWeeklyHistoryList"), acceptanceWeeklyCloseBtn: document.getElementById("acceptanceWeeklyCloseBtn"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), compactGpsSection: document.getElementById("compactGpsSection"), compactGpsButtons: document.getElementById("compactGpsButtons"), compactGpsRefreshBtn: document.getElementById("compactGpsRefreshBtn"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminModalTitle: document.getElementById("adminModalTitle"), adminMenuBackBtn: document.getElementById("adminMenuBackBtn"), adminMenu: document.getElementById("adminMenu"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminPerformancePanel: document.getElementById("adminPerformancePanel"), adminDataQualityPanel: document.getElementById("adminDataQualityPanel"), adminDiagnosticsPanel: document.getElementById("adminDiagnosticsPanel"), adminBackupPanel: document.getElementById("adminBackupPanel"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), normalizeApartmentFormatsBtn: document.getElementById("normalizeApartmentFormatsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), homeDataUpdateSlot: document.getElementById("homeDataUpdateSlot"), homeDataUpdateBtn: document.getElementById("homeDataUpdateBtn"), installAppBtn: document.getElementById("installAppBtn"), homeSupportSection: document.getElementById("homeSupportSection"), homeBottomActions: document.getElementById("homeBottomActions"), acceptanceCounter: document.getElementById("acceptanceCounter"), acceptanceAcceptedValue: document.getElementById("acceptanceAcceptedValue"), acceptanceRejectedValue: document.getElementById("acceptanceRejectedValue"), acceptanceDailyRateValue: document.getElementById("acceptanceDailyRateValue"), acceptanceWeeklyRateValue: document.getElementById("acceptanceWeeklyRateValue"), acceptanceWeeklyRateCard: document.getElementById("acceptanceWeeklyRateCard"), acceptanceDailyRateCard: document.getElementById("acceptanceDailyRateCard"), acceptanceWeeklyMinimumCard: document.getElementById("acceptanceWeeklyMinimumCard"), acceptanceDailyMinimumCard: document.getElementById("acceptanceDailyMinimumCard"), acceptanceWeeklyMinimumValue: document.getElementById("acceptanceWeeklyMinimumValue"), acceptanceDailyMinimumValue: document.getElementById("acceptanceDailyMinimumValue"), acceptanceRejectAvailableDaily: document.getElementById("acceptanceRejectAvailableDaily"), acceptanceRejectAvailableWeekly: document.getElementById("acceptanceRejectAvailableWeekly"), acceptanceAcceptAdd: document.getElementById("acceptanceAcceptAdd"), acceptanceAcceptSubtract: document.getElementById("acceptanceAcceptSubtract"), acceptanceRejectAdd: document.getElementById("acceptanceRejectAdd"), acceptanceRejectSubtract: document.getElementById("acceptanceRejectSubtract"), acceptanceWeeklySaveBtn: document.getElementById("acceptanceWeeklySaveBtn"), acceptanceWeeklyHistoryBtn: document.getElementById("acceptanceWeeklyHistoryBtn"), acceptanceWeeklyHistory: document.getElementById("acceptanceWeeklyHistory"), acceptanceWeeklyHistoryList: document.getElementById("acceptanceWeeklyHistoryList"), acceptanceWeeklyCloseBtn: document.getElementById("acceptanceWeeklyCloseBtn"), acceptanceResetBtn: document.getElementById("acceptanceResetBtn"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), compactGpsSection: document.getElementById("compactGpsSection"), compactGpsButtons: document.getElementById("compactGpsButtons"), compactGpsRefreshBtn: document.getElementById("compactGpsRefreshBtn"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminModalTitle: document.getElementById("adminModalTitle"), adminMenuBackBtn: document.getElementById("adminMenuBackBtn"), adminMenu: document.getElementById("adminMenu"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminPerformancePanel: document.getElementById("adminPerformancePanel"), adminDataQualityPanel: document.getElementById("adminDataQualityPanel"), adminDiagnosticsPanel: document.getElementById("adminDiagnosticsPanel"), adminBackupPanel: document.getElementById("adminBackupPanel"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), normalizeApartmentFormatsBtn: document.getElementById("normalizeApartmentFormatsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
@@ -29,7 +29,7 @@ const state = {
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, adminView: "menu", backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
     performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, networkResumeTimer: null, homeDataStatusTimer: null
 };
-const acceptanceCounterState = { dayKey: "", weekKey: "", accepted: 0, rejected: 0, completedDays: [], history: [] };
+const acceptanceCounterState = { accepted: 0, rejected: 0, dayKey: "", days: [], rolloverTimer: null, editingDayKey: "" };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
     initializeTheme();
@@ -100,34 +100,50 @@ function applyTheme(theme) {
 }
 
 /* ========================= 수락·거절 카운터 ========================= */
+const ACCEPTANCE_DAILY_MIN_RATE = 70;
+const ACCEPTANCE_WEEKLY_MIN_RATE = 80;
 const ACCEPTANCE_DAY_START_HOUR = 6;
-const ACCEPTANCE_DAILY_MINIMUM = 70;
-const ACCEPTANCE_WEEKLY_MINIMUM = 80;
-const ACCEPTANCE_HISTORY_LIMIT = 12;
-let acceptanceBoundaryTimer = 0;
-
+const ACCEPTANCE_WEEK_START_DAY = 3; // 수요일
+const ACCEPTANCE_HISTORY_KEEP_DAYS = 70;
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
 function initializeAcceptanceCounter() {
     if (!elements.acceptanceCounter) return;
-    hydrateAcceptanceCounter(loadAcceptanceCounter());
-    applyAcceptanceTimeBoundary(true);
+    const saved = loadAcceptanceCounter();
+    acceptanceCounterState.accepted = normalizeAcceptanceCount(saved.accepted);
+    acceptanceCounterState.rejected = normalizeAcceptanceCount(saved.rejected);
+    acceptanceCounterState.dayKey = saved.dayKey || getAcceptanceBusinessDayKey();
+    acceptanceCounterState.days = Array.isArray(saved.days) ? saved.days.map(normalizeAcceptanceDayRecord).filter(Boolean) : [];
+    rolloverAcceptanceDayIfNeeded(false);
+    saveAcceptanceCounter();
     elements.acceptanceAcceptAdd?.addEventListener("click", () => changeAcceptanceCount("accepted", 1));
     elements.acceptanceAcceptSubtract?.addEventListener("click", () => changeAcceptanceCount("accepted", -1));
     elements.acceptanceRejectAdd?.addEventListener("click", () => changeAcceptanceCount("rejected", 1));
     elements.acceptanceRejectSubtract?.addEventListener("click", () => changeAcceptanceCount("rejected", -1));
-    elements.acceptanceResetBtn?.addEventListener("click", resetAcceptanceCounter);
-    elements.acceptanceWeeklyBtn?.addEventListener("click", toggleAcceptanceWeeklyHistory);
+    elements.acceptanceWeeklySaveBtn?.addEventListener("click", saveAcceptanceWeeklyRecord);
+    elements.acceptanceWeeklyHistoryBtn?.addEventListener("click", toggleAcceptanceWeeklyHistory);
     elements.acceptanceWeeklyCloseBtn?.addEventListener("click", closeAcceptanceWeeklyHistory);
-    acceptanceBoundaryTimer = window.setInterval(() => {
-        if (applyAcceptanceTimeBoundary()) renderAcceptanceCounter();
-    }, 60 * 1000);
+    elements.acceptanceWeeklyHistoryList?.addEventListener("click", handleAcceptanceHistoryAction);
+    elements.acceptanceResetBtn?.addEventListener("click", resetAcceptanceCounter);
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState !== "visible") return;
+        rolloverAcceptanceDayIfNeeded(true);
+        scheduleAcceptanceDayRollover();
+    });
+    window.addEventListener("focus", () => rolloverAcceptanceDayIfNeeded(true));
     elements.acceptanceCounter.hidden = state.view !== "regions";
+    scheduleAcceptanceDayRollover();
     renderAcceptanceCounter();
 }
 function normalizeAcceptanceCount(value) {
     return Math.min(99999, Math.max(0, Math.floor(Number(value) || 0)));
-}
-function getAcceptanceShiftedDate(now = new Date()) {
-    return new Date(now.getTime() - ACCEPTANCE_DAY_START_HOUR * 60 * 60 * 1000);
 }
 function formatAcceptanceDateKey(date) {
     const year = date.getFullYear();
@@ -135,155 +151,132 @@ function formatAcceptanceDateKey(date) {
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
 }
-function parseAcceptanceDateKey(key) {
-    const match = String(key || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+function parseAcceptanceDateKey(value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
     if (!match) return null;
-    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return Number.isNaN(date.getTime()) ? null : date;
 }
-function getAcceptanceDayKey(now = new Date()) {
-    return formatAcceptanceDateKey(getAcceptanceShiftedDate(now));
-}
-function getAcceptanceWeekKey(now = new Date()) {
-    const shifted = getAcceptanceShiftedDate(now);
-    const daysSinceWednesday = (shifted.getDay() - 3 + 7) % 7;
-    shifted.setDate(shifted.getDate() - daysSinceWednesday);
+function getAcceptanceBusinessDayKey(now = new Date()) {
+    const shifted = new Date(now.getTime() - ACCEPTANCE_DAY_START_HOUR * 60 * 60 * 1000);
     return formatAcceptanceDateKey(shifted);
 }
-function getAcceptanceWeekKeyFromDayKey(dayKey) {
-    const date = parseAcceptanceDateKey(dayKey);
-    if (!date) return getAcceptanceWeekKey();
-    const daysSinceWednesday = (date.getDay() - 3 + 7) % 7;
-    date.setDate(date.getDate() - daysSinceWednesday);
+function getAcceptanceWeekKey(dayKey = getAcceptanceBusinessDayKey()) {
+    const date = parseAcceptanceDateKey(dayKey) || new Date();
+    const offset = (date.getDay() - ACCEPTANCE_WEEK_START_DAY + 7) % 7;
+    date.setDate(date.getDate() - offset);
     return formatAcceptanceDateKey(date);
 }
-function normalizeAcceptanceDayRecord(record) {
-    if (!record || !parseAcceptanceDateKey(record.dayKey)) return null;
+function normalizeAcceptanceDayRecord(value) {
+    if (!value || typeof value !== "object") return null;
+    const dayKey = /^\d{4}-\d{2}-\d{2}$/.test(String(value.dayKey || "")) ? String(value.dayKey) : "";
+    if (!dayKey) return null;
     return {
-        dayKey: record.dayKey,
-        accepted: normalizeAcceptanceCount(record.accepted),
-        rejected: normalizeAcceptanceCount(record.rejected),
-        savedAt: Number(record.savedAt) || Date.now()
-    };
-}
-function normalizeAcceptanceWeekRecord(record) {
-    if (!record || !parseAcceptanceDateKey(record.weekKey)) return null;
-    const accepted = normalizeAcceptanceCount(record.accepted);
-    const rejected = normalizeAcceptanceCount(record.rejected);
-    return {
-        weekKey: record.weekKey,
-        accepted,
-        rejected,
-        savedAt: Number(record.savedAt) || Date.now()
+        dayKey,
+        accepted: normalizeAcceptanceCount(value.accepted),
+        rejected: normalizeAcceptanceCount(value.rejected),
+        finalized: value.finalized === true,
+        updatedAt: Number(value.updatedAt) || Date.now()
     };
 }
 function loadAcceptanceCounter() {
     try {
-        const saved = JSON.parse(localStorage.getItem(APP_CONFIG.ACCEPTANCE_COUNTER_KEY) || "{}");
-        if (saved?.version === 2 || saved?.dayKey || saved?.weekKey) return saved;
-        return {
-            version: 2,
-            dayKey: getAcceptanceDayKey(),
-            weekKey: getAcceptanceWeekKey(),
-            accepted: saved?.accepted,
-            rejected: saved?.rejected,
-            completedDays: [],
-            history: []
-        };
+        const saved = JSON.parse(localStorage.getItem(APP_CONFIG.ACCEPTANCE_COUNTER_KEY) || "null");
+        if (saved && typeof saved === "object") {
+            const current = saved.current && typeof saved.current === "object" ? saved.current : saved;
+            return {
+                accepted: current.accepted,
+                rejected: current.rejected,
+                dayKey: current.dayKey || getAcceptanceBusinessDayKey(),
+                days: Array.isArray(saved.days) ? saved.days : []
+            };
+        }
+        const legacy = JSON.parse(localStorage.getItem(APP_CONFIG.ACCEPTANCE_COUNTER_LEGACY_KEY) || "null");
+        if (legacy && typeof legacy === "object") {
+            return { accepted: legacy.accepted, rejected: legacy.rejected, dayKey: getAcceptanceBusinessDayKey(), days: [] };
+        }
     } catch (error) {
         console.warn("수락률 카운터 불러오기 실패:", error);
-        return {};
     }
-}
-function hydrateAcceptanceCounter(saved = {}) {
-    acceptanceCounterState.dayKey = parseAcceptanceDateKey(saved.dayKey) ? saved.dayKey : getAcceptanceDayKey();
-    acceptanceCounterState.weekKey = parseAcceptanceDateKey(saved.weekKey) ? saved.weekKey : getAcceptanceWeekKey();
-    acceptanceCounterState.accepted = normalizeAcceptanceCount(saved.accepted);
-    acceptanceCounterState.rejected = normalizeAcceptanceCount(saved.rejected);
-    acceptanceCounterState.completedDays = Array.isArray(saved.completedDays)
-        ? saved.completedDays.map(normalizeAcceptanceDayRecord).filter(Boolean).slice(-14)
-        : [];
-    acceptanceCounterState.history = Array.isArray(saved.history)
-        ? saved.history.map(normalizeAcceptanceWeekRecord).filter(Boolean).slice(-ACCEPTANCE_HISTORY_LIMIT)
-        : [];
+    return { accepted: 0, rejected: 0, dayKey: getAcceptanceBusinessDayKey(), days: [] };
 }
 function saveAcceptanceCounter() {
     try {
+        pruneAcceptanceHistory();
         localStorage.setItem(APP_CONFIG.ACCEPTANCE_COUNTER_KEY, JSON.stringify({
             version: 2,
-            dayKey: acceptanceCounterState.dayKey,
-            weekKey: acceptanceCounterState.weekKey,
-            accepted: acceptanceCounterState.accepted,
-            rejected: acceptanceCounterState.rejected,
-            completedDays: acceptanceCounterState.completedDays,
-            history: acceptanceCounterState.history,
+            current: {
+                dayKey: acceptanceCounterState.dayKey,
+                accepted: acceptanceCounterState.accepted,
+                rejected: acceptanceCounterState.rejected,
+                updatedAt: Date.now()
+            },
+            days: acceptanceCounterState.days,
             updatedAt: Date.now()
         }));
     } catch (error) {
         console.warn("수락률 카운터 저장 실패:", error);
     }
 }
-function getCompletedWeekTotals() {
-    return acceptanceCounterState.completedDays.reduce((totals, day) => {
-        totals.accepted += normalizeAcceptanceCount(day.accepted);
-        totals.rejected += normalizeAcceptanceCount(day.rejected);
-        return totals;
-    }, { accepted: 0, rejected: 0 });
+function pruneAcceptanceHistory() {
+    const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - ACCEPTANCE_HISTORY_KEEP_DAYS);
+    const unique = new Map();
+    for (const raw of acceptanceCounterState.days) {
+        const record = normalizeAcceptanceDayRecord(raw);
+        const date = record ? parseAcceptanceDateKey(record.dayKey) : null;
+        if (!record || !date || date < cutoff) continue;
+        const existing = unique.get(record.dayKey);
+        if (!existing || record.updatedAt >= existing.updatedAt) unique.set(record.dayKey, record);
+    }
+    acceptanceCounterState.days = [...unique.values()].sort((a, b) => a.dayKey.localeCompare(b.dayKey));
 }
-function getCurrentWeekTotals() {
-    const completed = getCompletedWeekTotals();
-    return {
-        accepted: completed.accepted + normalizeAcceptanceCount(acceptanceCounterState.accepted),
-        rejected: completed.rejected + normalizeAcceptanceCount(acceptanceCounterState.rejected)
-    };
-}
-function storeCompletedAcceptanceWeek(weekKey, accepted, rejected) {
+function upsertAcceptanceDayRecord(dayKey, accepted, rejected, finalized = false) {
     const safeAccepted = normalizeAcceptanceCount(accepted);
     const safeRejected = normalizeAcceptanceCount(rejected);
-    if (safeAccepted + safeRejected <= 0 || !parseAcceptanceDateKey(weekKey)) return;
-    const record = { weekKey, accepted: safeAccepted, rejected: safeRejected, savedAt: Date.now() };
-    const withoutSameWeek = acceptanceCounterState.history.filter(item => item.weekKey !== weekKey);
-    acceptanceCounterState.history = [...withoutSameWeek, record].slice(-ACCEPTANCE_HISTORY_LIMIT);
-}
-function applyAcceptanceTimeBoundary(forceSave = false) {
-    const currentDayKey = getAcceptanceDayKey();
-    const currentWeekKey = getAcceptanceWeekKey();
-    let changed = false;
-
-    if (acceptanceCounterState.weekKey !== currentWeekKey) {
-        const previousTotals = getCurrentWeekTotals();
-        storeCompletedAcceptanceWeek(acceptanceCounterState.weekKey, previousTotals.accepted, previousTotals.rejected);
-        acceptanceCounterState.weekKey = currentWeekKey;
-        acceptanceCounterState.dayKey = currentDayKey;
-        acceptanceCounterState.accepted = 0;
-        acceptanceCounterState.rejected = 0;
-        acceptanceCounterState.completedDays = [];
-        changed = true;
-    } else if (acceptanceCounterState.dayKey !== currentDayKey) {
-        const previousDayWeekKey = getAcceptanceWeekKeyFromDayKey(acceptanceCounterState.dayKey);
-        if (previousDayWeekKey === currentWeekKey && acceptanceCounterState.accepted + acceptanceCounterState.rejected > 0) {
-            const previousDay = normalizeAcceptanceDayRecord({
-                dayKey: acceptanceCounterState.dayKey,
-                accepted: acceptanceCounterState.accepted,
-                rejected: acceptanceCounterState.rejected,
-                savedAt: Date.now()
-            });
-            acceptanceCounterState.completedDays = acceptanceCounterState.completedDays
-                .filter(item => item.dayKey !== previousDay.dayKey)
-                .concat(previousDay)
-                .slice(-14);
-        }
-        acceptanceCounterState.dayKey = currentDayKey;
-        acceptanceCounterState.accepted = 0;
-        acceptanceCounterState.rejected = 0;
-        changed = true;
+    const index = acceptanceCounterState.days.findIndex(item => item.dayKey === dayKey);
+    if (safeAccepted + safeRejected <= 0) {
+        if (index >= 0) acceptanceCounterState.days.splice(index, 1);
+        return;
     }
-
-    if (changed || forceSave) saveAcceptanceCounter();
-    if (changed && !elements.acceptanceWeeklyHistory?.hidden) renderAcceptanceWeeklyHistory();
-    return changed;
+    const next = { dayKey, accepted: safeAccepted, rejected: safeRejected, finalized: finalized === true, updatedAt: Date.now() };
+    if (index >= 0) acceptanceCounterState.days[index] = next;
+    else acceptanceCounterState.days.push(next);
+}
+function rolloverAcceptanceDayIfNeeded(showMessage = false) {
+    const todayKey = getAcceptanceBusinessDayKey();
+    if (!acceptanceCounterState.dayKey) acceptanceCounterState.dayKey = todayKey;
+    if (acceptanceCounterState.dayKey === todayKey) return false;
+    upsertAcceptanceDayRecord(
+        acceptanceCounterState.dayKey,
+        acceptanceCounterState.accepted,
+        acceptanceCounterState.rejected,
+        true
+    );
+    acceptanceCounterState.dayKey = todayKey;
+    acceptanceCounterState.accepted = 0;
+    acceptanceCounterState.rejected = 0;
+    saveAcceptanceCounter();
+    closeAcceptanceWeeklyHistory();
+    renderAcceptanceCounter();
+    if (showMessage) showToast("✅ 06시 기준으로 전날 기록을 주간 저장했습니다.");
+    return true;
+}
+function scheduleAcceptanceDayRollover() {
+    clearTimeout(acceptanceCounterState.rolloverTimer);
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(ACCEPTANCE_DAY_START_HOUR, 0, 2, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const delay = Math.min(2147483647, Math.max(1000, next.getTime() - now.getTime()));
+    acceptanceCounterState.rolloverTimer = window.setTimeout(() => {
+        rolloverAcceptanceDayIfNeeded(true);
+        scheduleAcceptanceDayRollover();
+    }, delay);
 }
 function changeAcceptanceCount(type, delta) {
-    applyAcceptanceTimeBoundary();
+    rolloverAcceptanceDayIfNeeded(false);
     const key = type === "rejected" ? "rejected" : "accepted";
     const current = normalizeAcceptanceCount(acceptanceCounterState[key]);
     const next = normalizeAcceptanceCount(current + Number(delta || 0));
@@ -294,111 +287,221 @@ function changeAcceptanceCount(type, delta) {
     acceptanceCounterState[key] = next;
     saveAcceptanceCounter();
     renderAcceptanceCounter();
+    if (!elements.acceptanceWeeklyHistory?.hidden) renderAcceptanceWeeklyHistory();
 }
 function resetAcceptanceCounter() {
-    applyAcceptanceTimeBoundary();
+    rolloverAcceptanceDayIfNeeded(false);
     if (acceptanceCounterState.accepted === 0 && acceptanceCounterState.rejected === 0) {
-        showToast("당일 기록이 이미 0건입니다.");
+        showToast("오늘 카운터는 이미 0건입니다.");
         return;
     }
-    if (!window.confirm("오늘 수락·거절 기록만 0건으로 초기화할까요?\n주간에 자동 저장된 이전 날짜 기록은 유지됩니다.")) return;
+    if (!window.confirm("오늘 수락·거절 카운터만 0건으로 초기화할까요?\n저장된 이전 날짜 기록은 유지됩니다.")) return;
     acceptanceCounterState.accepted = 0;
     acceptanceCounterState.rejected = 0;
     saveAcceptanceCounter();
     renderAcceptanceCounter();
-    showToast("✅ 당일 수락·거절 기록을 초기화했습니다.");
+    if (!elements.acceptanceWeeklyHistory?.hidden) renderAcceptanceWeeklyHistory();
+    showToast("✅ 오늘 수락·거절 카운터를 초기화했습니다.");
 }
-function calculateAcceptanceCounter(accepted, rejected) {
+function calculateAcceptanceCounter(accepted, rejected, targetRate = ACCEPTANCE_WEEKLY_MIN_RATE) {
     const safeAccepted = normalizeAcceptanceCount(accepted);
     const safeRejected = normalizeAcceptanceCount(rejected);
     const total = safeAccepted + safeRejected;
     const acceptRate = total > 0 ? (safeAccepted / total) * 100 : 0;
-    // 거절가능은 당일·주간 모두 80% 유지 기준: 수락 4건당 거절 총 1건.
-    const rejectAvailable80 = Math.max(0, Math.floor(safeAccepted / 4) - safeRejected);
-    return { total, acceptRate, rejectAvailable80 };
+    const targetRatio = Math.max(0.01, Math.min(0.99, Number(targetRate) / 100));
+    const maxRejectedAtTarget = Math.floor((safeAccepted * (1 - targetRatio) / targetRatio) + 1e-9);
+    const rejectAvailable = Math.max(0, maxRejectedAtTarget - safeRejected);
+    const acceptanceGap = targetRatio * total - safeAccepted;
+    const neededAcceptances = acceptanceGap <= 1e-9
+        ? 0
+        : Math.max(0, Math.ceil((acceptanceGap / (1 - targetRatio)) - 1e-9));
+    return { total, acceptRate, rejectAvailable, neededAcceptances };
 }
-function setAcceptanceRateStatus(card, calculated, minimum) {
-    if (!card) return;
-    card.classList.remove("is-empty", "is-pass", "is-fail");
-    if (calculated.total <= 0) card.classList.add("is-empty");
-    else card.classList.add(calculated.acceptRate >= minimum ? "is-pass" : "is-fail");
+function formatAcceptanceTarget(result) {
+    if (!result || result.total <= 0) return "집계 전";
+    if (result.neededAcceptances <= 0) return "달성";
+    return `수락 ${result.neededAcceptances}건 필요`;
+}
+function getAcceptanceWeekRecords(weekKey = getAcceptanceWeekKey()) {
+    const map = new Map();
+    for (const record of acceptanceCounterState.days) {
+        if (getAcceptanceWeekKey(record.dayKey) === weekKey) map.set(record.dayKey, normalizeAcceptanceDayRecord(record));
+    }
+    if (getAcceptanceWeekKey(acceptanceCounterState.dayKey) === weekKey) {
+        const currentTotal = acceptanceCounterState.accepted + acceptanceCounterState.rejected;
+        if (currentTotal > 0) {
+            map.set(acceptanceCounterState.dayKey, {
+                dayKey: acceptanceCounterState.dayKey,
+                accepted: normalizeAcceptanceCount(acceptanceCounterState.accepted),
+                rejected: normalizeAcceptanceCount(acceptanceCounterState.rejected),
+                finalized: false,
+                updatedAt: Date.now()
+            });
+        }
+    }
+    return [...map.values()].filter(Boolean).sort((a, b) => a.dayKey.localeCompare(b.dayKey));
+}
+function getAcceptanceWeekSummary(weekKey = getAcceptanceWeekKey()) {
+    const records = getAcceptanceWeekRecords(weekKey);
+    const accepted = records.reduce((sum, item) => sum + normalizeAcceptanceCount(item.accepted), 0);
+    const rejected = records.reduce((sum, item) => sum + normalizeAcceptanceCount(item.rejected), 0);
+    return { weekKey, records, accepted, rejected, ...calculateAcceptanceCounter(accepted, rejected, ACCEPTANCE_WEEKLY_MIN_RATE) };
+}
+function applyAcceptanceRateStatus(element, total, rate, threshold) {
+    if (!element) return;
+    element.classList.remove("is-empty", "is-pass", "is-fail");
+    element.classList.add(total <= 0 ? "is-empty" : rate >= threshold ? "is-pass" : "is-fail");
 }
 function renderAcceptanceCounter() {
     if (!elements.acceptanceCounter) return;
-    applyAcceptanceTimeBoundary();
+    rolloverAcceptanceDayIfNeeded(false);
     const accepted = normalizeAcceptanceCount(acceptanceCounterState.accepted);
     const rejected = normalizeAcceptanceCount(acceptanceCounterState.rejected);
-    const weekTotals = getCurrentWeekTotals();
-    const daily = calculateAcceptanceCounter(accepted, rejected);
-    const weekly = calculateAcceptanceCounter(weekTotals.accepted, weekTotals.rejected);
+    const daily = calculateAcceptanceCounter(accepted, rejected, ACCEPTANCE_DAILY_MIN_RATE);
+    const weekly = getAcceptanceWeekSummary();
     elements.acceptanceAcceptedValue.textContent = `${accepted}건`;
     elements.acceptanceRejectedValue.textContent = `${rejected}건`;
-    elements.acceptanceAcceptRate.textContent = daily.total === 0 ? "0.0%" : `${daily.acceptRate.toFixed(1)}%`;
-    if (elements.acceptanceWeeklyRate) elements.acceptanceWeeklyRate.textContent = weekly.total === 0 ? "0.0%" : `${weekly.acceptRate.toFixed(1)}%`;
-    elements.acceptanceRejectAvailable.textContent = `${daily.rejectAvailable80}건 / ${weekly.rejectAvailable80}건`;
-    setAcceptanceRateStatus(elements.acceptanceDailyRateCard, daily, ACCEPTANCE_DAILY_MINIMUM);
-    setAcceptanceRateStatus(elements.acceptanceWeeklyRateCard, weekly, ACCEPTANCE_WEEKLY_MINIMUM);
+    elements.acceptanceDailyRateValue.textContent = `${daily.acceptRate.toFixed(1)}%`;
+    elements.acceptanceWeeklyRateValue.textContent = `${weekly.acceptRate.toFixed(1)}%`;
+    elements.acceptanceDailyMinimumValue.textContent = formatAcceptanceTarget(daily);
+    elements.acceptanceWeeklyMinimumValue.textContent = formatAcceptanceTarget(weekly);
+    elements.acceptanceRejectAvailableDaily.textContent = `${daily.rejectAvailable}건`;
+    elements.acceptanceRejectAvailableWeekly.textContent = `${weekly.rejectAvailable}건`;
+    applyAcceptanceRateStatus(elements.acceptanceDailyRateCard, daily.total, daily.acceptRate, ACCEPTANCE_DAILY_MIN_RATE);
+    applyAcceptanceRateStatus(elements.acceptanceWeeklyRateCard, weekly.total, weekly.acceptRate, ACCEPTANCE_WEEKLY_MIN_RATE);
+    applyAcceptanceRateStatus(elements.acceptanceDailyMinimumCard, daily.total, daily.acceptRate, ACCEPTANCE_DAILY_MIN_RATE);
+    applyAcceptanceRateStatus(elements.acceptanceWeeklyMinimumCard, weekly.total, weekly.acceptRate, ACCEPTANCE_WEEKLY_MIN_RATE);
     if (elements.acceptanceAcceptSubtract) elements.acceptanceAcceptSubtract.disabled = accepted <= 0;
     if (elements.acceptanceRejectSubtract) elements.acceptanceRejectSubtract.disabled = rejected <= 0;
-    elements.acceptanceCounter.setAttribute("aria-label", `당일 수락 ${accepted}건, 거절 ${rejected}건, 당일 수락률 ${daily.acceptRate.toFixed(1)}퍼센트, 주간 수락률 ${weekly.acceptRate.toFixed(1)}퍼센트, 80퍼센트 기준 거절 가능 당일 ${daily.rejectAvailable80}건, 주간 ${weekly.rejectAvailable80}건`);
-    if (!elements.acceptanceWeeklyHistory?.hidden) renderAcceptanceWeeklyHistory();
+    elements.acceptanceCounter.setAttribute("aria-label", `오늘 수락 ${accepted}건, 거절 ${rejected}건, 당일 수락률 ${daily.acceptRate.toFixed(1)}퍼센트, 주간 누적 수락률 ${weekly.acceptRate.toFixed(1)}퍼센트`);
 }
-function formatAcceptanceShortDate(key) {
-    const date = parseAcceptanceDateKey(key);
-    if (!date) return "-";
-    return `${date.getMonth() + 1}.${date.getDate()}`;
-}
-function getAcceptanceWeekRangeLabel(weekKey) {
-    const start = parseAcceptanceDateKey(weekKey);
-    if (!start) return "주간";
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    return `${formatAcceptanceShortDate(weekKey)} ~ ${end.getMonth() + 1}.${end.getDate()}`;
-}
-function appendAcceptanceHistoryRow(container, label, accepted, rejected, isCurrent = false) {
-    const calculated = calculateAcceptanceCounter(accepted, rejected);
-    const row = document.createElement("div");
-    row.className = `acceptance-weekly-history-row${isCurrent ? " is-current" : ""}`;
-    const title = document.createElement("div");
-    title.className = "acceptance-weekly-history-title";
-    title.textContent = label;
-    const detail = document.createElement("div");
-    detail.className = "acceptance-weekly-history-detail";
-    detail.textContent = `수락 ${normalizeAcceptanceCount(accepted)} · 거절 ${normalizeAcceptanceCount(rejected)}`;
-    const rate = document.createElement("strong");
-    rate.className = calculated.total <= 0 ? "is-empty" : calculated.acceptRate >= ACCEPTANCE_WEEKLY_MINIMUM ? "is-pass" : "is-fail";
-    rate.textContent = calculated.total <= 0 ? "0.0%" : `${calculated.acceptRate.toFixed(1)}%`;
-    row.append(title, detail, rate);
-    container.appendChild(row);
-}
-function renderAcceptanceWeeklyHistory() {
-    const list = elements.acceptanceWeeklyHistoryList;
-    if (!list) return;
-    list.replaceChildren();
-    const currentTotals = getCurrentWeekTotals();
-    appendAcceptanceHistoryRow(list, `이번 주 ${getAcceptanceWeekRangeLabel(acceptanceCounterState.weekKey)}`, currentTotals.accepted, currentTotals.rejected, true);
-    [...acceptanceCounterState.history].reverse().forEach(record => {
-        appendAcceptanceHistoryRow(list, getAcceptanceWeekRangeLabel(record.weekKey), record.accepted, record.rejected);
-    });
-    if (acceptanceCounterState.history.length === 0) {
-        const note = document.createElement("div");
-        note.className = "acceptance-weekly-history-empty";
-        note.textContent = "완료된 주간 기록은 수요일 06시에 자동 저장됩니다.";
-        list.appendChild(note);
+function saveAcceptanceWeeklyRecord() {
+    rolloverAcceptanceDayIfNeeded(false);
+    const total = acceptanceCounterState.accepted + acceptanceCounterState.rejected;
+    if (total <= 0) {
+        showToast("저장할 당일 수락·거절 기록이 없습니다.");
+        return;
     }
+    upsertAcceptanceDayRecord(
+        acceptanceCounterState.dayKey,
+        acceptanceCounterState.accepted,
+        acceptanceCounterState.rejected,
+        false
+    );
+    saveAcceptanceCounter();
+    if (!elements.acceptanceWeeklyHistory?.hidden) renderAcceptanceWeeklyHistory();
+    showToast("✅ 현재 기록을 저장했습니다.");
 }
 function toggleAcceptanceWeeklyHistory() {
+    rolloverAcceptanceDayIfNeeded(false);
     if (!elements.acceptanceWeeklyHistory) return;
-    applyAcceptanceTimeBoundary(true);
-    const willOpen = elements.acceptanceWeeklyHistory.hidden;
-    elements.acceptanceWeeklyHistory.hidden = !willOpen;
-    elements.acceptanceWeeklyBtn?.setAttribute("aria-expanded", String(willOpen));
-    if (willOpen) renderAcceptanceWeeklyHistory();
+    if (elements.acceptanceWeeklyHistory.hidden) {
+        renderAcceptanceWeeklyHistory();
+        elements.acceptanceWeeklyHistory.hidden = false;
+        elements.acceptanceWeeklyHistoryBtn?.setAttribute("aria-expanded", "true");
+    } else {
+        closeAcceptanceWeeklyHistory();
+    }
 }
 function closeAcceptanceWeeklyHistory() {
     if (!elements.acceptanceWeeklyHistory) return;
+    acceptanceCounterState.editingDayKey = "";
     elements.acceptanceWeeklyHistory.hidden = true;
-    elements.acceptanceWeeklyBtn?.setAttribute("aria-expanded", "false");
+    elements.acceptanceWeeklyHistoryBtn?.setAttribute("aria-expanded", "false");
+}
+function getAcceptanceWeekKeys() {
+    const keys = new Set([getAcceptanceWeekKey()]);
+    for (const record of acceptanceCounterState.days) keys.add(getAcceptanceWeekKey(record.dayKey));
+    return [...keys].sort((a, b) => b.localeCompare(a)).slice(0, 8);
+}
+function formatAcceptanceDayLabel(dayKey) {
+    const date = parseAcceptanceDateKey(dayKey);
+    if (!date) return dayKey;
+    const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    return `${date.getMonth() + 1}/${date.getDate()}(${weekdays[date.getDay()]})`;
+}
+function handleAcceptanceHistoryAction(event) {
+    const button = event.target.closest("[data-acceptance-history-action]");
+    if (!button || !elements.acceptanceWeeklyHistoryList?.contains(button)) return;
+    const action = cleanText(button.dataset.acceptanceHistoryAction);
+    const dayKey = cleanText(button.dataset.dayKey);
+    if (!dayKey) return;
+    if (action === "edit") {
+        acceptanceCounterState.editingDayKey = dayKey;
+        renderAcceptanceWeeklyHistory();
+        const input = elements.acceptanceWeeklyHistoryList.querySelector("[data-acceptance-edit-day] input");
+        input?.focus();
+        return;
+    }
+    if (action === "cancel") {
+        acceptanceCounterState.editingDayKey = "";
+        renderAcceptanceWeeklyHistory();
+        return;
+    }
+    if (action === "reset") {
+        const dayLabel = formatAcceptanceDayLabel(dayKey);
+        if (!window.confirm(`${dayLabel} 수락·거절 기록을 0건으로 초기화할까요?\n해당 날짜 기록은 주간 합계에서 제외됩니다.`)) return;
+        if (dayKey === acceptanceCounterState.dayKey) {
+            acceptanceCounterState.accepted = 0;
+            acceptanceCounterState.rejected = 0;
+        }
+        upsertAcceptanceDayRecord(dayKey, 0, 0, false);
+        acceptanceCounterState.editingDayKey = "";
+        saveAcceptanceCounter();
+        renderAcceptanceCounter();
+        renderAcceptanceWeeklyHistory();
+        showToast(`✅ ${dayLabel} 기록을 초기화했습니다.`);
+        return;
+    }
+    if (action !== "save") return;
+    const editor = button.closest("[data-acceptance-edit-day]");
+    const accepted = normalizeAcceptanceCount(editor?.querySelector('[data-field="accepted"]')?.value);
+    const rejected = normalizeAcceptanceCount(editor?.querySelector('[data-field="rejected"]')?.value);
+    if (accepted + rejected <= 0) {
+        showToast("수락 또는 거절 건수를 1건 이상 입력해주세요.");
+        return;
+    }
+    if (dayKey === acceptanceCounterState.dayKey) {
+        acceptanceCounterState.accepted = accepted;
+        acceptanceCounterState.rejected = rejected;
+        const existingIndex = acceptanceCounterState.days.findIndex(item => item.dayKey === dayKey);
+        if (existingIndex >= 0) upsertAcceptanceDayRecord(dayKey, accepted, rejected, false);
+    } else {
+        const existing = acceptanceCounterState.days.find(item => item.dayKey === dayKey);
+        if (!existing) {
+            showToast("수정할 기록을 찾지 못했습니다.");
+            return;
+        }
+        upsertAcceptanceDayRecord(dayKey, accepted, rejected, existing.finalized === true);
+    }
+    acceptanceCounterState.editingDayKey = "";
+    saveAcceptanceCounter();
+    renderAcceptanceCounter();
+    renderAcceptanceWeeklyHistory();
+    showToast("✅ 수락·거절 기록을 수정했습니다.");
+}
+function renderAcceptanceWeeklyHistory() {
+    if (!elements.acceptanceWeeklyHistoryList) return;
+    const currentWeekKey = getAcceptanceWeekKey();
+    const sections = [];
+    for (const weekKey of getAcceptanceWeekKeys()) {
+        const summary = getAcceptanceWeekSummary(weekKey);
+        if (summary.total <= 0 && weekKey !== currentWeekKey) continue;
+        const statusClass = summary.total <= 0 ? "is-empty" : summary.acceptRate >= ACCEPTANCE_WEEKLY_MIN_RATE ? "is-pass" : "is-fail";
+        const title = weekKey === currentWeekKey ? "이번 주" : `${formatAcceptanceDayLabel(weekKey)} 시작`;
+        const rows = summary.records.length > 0
+            ? summary.records.map(record => {
+                const calculated = calculateAcceptanceCounter(record.accepted, record.rejected, ACCEPTANCE_DAILY_MIN_RATE);
+                const rowClass = calculated.total <= 0 ? "is-empty" : calculated.acceptRate >= ACCEPTANCE_DAILY_MIN_RATE ? "is-pass" : "is-fail";
+                if (acceptanceCounterState.editingDayKey === record.dayKey) {
+                    return `<div class="acceptance-history-edit-row" data-acceptance-edit-day="${escapeHtml(record.dayKey)}"><strong>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</strong><label>수락<input data-field="accepted" type="number" min="0" max="99999" inputmode="numeric" value="${record.accepted}"></label><label>거절<input data-field="rejected" type="number" min="0" max="99999" inputmode="numeric" value="${record.rejected}"></label><div class="acceptance-history-edit-actions"><button type="button" data-acceptance-history-action="save" data-day-key="${escapeHtml(record.dayKey)}">저장</button><button type="button" data-acceptance-history-action="cancel" data-day-key="${escapeHtml(record.dayKey)}">취소</button></div></div>`;
+                }
+                return `<div class="acceptance-history-row ${rowClass}"><span>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</span><span>수락 ${record.accepted} · 거절 ${record.rejected}</span><strong>${calculated.acceptRate.toFixed(1)}%</strong><div class="acceptance-history-row-actions"><button class="acceptance-history-edit-btn" type="button" data-acceptance-history-action="edit" data-day-key="${escapeHtml(record.dayKey)}">수정</button><button class="acceptance-history-reset-btn" type="button" data-acceptance-history-action="reset" data-day-key="${escapeHtml(record.dayKey)}">초기화</button></div></div>`;
+            }).join("")
+            : '<div class="acceptance-history-empty">저장된 기록이 없습니다.</div>';
+        sections.push(`<section class="acceptance-history-week"><div class="acceptance-history-week-head ${statusClass}"><span>${escapeHtml(title)}</span><strong>${summary.acceptRate.toFixed(1)}%</strong><small>수락 ${summary.accepted} · 거절 ${summary.rejected}</small></div>${rows}</section>`);
+    }
+    elements.acceptanceWeeklyHistoryList.innerHTML = sections.join("") || '<div class="acceptance-history-empty">저장된 주간 기록이 없습니다.</div>';
 }
 /* ========================= 앱 설치 ========================= */
 function initializeInstallButton() { if (!elements.installAppBtn) return; if (isAppRunningStandalone()) markAppInstalled(); window.addEventListener("beforeinstallprompt", event => { event.preventDefault(); state.deferredInstallPrompt = event; updateInstallButtonVisibility(); }); window.addEventListener("appinstalled", () => { markAppInstalled(); showToast("✅ 앱 설치 완료"); }); elements.installAppBtn.addEventListener("click", handleInstallApp); updateInstallButtonVisibility(); }
@@ -3511,7 +3614,7 @@ function closeModalByElement(modal) { if (modal === elements.commonEditorModal) 
 function closeTopModal() { const modals = [elements.adminModal, elements.adminPinModal, elements.historyModal, elements.deletePwdModal, elements.addPwdModal, elements.commonEditorModal]; const openedModal = modals.find(modal => modal.style.display === "flex"); if (openedModal) closeModalByElement(openedModal); }
 /* ========================= 토스트 ========================= */
 function showToast(message) { const text = cleanText(message); if (!text) return; clearTimeout(state.toastTimer); elements.toast.textContent = text; elements.toast.classList.add("show"); state.toastTimer = window.setTimeout(() => { elements.toast.classList.remove("show"); }, 2500); }
-window.addEventListener("beforeunload", () => { clearTimeout(state.gpsRestartTimer); clearTimeout(state.gpsResumeTimer); clearTimeout(state.gpsRefreshUnlockTimer); clearInterval(state.gpsMetaTimer); flushRecordsCache(); savePerformanceSnapshot(); stopGpsWatch(); });
+window.addEventListener("beforeunload", () => { clearTimeout(acceptanceCounterState.rolloverTimer); clearTimeout(state.gpsRestartTimer); clearTimeout(state.gpsResumeTimer); clearTimeout(state.gpsRefreshUnlockTimer); clearInterval(state.gpsMetaTimer); flushRecordsCache(); savePerformanceSnapshot(); stopGpsWatch(); });
 function scheduleAppUpdateReload() { state.appUpdatePending = true; clearTimeout(state.appUpdateTimer); state.appUpdateTimer = window.setTimeout(tryApplyAppUpdate, 700); }
 function tryApplyAppUpdate() {
     if (!state.appUpdatePending) return;
@@ -4520,7 +4623,7 @@ const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-39", "./number-one.css?v=20260716-36", "./script.js?v=20260716-39", "./number-one.js?v=20260716-36", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-42", "./number-one.css?v=20260716-36", "./script.js?v=20260716-42", "./number-one.js?v=20260716-36", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4703,7 +4806,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-39", serviceWorkerVersion: "v64" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-42", serviceWorkerVersion: "v67" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5084,7 +5187,7 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-39",
+    fileVersion: "20260716-42",
     serviceWorkerVersion: "v64",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
