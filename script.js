@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 수락률 주간기록 오류수정 20260716-41 */
+/* 넘버원 김포B 공비 - 주간기록 초기화·수락률 보드 가시성 조정 20260716-42 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -438,6 +438,21 @@ function handleAcceptanceHistoryAction(event) {
         renderAcceptanceWeeklyHistory();
         return;
     }
+    if (action === "reset") {
+        const dayLabel = formatAcceptanceDayLabel(dayKey);
+        if (!window.confirm(`${dayLabel} 수락·거절 기록을 0건으로 초기화할까요?\n해당 날짜 기록은 주간 합계에서 제외됩니다.`)) return;
+        if (dayKey === acceptanceCounterState.dayKey) {
+            acceptanceCounterState.accepted = 0;
+            acceptanceCounterState.rejected = 0;
+        }
+        upsertAcceptanceDayRecord(dayKey, 0, 0, false);
+        acceptanceCounterState.editingDayKey = "";
+        saveAcceptanceCounter();
+        renderAcceptanceCounter();
+        renderAcceptanceWeeklyHistory();
+        showToast(`✅ ${dayLabel} 기록을 초기화했습니다.`);
+        return;
+    }
     if (action !== "save") return;
     const editor = button.closest("[data-acceptance-edit-day]");
     const accepted = normalizeAcceptanceCount(editor?.querySelector('[data-field="accepted"]')?.value);
@@ -481,7 +496,7 @@ function renderAcceptanceWeeklyHistory() {
                 if (acceptanceCounterState.editingDayKey === record.dayKey) {
                     return `<div class="acceptance-history-edit-row" data-acceptance-edit-day="${escapeHtml(record.dayKey)}"><strong>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</strong><label>수락<input data-field="accepted" type="number" min="0" max="99999" inputmode="numeric" value="${record.accepted}"></label><label>거절<input data-field="rejected" type="number" min="0" max="99999" inputmode="numeric" value="${record.rejected}"></label><div class="acceptance-history-edit-actions"><button type="button" data-acceptance-history-action="save" data-day-key="${escapeHtml(record.dayKey)}">저장</button><button type="button" data-acceptance-history-action="cancel" data-day-key="${escapeHtml(record.dayKey)}">취소</button></div></div>`;
                 }
-                return `<div class="acceptance-history-row ${rowClass}"><span>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</span><span>수락 ${record.accepted} · 거절 ${record.rejected}</span><strong>${calculated.acceptRate.toFixed(1)}%</strong><button class="acceptance-history-edit-btn" type="button" data-acceptance-history-action="edit" data-day-key="${escapeHtml(record.dayKey)}">수정</button></div>`;
+                return `<div class="acceptance-history-row ${rowClass}"><span>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</span><span>수락 ${record.accepted} · 거절 ${record.rejected}</span><strong>${calculated.acceptRate.toFixed(1)}%</strong><div class="acceptance-history-row-actions"><button class="acceptance-history-edit-btn" type="button" data-acceptance-history-action="edit" data-day-key="${escapeHtml(record.dayKey)}">수정</button><button class="acceptance-history-reset-btn" type="button" data-acceptance-history-action="reset" data-day-key="${escapeHtml(record.dayKey)}">초기화</button></div></div>`;
             }).join("")
             : '<div class="acceptance-history-empty">저장된 기록이 없습니다.</div>';
         sections.push(`<section class="acceptance-history-week"><div class="acceptance-history-week-head ${statusClass}"><span>${escapeHtml(title)}</span><strong>${summary.acceptRate.toFixed(1)}%</strong><small>수락 ${summary.accepted} · 거절 ${summary.rejected}</small></div>${rows}</section>`);
@@ -4608,7 +4623,7 @@ const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-41", "./number-one.css?v=20260716-36", "./script.js?v=20260716-41", "./number-one.js?v=20260716-36", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-42", "./number-one.css?v=20260716-36", "./script.js?v=20260716-42", "./number-one.js?v=20260716-36", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4791,7 +4806,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-41", serviceWorkerVersion: "v66" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-42", serviceWorkerVersion: "v67" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5172,7 +5187,7 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-41",
+    fileVersion: "20260716-42",
     serviceWorkerVersion: "v64",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450

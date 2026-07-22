@@ -994,12 +994,12 @@ button:disabled { filter:saturate(.72); }
 /* v20260716-37: 아파트별 비밀번호 형식 정리 */
 .admin-cleanup-btn.wide { grid-column:1 / -1; }
 
-/* v20260716-41: 4열×4행 수락률 보드 + 역할별 상태색 + 기록 수정 */
+/* v20260716-42: 주간 기록 날짜별 초기화 + 수락률 보드 높이·글자·거절가능 재배치 */
 .acceptance-counter { padding:9px; }
 .acceptance-board {
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  grid-template-rows:minmax(58px,auto) minmax(62px,auto) minmax(46px,auto) minmax(46px,auto);
+  grid-template-rows:minmax(52px,auto) minmax(54px,auto) minmax(53px,auto) minmax(55px,auto);
   gap:5px;
 }
 .acceptance-board-cell {
@@ -1034,9 +1034,9 @@ button:disabled { filter:saturate(.72); }
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:6px 3px;
+  padding:4px 3px;
   font-weight:900;
-  line-height:1.12;
+  line-height:1.08;
 }
 .acceptance-rate-card { gap:2px; }
 .acceptance-rate-title,
@@ -1044,7 +1044,7 @@ button:disabled { filter:saturate(.72); }
 .acceptance-count-card > span,
 .acceptance-available-card > span {
   color:var(--text-main);
-  font-size:clamp(.59rem,2.45vw,.73rem);
+  font-size:clamp(.56rem,2.25vw,.68rem);
   font-weight:900;
   letter-spacing:-.04em;
   white-space:nowrap;
@@ -1053,20 +1053,50 @@ button:disabled { filter:saturate(.72); }
 .acceptance-target-card strong,
 .acceptance-count-card strong,
 .acceptance-available-card strong {
-  margin-top:3px;
-  font-size:clamp(.68rem,2.85vw,.86rem);
+  margin-top:2px;
+  font-size:clamp(.66rem,2.65vw,.82rem);
   font-weight:950;
   letter-spacing:-.04em;
   white-space:nowrap;
 }
-.acceptance-available-card small {
-  margin-top:2px;
-  color:var(--text-sub);
-  font-size:clamp(.50rem,2.05vw,.61rem);
-  font-weight:850;
-  letter-spacing:-.035em;
+.acceptance-available-card {
+  display:grid;
+  grid-template-columns:minmax(62px,.8fr) minmax(92px,1.2fr);
+  grid-template-rows:1fr 1fr;
+  align-items:center;
+  padding:4px 9px;
 }
-.acceptance-available-card strong b { font-weight:950; }
+.acceptance-available-title {
+  grid-column:1;
+  grid-row:1 / 3;
+  justify-self:center;
+  align-self:center;
+}
+.acceptance-available-values {
+  grid-column:2;
+  grid-row:1 / 3;
+  display:grid;
+  gap:4px;
+  align-content:center;
+  width:100%;
+}
+.acceptance-available-values > span {
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  gap:5px;
+  color:var(--text-sub);
+  font-size:clamp(.55rem,2.18vw,.66rem);
+  font-weight:900;
+  letter-spacing:-.035em;
+  white-space:nowrap;
+}
+.acceptance-available-values b {
+  color:var(--text-main);
+  font-size:clamp(.66rem,2.65vw,.82rem);
+  font-weight:950;
+  text-align:right;
+}
 .acceptance-status-light { width:7px; height:7px; margin-bottom:1px; border-radius:50%; background:#94a3b8; }
 
 .acceptance-count-btn,
@@ -1100,6 +1130,20 @@ button:disabled { filter:saturate(.72); }
   background:color-mix(in srgb,var(--step-bg) 84%,#8b5cf6 16%);
   border-color:color-mix(in srgb,var(--border) 70%,#8b5cf6 30%);
   color:#6d28d9;
+}
+.acceptance-weekly-save-btn,
+.acceptance-weekly-history-btn {
+  font-size:clamp(.65rem,2.65vw,.80rem);
+  line-height:1.08;
+}
+.acceptance-weekly-save-btn small {
+  font-size:clamp(.47rem,1.95vw,.57rem);
+}
+.acceptance-reset-btn {
+  font-size:clamp(.61rem,2.45vw,.74rem);
+}
+.acceptance-count-btn {
+  padding-block:7px;
 }
 [data-theme="dark"] .acceptance-weekly-save-btn { color:#7dd3fc; }
 [data-theme="dark"] .acceptance-weekly-history-btn { color:#c4b5fd; }
@@ -1173,6 +1217,24 @@ button:disabled { filter:saturate(.72); }
   font-weight:950;
 }
 [data-theme="dark"] .acceptance-history-edit-btn { color:#c4b5fd; }
+.acceptance-history-row-actions {
+  display:flex;
+  gap:4px;
+  justify-content:flex-end;
+  align-items:center;
+}
+.acceptance-history-reset-btn {
+  min-width:46px;
+  min-height:28px;
+  padding:4px 7px;
+  border:1px solid rgba(245,158,11,.34);
+  border-radius:8px;
+  background:rgba(245,158,11,.09);
+  color:#b45309;
+  font-size:.60rem;
+  font-weight:950;
+}
+[data-theme="dark"] .acceptance-history-reset-btn { color:#fbbf24; }
 .acceptance-history-edit-row {
   display:grid;
   grid-template-columns:minmax(58px,.75fr) 1fr 1fr;
@@ -1202,7 +1264,7 @@ button:disabled { filter:saturate(.72); }
 
 @media (max-width:390px) {
   .acceptance-counter { padding:7px; }
-  .acceptance-board { gap:4px; grid-template-rows:minmax(55px,auto) minmax(59px,auto) minmax(43px,auto) minmax(43px,auto); }
+  .acceptance-board { gap:4px; grid-template-rows:minmax(49px,auto) minmax(51px,auto) minmax(50px,auto) minmax(52px,auto); }
   .acceptance-board-cell { border-radius:9px; }
   .acceptance-rate-title,.acceptance-target-card > span,.acceptance-count-card > span,.acceptance-available-card > span { font-size:.57rem; }
   .acceptance-rate-card strong,.acceptance-target-card strong,.acceptance-count-card strong,.acceptance-available-card strong { font-size:.65rem; }
@@ -1212,11 +1274,16 @@ button:disabled { filter:saturate(.72); }
   .acceptance-board { gap:3px; }
   .acceptance-rate-title,.acceptance-target-card > span,.acceptance-count-card > span,.acceptance-available-card > span { font-size:.51rem; }
   .acceptance-rate-card strong,.acceptance-target-card strong,.acceptance-count-card strong,.acceptance-available-card strong { font-size:.58rem; }
-  .acceptance-available-card small { font-size:.43rem; }
-  .acceptance-action-btn,.acceptance-reset-btn { font-size:.51rem; }
-  .acceptance-action-btn small { font-size:.40rem; }
+  .acceptance-available-card { padding-inline:5px; grid-template-columns:minmax(48px,.72fr) minmax(78px,1.28fr); }
+  .acceptance-available-values > span { font-size:.48rem; gap:3px; }
+  .acceptance-available-values b { font-size:.58rem; }
+  .acceptance-action-btn,.acceptance-reset-btn { font-size:.55rem; }
+  .acceptance-weekly-save-btn,.acceptance-weekly-history-btn { font-size:.59rem; }
+  .acceptance-action-btn small { font-size:.42rem; }
   .acceptance-history-row { grid-template-columns:minmax(52px,.7fr) minmax(100px,1.4fr) auto auto; gap:4px; }
-  .acceptance-history-edit-btn { min-width:37px; padding:3px 5px; font-size:.56rem; }
+  .acceptance-history-row-actions { gap:3px; }
+  .acceptance-history-edit-btn { min-width:34px; padding:3px 4px; font-size:.53rem; }
+  .acceptance-history-reset-btn { min-width:41px; padding:3px 4px; font-size:.52rem; }
 }
 
 /* 주간 기록도 메인 보드와 같은 역할색으로 통일 */

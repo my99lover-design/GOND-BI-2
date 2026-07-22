@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-41">
+    <link rel="stylesheet" href="style.css?v=20260716-42">
     <link rel="stylesheet" href="number-one.css?v=20260716-36">
 </head>
 <body>
@@ -180,9 +180,11 @@
                     <strong id="acceptanceRejectedValue">0건</strong>
                 </div>
                 <div class="acceptance-board-cell acceptance-available-card">
-                    <span>거절가능</span>
-                    <small>(당일 / 주간)</small>
-                    <strong><b id="acceptanceRejectAvailableDaily">0건</b> / <b id="acceptanceRejectAvailableWeekly">0건</b></strong>
+                    <span class="acceptance-available-title">거절가능</span>
+                    <div class="acceptance-available-values">
+                        <span>당일 <b id="acceptanceRejectAvailableDaily">0건</b></span>
+                        <span>주간 <b id="acceptanceRejectAvailableWeekly">0건</b></span>
+                    </div>
                 </div>
 
                 <button id="acceptanceAcceptAdd" class="acceptance-board-cell acceptance-count-btn acceptance-plus accept acceptance-accept-add" type="button" aria-label="당일 수락 1건 추가">+</button>
@@ -499,7 +501,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-41"></script>
+<script src="script.js?v=20260716-42"></script>
 <script src="number-one.js?v=20260716-36"></script>
 </body>
 </html>
