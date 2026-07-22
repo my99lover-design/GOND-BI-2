@@ -994,7 +994,7 @@ button:disabled { filter:saturate(.72); }
 /* v20260716-37: 아파트별 비밀번호 형식 정리 */
 .admin-cleanup-btn.wide { grid-column:1 / -1; }
 
-/* v20260716-42: 주간 기록 날짜별 초기화 + 수락률 보드 높이·글자·거절가능 재배치 */
+/* v20260716-43: 주간 기록 날짜별 초기화 + 수락률 보드 높이·글자·거절가능 재배치 */
 .acceptance-counter { padding:9px; }
 .acceptance-board {
   display:grid;
@@ -1295,3 +1295,16 @@ button:disabled { filter:saturate(.72); }
 [data-theme="dark"] .acceptance-history-week-head.is-fail { color:#fbbf24; }
 [data-theme="dark"] .acceptance-history-row.is-pass strong { color:#7dd3fc; }
 [data-theme="dark"] .acceptance-history-row.is-fail strong { color:#fbbf24; }
+
+
+/* v20260716-43: 거절가능 당일·주간 80% 기준 문구 */
+.acceptance-available-title small {
+  display:block;
+  margin-top:4px;
+  color:var(--text-sub);
+  font-size:clamp(.47rem,1.9vw,.56rem);
+  font-weight:900;
+  line-height:1;
+  letter-spacing:-.04em;
+  white-space:nowrap;
+}

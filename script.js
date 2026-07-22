@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 주간기록 초기화·수락률 보드 가시성 조정 20260716-42 */
+/* 넘버원 김포B 공비 - 거절가능 80% 기준 분리 20260716-43 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -358,6 +358,7 @@ function renderAcceptanceCounter() {
     const accepted = normalizeAcceptanceCount(acceptanceCounterState.accepted);
     const rejected = normalizeAcceptanceCount(acceptanceCounterState.rejected);
     const daily = calculateAcceptanceCounter(accepted, rejected, ACCEPTANCE_DAILY_MIN_RATE);
+    const dailyRejectAllowance = calculateAcceptanceCounter(accepted, rejected, ACCEPTANCE_WEEKLY_MIN_RATE);
     const weekly = getAcceptanceWeekSummary();
     elements.acceptanceAcceptedValue.textContent = `${accepted}건`;
     elements.acceptanceRejectedValue.textContent = `${rejected}건`;
@@ -365,7 +366,7 @@ function renderAcceptanceCounter() {
     elements.acceptanceWeeklyRateValue.textContent = `${weekly.acceptRate.toFixed(1)}%`;
     elements.acceptanceDailyMinimumValue.textContent = formatAcceptanceTarget(daily);
     elements.acceptanceWeeklyMinimumValue.textContent = formatAcceptanceTarget(weekly);
-    elements.acceptanceRejectAvailableDaily.textContent = `${daily.rejectAvailable}건`;
+    elements.acceptanceRejectAvailableDaily.textContent = `${dailyRejectAllowance.rejectAvailable}건`;
     elements.acceptanceRejectAvailableWeekly.textContent = `${weekly.rejectAvailable}건`;
     applyAcceptanceRateStatus(elements.acceptanceDailyRateCard, daily.total, daily.acceptRate, ACCEPTANCE_DAILY_MIN_RATE);
     applyAcceptanceRateStatus(elements.acceptanceWeeklyRateCard, weekly.total, weekly.acceptRate, ACCEPTANCE_WEEKLY_MIN_RATE);
@@ -373,7 +374,7 @@ function renderAcceptanceCounter() {
     applyAcceptanceRateStatus(elements.acceptanceWeeklyMinimumCard, weekly.total, weekly.acceptRate, ACCEPTANCE_WEEKLY_MIN_RATE);
     if (elements.acceptanceAcceptSubtract) elements.acceptanceAcceptSubtract.disabled = accepted <= 0;
     if (elements.acceptanceRejectSubtract) elements.acceptanceRejectSubtract.disabled = rejected <= 0;
-    elements.acceptanceCounter.setAttribute("aria-label", `오늘 수락 ${accepted}건, 거절 ${rejected}건, 당일 수락률 ${daily.acceptRate.toFixed(1)}퍼센트, 주간 누적 수락률 ${weekly.acceptRate.toFixed(1)}퍼센트`);
+    elements.acceptanceCounter.setAttribute("aria-label", `오늘 수락 ${accepted}건, 거절 ${rejected}건, 당일 수락률 ${daily.acceptRate.toFixed(1)}퍼센트, 주간 누적 수락률 ${weekly.acceptRate.toFixed(1)}퍼센트, 80퍼센트 기준 거절가능 당일 ${dailyRejectAllowance.rejectAvailable}건, 주간 ${weekly.rejectAvailable}건`);
 }
 function saveAcceptanceWeeklyRecord() {
     rolloverAcceptanceDayIfNeeded(false);
@@ -4616,14 +4617,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v64",
+    app: "gimpo-b-app-v68",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-42", "./number-one.css?v=20260716-36", "./script.js?v=20260716-42", "./number-one.js?v=20260716-36", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-43", "./number-one.css?v=20260716-36", "./script.js?v=20260716-43", "./number-one.js?v=20260716-36", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4806,7 +4807,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-42", serviceWorkerVersion: "v67" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-43", serviceWorkerVersion: "v68" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5187,8 +5188,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-42",
-    serviceWorkerVersion: "v64",
+    fileVersion: "20260716-43",
+    serviceWorkerVersion: "v68",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
