@@ -678,6 +678,152 @@ button.is-processing::after { content:""; display:inline-block; width:.75em; hei
 }
 
 
+/* v20260716-39: 수락률 일간 70%·주간 80% 저장/기록 */
+.acceptance-current-rate {
+  width:100%;
+  justify-content:flex-start;
+  border:1px solid var(--border);
+}
+.acceptance-current-rate small { font-size:.68rem; font-weight:850; }
+.acceptance-current-rate b { margin-left:auto; }
+.acceptance-status-light {
+  display:inline-block;
+  flex:0 0 auto;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#94a3b8;
+  box-shadow:0 0 0 3px rgba(148,163,184,.16);
+}
+.acceptance-rate-status.is-pass { border-color:rgba(34,197,94,.52); background:rgba(34,197,94,.12); }
+.acceptance-rate-status.is-fail { border-color:rgba(239,68,68,.50); background:rgba(239,68,68,.10); }
+.acceptance-rate-status.is-empty { border-color:var(--border); background:var(--step-bg); }
+.acceptance-rate-status.is-pass .acceptance-status-light { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.18); }
+.acceptance-rate-status.is-fail .acceptance-status-light { background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
+.acceptance-rate-status.is-pass .acceptance-metric-value,
+.acceptance-rate-status.is-pass.acceptance-current-rate b { color:#15803d; }
+.acceptance-rate-status.is-fail .acceptance-metric-value,
+.acceptance-rate-status.is-fail.acceptance-current-rate b { color:#dc2626; }
+[data-theme="dark"] .acceptance-rate-status.is-pass .acceptance-metric-value,
+[data-theme="dark"] .acceptance-rate-status.is-pass.acceptance-current-rate b { color:#4ade80; }
+[data-theme="dark"] .acceptance-rate-status.is-fail .acceptance-metric-value,
+[data-theme="dark"] .acceptance-rate-status.is-fail.acceptance-current-rate b { color:#f87171; }
+#acceptanceDailyRateCard .acceptance-metric-label {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  overflow:visible;
+  white-space:nowrap;
+}
+#acceptanceDailyRateCard .acceptance-status-light { width:7px; height:7px; }
+.acceptance-rate-minimum {
+  display:block;
+  margin-top:2px;
+  color:var(--text-sub);
+  font-size:.56rem;
+  font-weight:850;
+  line-height:1;
+}
+.acceptance-count-btn,.acceptance-action-btn {
+  min-width:0;
+  padding:7px 3px;
+  border:1px solid var(--border);
+  border-radius:11px;
+  font-weight:950;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.acceptance-action-btn {
+  min-height:91px;
+  background:var(--step-bg);
+  color:var(--text-main);
+  line-height:1.15;
+}
+.acceptance-action-btn span,.acceptance-action-btn small { display:block; }
+.acceptance-action-btn small { margin-top:6px; color:var(--text-sub); font-size:.62rem; letter-spacing:0; }
+.acceptance-weekly-btn { border-color:rgba(59,130,246,.35); background:rgba(59,130,246,.10); color:var(--primary-dark); font-size:.78rem; }
+[data-theme="dark"] .acceptance-weekly-btn { color:var(--primary); }
+.acceptance-reset-btn {
+  grid-column:auto;
+  min-height:91px;
+  font-size:.82rem;
+  letter-spacing:.08em;
+}
+.acceptance-action-btn:active { transform:scale(.97); }
+.acceptance-weekly-history {
+  margin-top:9px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--step-bg);
+}
+.acceptance-weekly-history[hidden] { display:none!important; }
+.acceptance-weekly-history-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.acceptance-weekly-history-head strong { font-size:.84rem; }
+.acceptance-weekly-history-head button {
+  width:30px;
+  height:30px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--card-bg);
+  color:var(--text-main);
+  font-size:1.1rem;
+  font-weight:900;
+}
+.acceptance-weekly-history-list { display:grid; gap:8px; max-height:310px; overflow:auto; }
+.acceptance-history-week { overflow:hidden; border:1px solid var(--border); border-radius:10px; background:var(--card-bg); }
+.acceptance-history-week-head {
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:2px 8px;
+  padding:8px 9px;
+  border-bottom:1px solid var(--border);
+}
+.acceptance-history-week-head span { font-size:.75rem; font-weight:900; }
+.acceptance-history-week-head strong { font-size:.9rem; }
+.acceptance-history-week-head small { grid-column:1 / 3; color:var(--text-sub); font-size:.62rem; font-weight:800; }
+.acceptance-history-week-head.is-pass { background:rgba(34,197,94,.11); color:#15803d; }
+.acceptance-history-week-head.is-fail { background:rgba(239,68,68,.09); color:#dc2626; }
+[data-theme="dark"] .acceptance-history-week-head.is-pass { color:#4ade80; }
+[data-theme="dark"] .acceptance-history-week-head.is-fail { color:#f87171; }
+.acceptance-history-row {
+  display:grid;
+  grid-template-columns:.8fr 1.5fr auto;
+  align-items:center;
+  gap:6px;
+  padding:7px 9px;
+  border-top:1px solid color-mix(in srgb,var(--border) 65%,transparent);
+  font-size:.66rem;
+}
+.acceptance-history-row:first-of-type { border-top:0; }
+.acceptance-history-row span:nth-child(2) { color:var(--text-sub); }
+.acceptance-history-row.is-pass strong { color:#15803d; }
+.acceptance-history-row.is-fail strong { color:#dc2626; }
+[data-theme="dark"] .acceptance-history-row.is-pass strong { color:#4ade80; }
+[data-theme="dark"] .acceptance-history-row.is-fail strong { color:#f87171; }
+.acceptance-history-empty { padding:13px 8px; color:var(--text-sub); font-size:.72rem; text-align:center; }
+@media (max-width:390px) {
+  .acceptance-current-rate { padding:7px 9px; gap:4px; font-size:.68rem; }
+  .acceptance-current-rate small { font-size:.57rem; }
+  .acceptance-action-btn,.acceptance-reset-btn { min-height:86px; }
+  .acceptance-weekly-btn { font-size:.70rem; }
+  .acceptance-rate-minimum { font-size:.52rem; }
+}
+@media (max-width:340px) {
+  .acceptance-current-rate { font-size:.61rem; }
+  .acceptance-current-rate small { font-size:.51rem; }
+  #acceptanceDailyRateCard .acceptance-metric-label { font-size:.53rem; gap:2px; }
+  .acceptance-weekly-btn,.acceptance-reset-btn { font-size:.66rem; }
+}
+
+
 
 /* v20260716-31: 홈 재배치·문제 시 데이터 버튼·라이트/다크 전체 가시성 */
 html { color-scheme:light; }
@@ -847,3 +993,165 @@ button:disabled { filter:saturate(.72); }
 
 /* v20260716-37: 아파트별 비밀번호 형식 정리 */
 .admin-cleanup-btn.wide { grid-column:1 / -1; }
+
+/* v20260716-39 final: 4열×4행 수락률 보드 (상단 1.5칸+1.5칸+1칸) */
+.acceptance-counter {
+  padding:9px;
+}
+.acceptance-board {
+  display:grid;
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  grid-template-rows:minmax(54px,auto) minmax(61px,auto) minmax(45px,auto) minmax(45px,auto);
+  gap:5px;
+}
+.acceptance-board-cell {
+  min-width:0;
+  margin:0;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--step-bg);
+  color:var(--text-main);
+  text-align:center;
+}
+.acceptance-daily-rate { grid-column:1 / 4; grid-row:1; }
+.acceptance-weekly-rate { grid-column:4 / 7; grid-row:1; }
+#acceptanceWeeklyMinimumCard { grid-column:7 / 9; grid-row:1; }
+.acceptance-accepted-card { grid-column:1 / 3; grid-row:2; }
+.acceptance-rejected-card { grid-column:3 / 5; grid-row:2; }
+.acceptance-available-card { grid-column:5 / 7; grid-row:2; }
+#acceptanceDailyMinimumCard { grid-column:7 / 9; grid-row:2; }
+.acceptance-accept-add { grid-column:1 / 3; grid-row:3; }
+.acceptance-reject-add { grid-column:3 / 5; grid-row:3; }
+.acceptance-reset-btn { grid-column:5 / 7; grid-row:3 / 5; }
+.acceptance-weekly-save-btn { grid-column:7 / 9; grid-row:3; }
+.acceptance-accept-subtract { grid-column:1 / 3; grid-row:4; }
+.acceptance-reject-subtract { grid-column:3 / 5; grid-row:4; }
+.acceptance-weekly-history-btn { grid-column:7 / 9; grid-row:4; }
+
+.acceptance-rate-card {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:7px 4px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.acceptance-rate-title {
+  color:var(--text-main);
+  font-size:clamp(.67rem,2.8vw,.82rem);
+  letter-spacing:-.035em;
+}
+.acceptance-rate-card strong {
+  color:var(--text-main);
+  font-size:clamp(.76rem,3.1vw,.94rem);
+  font-weight:950;
+  letter-spacing:-.035em;
+}
+.acceptance-minimum-card,
+.acceptance-count-card,
+.acceptance-available-card {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:5px 2px;
+  font-weight:900;
+  line-height:1.12;
+}
+.acceptance-minimum-card > span,
+.acceptance-count-card > span,
+.acceptance-available-card > span {
+  font-size:clamp(.62rem,2.55vw,.76rem);
+  font-weight:900;
+  letter-spacing:-.035em;
+}
+.acceptance-minimum-card small,
+.acceptance-available-card small {
+  margin-top:2px;
+  color:var(--text-sub);
+  font-size:clamp(.53rem,2.2vw,.64rem);
+  font-weight:850;
+  letter-spacing:-.035em;
+}
+.acceptance-minimum-card strong,
+.acceptance-count-card strong,
+.acceptance-available-card strong {
+  margin-top:4px;
+  font-size:clamp(.72rem,3vw,.88rem);
+  font-weight:950;
+  letter-spacing:-.035em;
+  white-space:nowrap;
+}
+.acceptance-available-card strong b { font-weight:950; }
+.acceptance-count-btn,
+.acceptance-action-btn,
+.acceptance-reset-btn {
+  min-height:0;
+  padding:5px 3px;
+  border-radius:10px;
+  line-height:1.15;
+}
+.acceptance-count-btn { font-size:1.38rem; }
+.acceptance-action-btn {
+  font-size:clamp(.61rem,2.5vw,.73rem);
+  font-weight:950;
+  letter-spacing:-.035em;
+}
+.acceptance-action-btn span,.acceptance-action-btn small { display:block; }
+.acceptance-action-btn small {
+  margin-top:3px;
+  color:var(--text-sub);
+  font-size:clamp(.49rem,2vw,.58rem);
+  font-weight:850;
+  line-height:1.05;
+}
+.acceptance-reset-btn {
+  background:color-mix(in srgb,var(--step-bg) 82%,var(--danger) 18%);
+  border-color:color-mix(in srgb,var(--border) 70%,var(--danger) 30%);
+  color:var(--text-main);
+  font-size:clamp(.64rem,2.55vw,.75rem);
+  font-weight:950;
+  letter-spacing:-.045em;
+}
+.acceptance-weekly-save-btn {
+  background:color-mix(in srgb,var(--step-bg) 82%,var(--primary) 18%);
+  border-color:color-mix(in srgb,var(--border) 68%,var(--primary) 32%);
+  color:var(--primary-dark);
+}
+.acceptance-weekly-history-btn {
+  background:color-mix(in srgb,var(--step-bg) 88%,var(--primary) 12%);
+  border-color:color-mix(in srgb,var(--border) 76%,var(--primary) 24%);
+  color:var(--primary-dark);
+}
+[data-theme="dark"] .acceptance-weekly-save-btn,
+[data-theme="dark"] .acceptance-weekly-history-btn { color:var(--primary); }
+.acceptance-rate-status.is-pass { border-color:rgba(34,197,94,.58); background:rgba(34,197,94,.13); }
+.acceptance-rate-status.is-fail { border-color:rgba(239,68,68,.56); background:rgba(239,68,68,.11); }
+.acceptance-rate-status.is-empty { border-color:var(--border); background:var(--step-bg); }
+.acceptance-rate-status.is-pass .acceptance-status-light { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.18); }
+.acceptance-rate-status.is-fail .acceptance-status-light { background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
+.acceptance-rate-status.is-pass strong { color:#15803d; }
+.acceptance-rate-status.is-fail strong { color:#dc2626; }
+[data-theme="dark"] .acceptance-rate-status.is-pass strong { color:#4ade80; }
+[data-theme="dark"] .acceptance-rate-status.is-fail strong { color:#f87171; }
+.acceptance-status-light { flex:0 0 auto; width:8px; height:8px; border-radius:50%; background:#94a3b8; }
+.acceptance-weekly-history { margin-top:8px; }
+@media (max-width:390px) {
+  .acceptance-counter { padding:7px; }
+  .acceptance-board { gap:4px; grid-template-rows:minmax(51px,auto) minmax(58px,auto) minmax(43px,auto) minmax(43px,auto); }
+  .acceptance-board-cell { border-radius:9px; }
+  .acceptance-rate-card { gap:3px; padding:5px 2px; }
+  .acceptance-status-light { width:7px; height:7px; }
+  .acceptance-count-btn { font-size:1.28rem; }
+}
+@media (max-width:340px) {
+  .acceptance-board { gap:3px; }
+  .acceptance-rate-title { font-size:.60rem; }
+  .acceptance-rate-card strong { font-size:.69rem; }
+  .acceptance-minimum-card > span,.acceptance-count-card > span,.acceptance-available-card > span { font-size:.56rem; }
+  .acceptance-minimum-card small,.acceptance-available-card small { font-size:.47rem; }
+  .acceptance-minimum-card strong,.acceptance-count-card strong,.acceptance-available-card strong { font-size:.65rem; }
+  .acceptance-action-btn,.acceptance-reset-btn { font-size:.56rem; }
+  .acceptance-action-btn small { font-size:.44rem; }
+}
