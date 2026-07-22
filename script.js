@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 수락률 주간기록 오류수정 20260716-40 */
+/* 넘버원 김포B 공비 - 수락률 주간기록 오류수정 20260716-41 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -29,7 +29,7 @@ const state = {
     toastTimer: null, pendingOperations: [], syncProcessing: false, syncTimer: null, syncHadWork: false, cacheWriteTimer: null, cacheWritePending: false, deferredInstallPrompt: null, iosInstallGuideShown: false, changeHistory: [], historyLoading: false, undoingHistoryId: "", adminToken: "", adminTokenExpiresAt: 0, adminAuthenticating: false, adminDashboard: null, adminLoading: false, adminView: "menu", backupCreating: false, restoringBackupName: "", autoBackupUpdating: false, passwordCleanupMode: "", addPasswordMode: "direct", addPasswordTemplate: null, appUpdatePending: false, appUpdateTimer: null,
     performanceSessionId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, performanceMetrics: {}, performanceHistory: [], initialIndexPerformanceRecorded: false, firstDeviceGpsRecorded: false, highAccuracyGpsRecorded: false, savedViewState: null, initialViewResolved: false, pendingScrollRestore: null, viewStateSaveTimer: null, restoringSavedView: false, usageHeartbeatTimer: null, lastUsageHeartbeatAt: 0, usageHeartbeatInFlight: false, networkResumeTimer: null, homeDataStatusTimer: null
 };
-const acceptanceCounterState = { accepted: 0, rejected: 0, dayKey: "", days: [], rolloverTimer: null };
+const acceptanceCounterState = { accepted: 0, rejected: 0, dayKey: "", days: [], rolloverTimer: null, editingDayKey: "" };
 document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
     initializeTheme();
@@ -130,6 +130,7 @@ function initializeAcceptanceCounter() {
     elements.acceptanceWeeklySaveBtn?.addEventListener("click", saveAcceptanceWeeklyRecord);
     elements.acceptanceWeeklyHistoryBtn?.addEventListener("click", toggleAcceptanceWeeklyHistory);
     elements.acceptanceWeeklyCloseBtn?.addEventListener("click", closeAcceptanceWeeklyHistory);
+    elements.acceptanceWeeklyHistoryList?.addEventListener("click", handleAcceptanceHistoryAction);
     elements.acceptanceResetBtn?.addEventListener("click", resetAcceptanceCounter);
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState !== "visible") return;
@@ -310,7 +311,16 @@ function calculateAcceptanceCounter(accepted, rejected, targetRate = ACCEPTANCE_
     const targetRatio = Math.max(0.01, Math.min(0.99, Number(targetRate) / 100));
     const maxRejectedAtTarget = Math.floor((safeAccepted * (1 - targetRatio) / targetRatio) + 1e-9);
     const rejectAvailable = Math.max(0, maxRejectedAtTarget - safeRejected);
-    return { total, acceptRate, rejectAvailable };
+    const acceptanceGap = targetRatio * total - safeAccepted;
+    const neededAcceptances = acceptanceGap <= 1e-9
+        ? 0
+        : Math.max(0, Math.ceil((acceptanceGap / (1 - targetRatio)) - 1e-9));
+    return { total, acceptRate, rejectAvailable, neededAcceptances };
+}
+function formatAcceptanceTarget(result) {
+    if (!result || result.total <= 0) return "집계 전";
+    if (result.neededAcceptances <= 0) return "달성";
+    return `수락 ${result.neededAcceptances}건 필요`;
 }
 function getAcceptanceWeekRecords(weekKey = getAcceptanceWeekKey()) {
     const map = new Map();
@@ -353,8 +363,8 @@ function renderAcceptanceCounter() {
     elements.acceptanceRejectedValue.textContent = `${rejected}건`;
     elements.acceptanceDailyRateValue.textContent = `${daily.acceptRate.toFixed(1)}%`;
     elements.acceptanceWeeklyRateValue.textContent = `${weekly.acceptRate.toFixed(1)}%`;
-    elements.acceptanceDailyMinimumValue.textContent = `${daily.acceptRate.toFixed(1)}%`;
-    elements.acceptanceWeeklyMinimumValue.textContent = `${weekly.acceptRate.toFixed(1)}%`;
+    elements.acceptanceDailyMinimumValue.textContent = formatAcceptanceTarget(daily);
+    elements.acceptanceWeeklyMinimumValue.textContent = formatAcceptanceTarget(weekly);
     elements.acceptanceRejectAvailableDaily.textContent = `${daily.rejectAvailable}건`;
     elements.acceptanceRejectAvailableWeekly.textContent = `${weekly.rejectAvailable}건`;
     applyAcceptanceRateStatus(elements.acceptanceDailyRateCard, daily.total, daily.acceptRate, ACCEPTANCE_DAILY_MIN_RATE);
@@ -380,7 +390,7 @@ function saveAcceptanceWeeklyRecord() {
     );
     saveAcceptanceCounter();
     if (!elements.acceptanceWeeklyHistory?.hidden) renderAcceptanceWeeklyHistory();
-    showToast("✅ 현재 당일 기록을 주간 누적에 저장했습니다.");
+    showToast("✅ 현재 기록을 저장했습니다.");
 }
 function toggleAcceptanceWeeklyHistory() {
     rolloverAcceptanceDayIfNeeded(false);
@@ -395,6 +405,7 @@ function toggleAcceptanceWeeklyHistory() {
 }
 function closeAcceptanceWeeklyHistory() {
     if (!elements.acceptanceWeeklyHistory) return;
+    acceptanceCounterState.editingDayKey = "";
     elements.acceptanceWeeklyHistory.hidden = true;
     elements.acceptanceWeeklyHistoryBtn?.setAttribute("aria-expanded", "false");
 }
@@ -409,6 +420,51 @@ function formatAcceptanceDayLabel(dayKey) {
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
     return `${date.getMonth() + 1}/${date.getDate()}(${weekdays[date.getDay()]})`;
 }
+function handleAcceptanceHistoryAction(event) {
+    const button = event.target.closest("[data-acceptance-history-action]");
+    if (!button || !elements.acceptanceWeeklyHistoryList?.contains(button)) return;
+    const action = cleanText(button.dataset.acceptanceHistoryAction);
+    const dayKey = cleanText(button.dataset.dayKey);
+    if (!dayKey) return;
+    if (action === "edit") {
+        acceptanceCounterState.editingDayKey = dayKey;
+        renderAcceptanceWeeklyHistory();
+        const input = elements.acceptanceWeeklyHistoryList.querySelector("[data-acceptance-edit-day] input");
+        input?.focus();
+        return;
+    }
+    if (action === "cancel") {
+        acceptanceCounterState.editingDayKey = "";
+        renderAcceptanceWeeklyHistory();
+        return;
+    }
+    if (action !== "save") return;
+    const editor = button.closest("[data-acceptance-edit-day]");
+    const accepted = normalizeAcceptanceCount(editor?.querySelector('[data-field="accepted"]')?.value);
+    const rejected = normalizeAcceptanceCount(editor?.querySelector('[data-field="rejected"]')?.value);
+    if (accepted + rejected <= 0) {
+        showToast("수락 또는 거절 건수를 1건 이상 입력해주세요.");
+        return;
+    }
+    if (dayKey === acceptanceCounterState.dayKey) {
+        acceptanceCounterState.accepted = accepted;
+        acceptanceCounterState.rejected = rejected;
+        const existingIndex = acceptanceCounterState.days.findIndex(item => item.dayKey === dayKey);
+        if (existingIndex >= 0) upsertAcceptanceDayRecord(dayKey, accepted, rejected, false);
+    } else {
+        const existing = acceptanceCounterState.days.find(item => item.dayKey === dayKey);
+        if (!existing) {
+            showToast("수정할 기록을 찾지 못했습니다.");
+            return;
+        }
+        upsertAcceptanceDayRecord(dayKey, accepted, rejected, existing.finalized === true);
+    }
+    acceptanceCounterState.editingDayKey = "";
+    saveAcceptanceCounter();
+    renderAcceptanceCounter();
+    renderAcceptanceWeeklyHistory();
+    showToast("✅ 수락·거절 기록을 수정했습니다.");
+}
 function renderAcceptanceWeeklyHistory() {
     if (!elements.acceptanceWeeklyHistoryList) return;
     const currentWeekKey = getAcceptanceWeekKey();
@@ -422,7 +478,10 @@ function renderAcceptanceWeeklyHistory() {
             ? summary.records.map(record => {
                 const calculated = calculateAcceptanceCounter(record.accepted, record.rejected, ACCEPTANCE_DAILY_MIN_RATE);
                 const rowClass = calculated.total <= 0 ? "is-empty" : calculated.acceptRate >= ACCEPTANCE_DAILY_MIN_RATE ? "is-pass" : "is-fail";
-                return `<div class="acceptance-history-row ${rowClass}"><span>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</span><span>수락 ${record.accepted} · 거절 ${record.rejected}</span><strong>${calculated.acceptRate.toFixed(1)}%</strong></div>`;
+                if (acceptanceCounterState.editingDayKey === record.dayKey) {
+                    return `<div class="acceptance-history-edit-row" data-acceptance-edit-day="${escapeHtml(record.dayKey)}"><strong>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</strong><label>수락<input data-field="accepted" type="number" min="0" max="99999" inputmode="numeric" value="${record.accepted}"></label><label>거절<input data-field="rejected" type="number" min="0" max="99999" inputmode="numeric" value="${record.rejected}"></label><div class="acceptance-history-edit-actions"><button type="button" data-acceptance-history-action="save" data-day-key="${escapeHtml(record.dayKey)}">저장</button><button type="button" data-acceptance-history-action="cancel" data-day-key="${escapeHtml(record.dayKey)}">취소</button></div></div>`;
+                }
+                return `<div class="acceptance-history-row ${rowClass}"><span>${escapeHtml(formatAcceptanceDayLabel(record.dayKey))}</span><span>수락 ${record.accepted} · 거절 ${record.rejected}</span><strong>${calculated.acceptRate.toFixed(1)}%</strong><button class="acceptance-history-edit-btn" type="button" data-acceptance-history-action="edit" data-day-key="${escapeHtml(record.dayKey)}">수정</button></div>`;
             }).join("")
             : '<div class="acceptance-history-empty">저장된 기록이 없습니다.</div>';
         sections.push(`<section class="acceptance-history-week"><div class="acceptance-history-week-head ${statusClass}"><span>${escapeHtml(title)}</span><strong>${summary.acceptRate.toFixed(1)}%</strong><small>수락 ${summary.accepted} · 거절 ${summary.rejected}</small></div>${rows}</section>`);
@@ -4549,7 +4608,7 @@ const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-40", "./number-one.css?v=20260716-36", "./script.js?v=20260716-40", "./number-one.js?v=20260716-36", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-41", "./number-one.css?v=20260716-36", "./script.js?v=20260716-41", "./number-one.js?v=20260716-36", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4732,7 +4791,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-40", serviceWorkerVersion: "v65" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-41", serviceWorkerVersion: "v66" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5113,7 +5172,7 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-40",
+    fileVersion: "20260716-41",
     serviceWorkerVersion: "v64",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450

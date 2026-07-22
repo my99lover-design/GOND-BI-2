@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-40">
+    <link rel="stylesheet" href="style.css?v=20260716-41">
     <link rel="stylesheet" href="number-one.css?v=20260716-36">
 </head>
 <body>
@@ -162,9 +162,13 @@
                     <span class="acceptance-rate-title">주간 수락률</span>
                     <strong id="acceptanceWeeklyRateValue">0.0%</strong>
                 </div>
-                <div id="acceptanceWeeklyMinimumCard" class="acceptance-board-cell acceptance-minimum-card acceptance-rate-status is-empty">
-                    <span>주간 누적 최소</span><small>(80%)</small>
-                    <strong id="acceptanceWeeklyMinimumValue">0.0%</strong>
+                <div id="acceptanceDailyMinimumCard" class="acceptance-board-cell acceptance-target-card acceptance-daily-target acceptance-rate-status is-empty">
+                    <span>당일 70%까지</span>
+                    <strong id="acceptanceDailyMinimumValue">집계 전</strong>
+                </div>
+                <div id="acceptanceWeeklyMinimumCard" class="acceptance-board-cell acceptance-target-card acceptance-weekly-target acceptance-rate-status is-empty">
+                    <span>주간 80%까지</span>
+                    <strong id="acceptanceWeeklyMinimumValue">집계 전</strong>
                 </div>
 
                 <div class="acceptance-board-cell acceptance-count-card acceptance-accepted-card">
@@ -177,23 +181,19 @@
                 </div>
                 <div class="acceptance-board-cell acceptance-available-card">
                     <span>거절가능</span>
-                    <small>(당일/주간)</small>
+                    <small>(당일 / 주간)</small>
                     <strong><b id="acceptanceRejectAvailableDaily">0건</b> / <b id="acceptanceRejectAvailableWeekly">0건</b></strong>
-                </div>
-                <div id="acceptanceDailyMinimumCard" class="acceptance-board-cell acceptance-minimum-card acceptance-rate-status is-empty">
-                    <span>당일 최소</span><small>(70%)</small>
-                    <strong id="acceptanceDailyMinimumValue">0.0%</strong>
                 </div>
 
                 <button id="acceptanceAcceptAdd" class="acceptance-board-cell acceptance-count-btn acceptance-plus accept acceptance-accept-add" type="button" aria-label="당일 수락 1건 추가">+</button>
                 <button id="acceptanceRejectAdd" class="acceptance-board-cell acceptance-count-btn acceptance-plus reject acceptance-reject-add" type="button" aria-label="당일 거절 1건 추가">+</button>
-                <button id="acceptanceResetBtn" class="acceptance-board-cell acceptance-action-btn acceptance-reset-btn" type="button">당일 수락/거절<br>초기화</button>
-                <button id="acceptanceWeeklySaveBtn" class="acceptance-board-cell acceptance-action-btn acceptance-weekly-save-btn" type="button">
-                    <span>주간기록저장</span><small>(06시 자동 저장)</small>
-                </button>
+                <button id="acceptanceResetBtn" class="acceptance-board-cell acceptance-action-btn acceptance-reset-btn" type="button">당일 수락/거절 초기화</button>
 
                 <button id="acceptanceAcceptSubtract" class="acceptance-board-cell acceptance-count-btn acceptance-minus accept acceptance-accept-subtract" type="button" aria-label="당일 수락 1건 감소">−</button>
                 <button id="acceptanceRejectSubtract" class="acceptance-board-cell acceptance-count-btn acceptance-minus reject acceptance-reject-subtract" type="button" aria-label="당일 거절 1건 감소">−</button>
+                <button id="acceptanceWeeklySaveBtn" class="acceptance-board-cell acceptance-action-btn acceptance-weekly-save-btn" type="button">
+                    <span>현재기록저장</span><small>06시 자동 저장</small>
+                </button>
                 <button id="acceptanceWeeklyHistoryBtn" class="acceptance-board-cell acceptance-action-btn acceptance-weekly-history-btn" type="button" aria-expanded="false">주간 기록 확인</button>
             </div>
             <div id="acceptanceWeeklyHistory" class="acceptance-weekly-history" hidden>
@@ -499,7 +499,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-40"></script>
+<script src="script.js?v=20260716-41"></script>
 <script src="number-one.js?v=20260716-36"></script>
 </body>
 </html>
