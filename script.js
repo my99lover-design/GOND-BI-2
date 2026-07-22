@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 수락률 일간·주간 저장 20260716-39 */
+/* 넘버원 김포B 공비 - 수락률 주간기록 오류수정 20260716-40 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -105,6 +105,15 @@ const ACCEPTANCE_WEEKLY_MIN_RATE = 80;
 const ACCEPTANCE_DAY_START_HOUR = 6;
 const ACCEPTANCE_WEEK_START_DAY = 3; // 수요일
 const ACCEPTANCE_HISTORY_KEEP_DAYS = 70;
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
 function initializeAcceptanceCounter() {
     if (!elements.acceptanceCounter) return;
     const saved = loadAcceptanceCounter();
@@ -4540,7 +4549,7 @@ const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-39", "./number-one.css?v=20260716-36", "./script.js?v=20260716-39", "./number-one.js?v=20260716-36", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-40", "./number-one.css?v=20260716-36", "./script.js?v=20260716-40", "./number-one.js?v=20260716-36", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4723,7 +4732,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-39", serviceWorkerVersion: "v64" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-40", serviceWorkerVersion: "v65" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5104,7 +5113,7 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-39",
+    fileVersion: "20260716-40",
     serviceWorkerVersion: "v64",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
