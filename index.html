@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-35">
+    <link rel="stylesheet" href="style.css?v=20260716-37">
     <link rel="stylesheet" href="number-one.css?v=20260716-36">
 </head>
 <body>
@@ -398,8 +398,9 @@
                     <div class="admin-cleanup-actions">
                         <button id="sortPasswordsBtn" class="admin-cleanup-btn" type="button">쉬운 번호 우선 정렬</button>
                         <button id="deduplicatePasswordsBtn" class="admin-cleanup-btn danger" type="button">중복 제거</button>
+                        <button id="normalizeApartmentFormatsBtn" class="admin-cleanup-btn wide" type="button">아파트별 형식 정리</button>
                     </div>
-                    <div class="admin-cleanup-help">정상 구분기호로 저장된 비밀번호만 처리합니다. 비밀번호 열 외의 데이터는 변경하지 않으며, 변경 대상이 있으면 실행 전 자동 백업됩니다.</div>
+                    <div class="admin-cleanup-help">아파트별 형식 정리는 각 아파트에서 가장 많이 쓰인 대표 형식으로 인식 가능한 비밀번호만 통일합니다. 동률이거나 형식을 판단할 수 없는 값은 건드리지 않습니다. 비밀번호 열 외의 데이터는 변경하지 않으며, 변경 대상이 있으면 실행 전 자동 백업됩니다.</div>
                     <div id="adminDataQualityList" class="admin-data-quality-list"></div>
                 </section>
             </div>
@@ -478,7 +479,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-35"></script>
+<script src="script.js?v=20260716-37"></script>
 <script src="number-one.js?v=20260716-36"></script>
 </body>
 </html>

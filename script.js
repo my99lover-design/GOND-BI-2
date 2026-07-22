@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 현황판·관리자 문제표시 20260716-35 */
+/* 넘버원 김포B 공비 - 아파트별 비밀번호 형식 20260716-37 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -21,7 +21,7 @@ const PERFORMANCE_RULES = Object.freeze({
     dataSync: { label: "전체 데이터 동기화", category: "서버 통신", good: 5000, warning: 10000 }
 });
 const elements = {
-    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), homeDataUpdateSlot: document.getElementById("homeDataUpdateSlot"), homeDataUpdateBtn: document.getElementById("homeDataUpdateBtn"), installAppBtn: document.getElementById("installAppBtn"), homeSupportSection: document.getElementById("homeSupportSection"), homeBottomActions: document.getElementById("homeBottomActions"), acceptanceCounter: document.getElementById("acceptanceCounter"), acceptanceAcceptedValue: document.getElementById("acceptanceAcceptedValue"), acceptanceRejectedValue: document.getElementById("acceptanceRejectedValue"), acceptanceAcceptRate: document.getElementById("acceptanceAcceptRate"), acceptanceRejectAvailable: document.getElementById("acceptanceRejectAvailable"), acceptanceTargetAccepted: document.getElementById("acceptanceTargetAccepted"), acceptanceAcceptAdd: document.getElementById("acceptanceAcceptAdd"), acceptanceAcceptSubtract: document.getElementById("acceptanceAcceptSubtract"), acceptanceRejectAdd: document.getElementById("acceptanceRejectAdd"), acceptanceRejectSubtract: document.getElementById("acceptanceRejectSubtract"), acceptanceResetBtn: document.getElementById("acceptanceResetBtn"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), compactGpsSection: document.getElementById("compactGpsSection"), compactGpsButtons: document.getElementById("compactGpsButtons"), compactGpsRefreshBtn: document.getElementById("compactGpsRefreshBtn"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminModalTitle: document.getElementById("adminModalTitle"), adminMenuBackBtn: document.getElementById("adminMenuBackBtn"), adminMenu: document.getElementById("adminMenu"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminPerformancePanel: document.getElementById("adminPerformancePanel"), adminDataQualityPanel: document.getElementById("adminDataQualityPanel"), adminDiagnosticsPanel: document.getElementById("adminDiagnosticsPanel"), adminBackupPanel: document.getElementById("adminBackupPanel"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
+    headerArea: document.querySelector(".header-area"), appTitle: document.getElementById("appTitle"), titleMain: document.getElementById("titleMain"), titleSub: document.getElementById("titleSub"), themeToggle: document.getElementById("themeToggle"), homeDataUpdateSlot: document.getElementById("homeDataUpdateSlot"), homeDataUpdateBtn: document.getElementById("homeDataUpdateBtn"), installAppBtn: document.getElementById("installAppBtn"), homeSupportSection: document.getElementById("homeSupportSection"), homeBottomActions: document.getElementById("homeBottomActions"), acceptanceCounter: document.getElementById("acceptanceCounter"), acceptanceAcceptedValue: document.getElementById("acceptanceAcceptedValue"), acceptanceRejectedValue: document.getElementById("acceptanceRejectedValue"), acceptanceAcceptRate: document.getElementById("acceptanceAcceptRate"), acceptanceRejectAvailable: document.getElementById("acceptanceRejectAvailable"), acceptanceTargetAccepted: document.getElementById("acceptanceTargetAccepted"), acceptanceAcceptAdd: document.getElementById("acceptanceAcceptAdd"), acceptanceAcceptSubtract: document.getElementById("acceptanceAcceptSubtract"), acceptanceRejectAdd: document.getElementById("acceptanceRejectAdd"), acceptanceRejectSubtract: document.getElementById("acceptanceRejectSubtract"), acceptanceResetBtn: document.getElementById("acceptanceResetBtn"), numberOneOpenBtn: document.getElementById("numberOneOpenBtn"), adminBtn: document.getElementById("adminBtn"), adminPerformanceAlertBadge: document.getElementById("adminPerformanceAlertBadge"), adminPinModal: document.getElementById("adminPinModal"), adminPinInput: document.getElementById("adminPinInput"), adminPinError: document.getElementById("adminPinError"), adminPinSubmitBtn: document.getElementById("adminPinSubmitBtn"), adminPinCancelBtn: document.getElementById("adminPinCancelBtn"), historyBtn: document.getElementById("historyBtn"), navContainer: document.getElementById("navContainer"), viewContextBar: document.getElementById("viewContextBar"), compactGpsSection: document.getElementById("compactGpsSection"), compactGpsButtons: document.getElementById("compactGpsButtons"), compactGpsRefreshBtn: document.getElementById("compactGpsRefreshBtn"), backBtn: document.getElementById("backBtn"), homeBtn: document.getElementById("homeBtn"), gpsSection: document.getElementById("gpsSection"), gpsStatusBadge: document.getElementById("gpsStatusBadge"), gpsRefreshBtn: document.getElementById("gpsRefreshBtn"), gpsLocationMeta: document.getElementById("gpsLocationMeta"), dataSyncStatus: document.getElementById("dataSyncStatus"), gpsButtons: document.getElementById("gpsButtons"), commonPwdStandalone: document.getElementById("commonPwdStandalone"), stepContainer: document.getElementById("stepContainer"), buttonGrid: document.getElementById("buttonGrid"), cardList: document.getElementById("cardList"), commonSaveBtn: document.getElementById("commonSaveBtn"), commonDeleteBtn: document.getElementById("commonDeleteBtn"), addPwdSubmitBtn: document.getElementById("addPwdSubmitBtn"), commonEditorModal: document.getElementById("commonEditorModal"), commonModalAptLabel: document.getElementById("commonModalAptLabel"), formCommonPwdValue: document.getElementById("formCommonPwdValue"), addPwdModal: document.getElementById("addPwdModal"), addPwdModalTitle: document.getElementById("addPwdModalTitle"), addPwdRowId: document.getElementById("addPwdRowId"), addPwdInfo: document.getElementById("addPwdInfo"), addPwdFormatStatus: document.getElementById("addPwdFormatStatus"), addPwdSmartFields: document.getElementById("addPwdSmartFields"), addPwdRoomValue: document.getElementById("addPwdRoomValue"), addPwdCodeValue: document.getElementById("addPwdCodeValue"), addPwdFormatSample: document.getElementById("addPwdFormatSample"), addPwdPreview: document.getElementById("addPwdPreview"), addPwdDirectGroup: document.getElementById("addPwdDirectGroup"), addPwdValue: document.getElementById("addPwdValue"), addPwdModeToggle: document.getElementById("addPwdModeToggle"), deletePwdModal: document.getElementById("deletePwdModal"), deletePwdModalTitle: document.getElementById("deletePwdModalTitle"), deletePwdRowId: document.getElementById("deletePwdRowId"), deletePwdInfo: document.getElementById("deletePwdInfo"), deletePwdButtons: document.getElementById("deletePwdButtons"), selectedPwdOriginal: document.getElementById("selectedPwdOriginal"), passwordEditPanel: document.getElementById("passwordEditPanel"), editPwdValue: document.getElementById("editPwdValue"), updateSelectedPwdBtn: document.getElementById("updateSelectedPwdBtn"), deleteSelectedPwdBtn: document.getElementById("deleteSelectedPwdBtn"), historyModal: document.getElementById("historyModal"), historyRefreshBtn: document.getElementById("historyRefreshBtn"), historyStatus: document.getElementById("historyStatus"), historyList: document.getElementById("historyList"), adminModal: document.getElementById("adminModal"), adminModalTitle: document.getElementById("adminModalTitle"), adminMenuBackBtn: document.getElementById("adminMenuBackBtn"), adminMenu: document.getElementById("adminMenu"), adminRefreshBtn: document.getElementById("adminRefreshBtn"), adminStatus: document.getElementById("adminStatus"), adminContent: document.getElementById("adminContent"), adminPerformancePanel: document.getElementById("adminPerformancePanel"), adminDataQualityPanel: document.getElementById("adminDataQualityPanel"), adminDiagnosticsPanel: document.getElementById("adminDiagnosticsPanel"), adminBackupPanel: document.getElementById("adminBackupPanel"), adminCurrentTab: document.getElementById("adminCurrentTab"), adminStatsTab: document.getElementById("adminStatsTab"), adminCurrentPanel: document.getElementById("adminCurrentPanel"), adminStatsPanel: document.getElementById("adminStatsPanel"), adminStatsCheckedAt: document.getElementById("adminStatsCheckedAt"), adminStatsMetrics: document.getElementById("adminStatsMetrics"), adminRegionStats: document.getElementById("adminRegionStats"), adminChangeTypeStats: document.getElementById("adminChangeTypeStats"), adminTopApartments: document.getElementById("adminTopApartments"), adminAppInfoStats: document.getElementById("adminAppInfoStats"), adminMetrics: document.getElementById("adminMetrics"), adminPerformanceStatus: document.getElementById("adminPerformanceStatus"), adminPerformanceList: document.getElementById("adminPerformanceList"), adminGpsWarning: document.getElementById("adminGpsWarning"), adminDataQualityStatus: document.getElementById("adminDataQualityStatus"), adminDataQualityList: document.getElementById("adminDataQualityList"), sortPasswordsBtn: document.getElementById("sortPasswordsBtn"), deduplicatePasswordsBtn: document.getElementById("deduplicatePasswordsBtn"), normalizeApartmentFormatsBtn: document.getElementById("normalizeApartmentFormatsBtn"), createBackupBtn: document.getElementById("createBackupBtn"), autoBackupStatus: document.getElementById("autoBackupStatus"), autoBackupWarning: document.getElementById("autoBackupWarning"), setupAutoBackupBtn: document.getElementById("setupAutoBackupBtn"), backupList: document.getElementById("backupList"), toast: document.getElementById("toast")
 };
 const state = {
     records: [], indexes: createEmptyIndexes(), dataVersion: "", lastDataCheckAt: 0, lastSuccessfulSyncAt: 0, dataSyncState: "checking", locationMap: new Map(), locationsLoaded: false, locationsError: false, locationsRawText: "", locationCacheSavedAt: 0, dataGeneration: 0, selectedRegion: "", selectedApartment: "", selectedDong: "", view: "regions", history: [], loading: true, networkLoading: false, currentCommonEdit: null, currentLocation: null,
@@ -1646,6 +1646,7 @@ function initializeAdminButton() {
     if (elements.setupAutoBackupBtn) elements.setupAutoBackupBtn.addEventListener("click", setupAutomaticBackup);
     if (elements.sortPasswordsBtn) elements.sortPasswordsBtn.addEventListener("click", () => runPasswordCleanup("sort"));
     if (elements.deduplicatePasswordsBtn) elements.deduplicatePasswordsBtn.addEventListener("click", () => runPasswordCleanup("deduplicate"));
+    if (elements.normalizeApartmentFormatsBtn) elements.normalizeApartmentFormatsBtn.addEventListener("click", () => runPasswordCleanup("apartmentFormat"));
 }
 function isAdminDeviceUnlocked() {
     try { return localStorage.getItem(APP_CONFIG.ADMIN_DEVICE_VISIBLE_KEY) === "1"; }
@@ -1834,7 +1835,9 @@ function handleAdminAuthError(error) {
             healthy: data?.dataQuality?.healthy === true,
             cleanup: {
                 sortableCount: Number(data?.dataQuality?.cleanup?.sortableCount) || 0,
-                duplicateCount: Number(data?.dataQuality?.cleanup?.duplicateCount) || 0
+                duplicateCount: Number(data?.dataQuality?.cleanup?.duplicateCount) || 0,
+                apartmentFormatRowCount: Number(data?.dataQuality?.cleanup?.apartmentFormatRowCount) || 0,
+                apartmentFormatPlaceCount: Number(data?.dataQuality?.cleanup?.apartmentFormatPlaceCount) || 0
             },
             categories: qualityCategories
         },
@@ -2086,6 +2089,8 @@ function renderDataQualityReport(dataQuality, gpsMissingItems) {
 function renderPasswordCleanupActions(cleanup, pendingCount) {
     const sortableCount = Number(cleanup?.sortableCount) || 0;
     const duplicateCount = Number(cleanup?.duplicateCount) || 0;
+    const apartmentFormatRowCount = Number(cleanup?.apartmentFormatRowCount) || 0;
+    const apartmentFormatPlaceCount = Number(cleanup?.apartmentFormatPlaceCount) || 0;
     const busy = Boolean(state.passwordCleanupMode) || state.backupCreating || Boolean(state.restoringBackupName) || pendingCount > 0;
     if (elements.sortPasswordsBtn) {
         elements.sortPasswordsBtn.disabled = busy;
@@ -2109,6 +2114,17 @@ function renderPasswordCleanupActions(cleanup, pendingCount) {
             ? `${duplicateCount.toLocaleString()}개 행이 점검에서 확인되었습니다.`
             : "누르면 서버에서 전체 비밀번호를 다시 확인합니다.";
     }
+    if (elements.normalizeApartmentFormatsBtn) {
+        elements.normalizeApartmentFormatsBtn.disabled = busy;
+        elements.normalizeApartmentFormatsBtn.textContent = state.passwordCleanupMode === "apartmentFormat"
+            ? "형식 정리중…"
+            : apartmentFormatRowCount > 0
+                ? `아파트별 형식 정리 (${apartmentFormatRowCount.toLocaleString()}행)`
+                : "아파트별 형식 정리";
+        elements.normalizeApartmentFormatsBtn.title = apartmentFormatRowCount > 0
+            ? `${apartmentFormatPlaceCount.toLocaleString()}곳 · ${apartmentFormatRowCount.toLocaleString()}개 행이 대표 형식과 다릅니다.`
+            : "아파트별 대표 형식을 다시 확인합니다.";
+    }
 }
 
 async function runPasswordCleanup(mode) {
@@ -2118,13 +2134,23 @@ async function runPasswordCleanup(mode) {
         return;
     }
     const isSort = mode === "sort";
+    const isApartmentFormat = mode === "apartmentFormat";
+    const cleanup = state.adminDashboard.dataQuality.cleanup || {};
     const count = isSort
-        ? Number(state.adminDashboard.dataQuality.cleanup?.sortableCount) || 0
-        : Number(state.adminDashboard.dataQuality.cleanup?.duplicateCount) || 0;
-    const title = isSort ? "쉬운 번호 우선·호수 정렬" : "중복 비밀번호 제거";
+        ? Number(cleanup.sortableCount) || 0
+        : isApartmentFormat
+            ? Number(cleanup.apartmentFormatRowCount) || 0
+            : Number(cleanup.duplicateCount) || 0;
+    const title = isSort
+        ? "쉬운 번호 우선·호수 정렬"
+        : isApartmentFormat
+            ? "아파트별 비밀번호 형식 정리"
+            : "중복 비밀번호 제거";
     const detail = isSort
         ? "쉬운 번호를 1) 3자리 이하, 2) 같은 숫자 반복, 3) 숫자 블록 반복, 4) 숫자 쌍 반복, 5) 연속 숫자, 6) 역순 숫자, 7) 앞뒤 대칭, 8) 호수와 동일, 9) 지정 쉬운 번호 순으로 나누고, 각 순위 안에서는 호수순으로 정렬합니다. 일반 번호는 그 뒤에서 호수순으로 정렬하며 중복 개수는 유지합니다."
-        : "처음 저장된 값은 유지하고 같은 비밀번호만 제거합니다. 순서는 변경하지 않습니다.";
+        : isApartmentFormat
+            ? "각 아파트에서 가장 많이 쓰인 대표 형식으로 인식 가능한 비밀번호만 통일합니다. 호수와 비밀번호 숫자는 그대로 유지하고, 형식 동률·판단 불가 값은 변경하지 않습니다."
+            : "처음 저장된 값은 유지하고 같은 비밀번호만 제거합니다. 순서는 변경하지 않습니다.";
     const targetText = count > 0
         ? `점검에서 확인된 대상 ${count.toLocaleString()}개 행을 처리합니다.`
         : "서버에서 전체 비밀번호 데이터를 다시 확인한 뒤 대상 행만 처리합니다.";
@@ -2451,6 +2477,22 @@ function confirmDeleteCommonPassword() {
 window.confirmDeleteCommonPassword = confirmDeleteCommonPassword;
 window.confirmDeleteCommonPassworld = confirmDeleteCommonPassword;
 /* ========================= 비밀번호 추가·수정·삭제 ========================= */
+function getPasswordTemplateScopeRecords(record) {
+    if (!record) return [];
+    const region = cleanText(record.region);
+    const apartment = cleanText(record.apartment);
+    if (isOfficeRecord(record)) {
+        return state.indexes.recordsByApartmentDong.get(makeKey(region, apartment, normalizeDongValue(record.dong))) || [];
+    }
+    return state.indexes.recordsByApartment.get(makeKey(region, apartment)) || [];
+}
+function detectApartmentPasswordTemplate(record) {
+    const passwords = [];
+    for (const scopeRecord of getPasswordTemplateScopeRecords(record)) {
+        passwords.push(...splitPasswords(scopeRecord.password));
+    }
+    return detectPasswordTemplate(passwords);
+}
 function openAddPwdModal(rowId) {
     const record = findRecordByRowId(rowId);
     if (!record) {
@@ -2463,19 +2505,21 @@ function openAddPwdModal(rowId) {
     elements.addPwdInfo.textContent = createRecordInfoText(record);
     resetAddPasswordInputs();
 
-    const currentPasswords = splitPasswords(record.password);
-    const detectedTemplate = detectPasswordTemplate(currentPasswords);
+    const scopeRecords = getPasswordTemplateScopeRecords(record);
+    const scopePasswords = scopeRecords.flatMap(item => splitPasswords(item.password));
+    const detectedTemplate = detectApartmentPasswordTemplate(record);
     state.addPasswordTemplate = detectedTemplate;
 
-    if (currentPasswords.length === 0) {
-        elements.addPwdFormatStatus.textContent = "첫 비밀번호는 호수·비밀번호·종료문자를 포함한 전체 형식으로 입력해주세요.";
+    if (scopePasswords.length === 0) {
+        elements.addPwdFormatStatus.textContent = "이 아파트의 첫 비밀번호는 호수·비밀번호·종료문자를 포함한 전체 형식으로 입력해주세요.";
         setAddPasswordMode("direct");
     } else if (detectedTemplate) {
-        elements.addPwdFormatStatus.textContent = "기존 등록 형식을 자동으로 적용합니다.";
-        elements.addPwdFormatSample.textContent = `기준 형식: ${detectedTemplate.sample}`;
+        const scopeLabel = isOfficeRecord(record) ? "건물" : "아파트";
+        elements.addPwdFormatStatus.textContent = `${scopeLabel}에서 가장 많이 쓰인 형식을 자동으로 적용합니다.`;
+        elements.addPwdFormatSample.textContent = `대표 형식: ${detectedTemplate.sample} · ${detectedTemplate.count}건 기준`;
         setAddPasswordMode("smart");
     } else {
-        elements.addPwdFormatStatus.textContent = "기존 형식의 숫자 위치를 확실히 판단할 수 없어 전체 입력 방식으로 열었습니다.";
+        elements.addPwdFormatStatus.textContent = "이 아파트의 기존 형식에서 숫자 위치를 확실히 판단할 수 없어 전체 입력 방식으로 열었습니다.";
         setAddPasswordMode("direct");
     }
 
@@ -4252,14 +4296,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v60",
+    app: "gimpo-b-app-v62",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-35", "./number-one.css?v=20260716-35", "./script.js?v=20260716-35", "./number-one.js?v=20260716-35", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-37", "./number-one.css?v=20260716-36", "./script.js?v=20260716-37", "./number-one.js?v=20260716-36", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4442,7 +4486,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-35", serviceWorkerVersion: "v60" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-37", serviceWorkerVersion: "v62" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4823,8 +4867,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-35",
-    serviceWorkerVersion: "v60",
+    fileVersion: "20260716-37",
+    serviceWorkerVersion: "v62",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
