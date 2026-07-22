@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 아파트별 비밀번호 형식 20260716-37 */
+/* 넘버원 김포B 공비 - 관리자 현재상태 느낌표 오탐 보정 20260716-38 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -4296,14 +4296,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v62",
+    app: "gimpo-b-app-v63",
     images: "gimpo-b-images-v4",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-37", "./number-one.css?v=20260716-36", "./script.js?v=20260716-37", "./number-one.js?v=20260716-36", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-37", "./number-one.css?v=20260716-36", "./script.js?v=20260716-38", "./number-one.js?v=20260716-36", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4486,7 +4486,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-37", serviceWorkerVersion: "v62" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-38", serviceWorkerVersion: "v63" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -4867,8 +4867,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-37",
-    serviceWorkerVersion: "v62",
+    fileVersion: "20260716-38",
+    serviceWorkerVersion: "v63",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -5147,9 +5147,9 @@ function updateAdminMenuIssueIndicators() {
         : 0;
     const pendingCount = Array.isArray(state.pendingOperations) ? state.pendingOperations.length : 0;
 
+    // 현재 상태는 즉시 조치가 필요한 운영 상태만 표시합니다.
+    // 빈 비밀번호·GPS 미연결은 데이터 오류 점검 메뉴에서만 안내합니다.
     const currentDetails = [];
-    if (dashboard?.blankPasswordRowCount > 0) currentDetails.push(`빈 비밀번호 ${dashboard.blankPasswordRowCount}건`);
-    if (gpsMissingCount > 0) currentDetails.push(`GPS 미연결 ${gpsMissingCount}곳`);
     if (pendingCount > 0) currentDetails.push(`저장 대기 ${pendingCount}건`);
     if (state.dataSyncState === "error") currentDetails.push("최근 데이터 동기화 오류");
     setAdminMenuIssueIndicator("current", currentDetails.length > 0, currentDetails.join(" · "));
