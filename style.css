@@ -994,7 +994,7 @@ button:disabled { filter:saturate(.72); }
 /* v20260716-37: 아파트별 비밀번호 형식 정리 */
 .admin-cleanup-btn.wide { grid-column:1 / -1; }
 
-/* v20260716-44: 수락·거절 B마트/스토어 제외 안내 문구 추가 */
+/* v20260716-45: 수락·거절 B마트/스토어 제외 안내 문구 추가 */
 .acceptance-counter { padding:9px; }
 .acceptance-board {
   display:grid;
@@ -1332,4 +1332,97 @@ button:disabled { filter:saturate(.72); }
   line-height:1;
   letter-spacing:-.04em;
   white-space:nowrap;
+}
+
+
+/* v20260716-45: B마트/스토어 제외 안내 2배 확대·수락/거절 카드 축소 */
+.acceptance-count-group {
+  grid-template-rows:36px auto;
+  align-content:center;
+  gap:2px 5px;
+}
+.acceptance-count-card {
+  padding:2px 3px;
+  min-height:36px;
+}
+.acceptance-count-card > span {
+  font-size:clamp(.52rem,2.05vw,.62rem);
+  line-height:1;
+}
+.acceptance-count-card strong {
+  margin-top:1px;
+  font-size:clamp(.62rem,2.45vw,.76rem);
+  line-height:1;
+}
+.acceptance-count-note {
+  color:#dc2626;
+  font-size:clamp(.94rem,4.05vw,1.05rem);
+  font-weight:1000;
+  line-height:1.08;
+  letter-spacing:-.055em;
+  text-shadow:0 1px 0 rgba(255,255,255,.35);
+}
+[data-theme="dark"] .acceptance-count-note {
+  color:#ff5b5b;
+  text-shadow:0 1px 0 rgba(0,0,0,.45);
+}
+@media (max-width:390px) {
+  .acceptance-count-group { grid-template-rows:34px auto; }
+  .acceptance-count-card { min-height:34px; padding:1px 2px; }
+  .acceptance-count-note { font-size:1rem; }
+}
+@media (max-width:340px) {
+  .acceptance-count-group { grid-template-rows:32px auto; }
+  .acceptance-count-card { min-height:32px; }
+  .acceptance-count-note { font-size:.90rem; letter-spacing:-.075em; }
+}
+
+/* v20260716-46: 거절가능 카드 여백 축소·가시성 확대 */
+.acceptance-available-card {
+  grid-template-columns:minmax(66px,.86fr) minmax(96px,1.14fr);
+  column-gap:5px;
+  padding:2px 6px;
+}
+.acceptance-available-title {
+  font-size:clamp(.72rem,2.95vw,.88rem) !important;
+  line-height:1.02;
+  letter-spacing:-.055em;
+}
+.acceptance-available-title small {
+  margin-top:3px;
+  font-size:clamp(.58rem,2.42vw,.70rem);
+  line-height:1.02;
+}
+.acceptance-available-values {
+  gap:2px;
+}
+.acceptance-available-values > span {
+  gap:4px;
+  font-size:clamp(.66rem,2.72vw,.80rem);
+  line-height:1.05;
+}
+.acceptance-available-values b {
+  font-size:clamp(.82rem,3.35vw,1rem);
+  line-height:1;
+}
+@media (max-width:390px) {
+  .acceptance-available-card {
+    grid-template-columns:minmax(62px,.84fr) minmax(90px,1.16fr);
+    padding-inline:5px;
+  }
+  .acceptance-available-title { font-size:.78rem !important; }
+  .acceptance-available-title small { font-size:.62rem; }
+  .acceptance-available-values > span { font-size:.71rem; }
+  .acceptance-available-values b { font-size:.90rem; }
+}
+@media (max-width:340px) {
+  .acceptance-available-card {
+    grid-template-columns:minmax(58px,.82fr) minmax(82px,1.18fr);
+    padding-inline:4px;
+    column-gap:3px;
+  }
+  .acceptance-available-title { font-size:.72rem !important; }
+  .acceptance-available-title small { font-size:.57rem; }
+  .acceptance-available-values > span { font-size:.65rem; }
+  .acceptance-available-values b { font-size:.82rem; }
 }
