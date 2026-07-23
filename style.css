@@ -994,12 +994,12 @@ button:disabled { filter:saturate(.72); }
 /* v20260716-37: 아파트별 비밀번호 형식 정리 */
 .admin-cleanup-btn.wide { grid-column:1 / -1; }
 
-/* v20260716-43: 주간 기록 날짜별 초기화 + 수락률 보드 높이·글자·거절가능 재배치 */
+/* v20260716-44: 수락·거절 B마트/스토어 제외 안내 문구 추가 */
 .acceptance-counter { padding:9px; }
 .acceptance-board {
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  grid-template-rows:minmax(52px,auto) minmax(54px,auto) minmax(53px,auto) minmax(55px,auto);
+  grid-template-rows:minmax(52px,auto) minmax(66px,auto) minmax(53px,auto) minmax(55px,auto);
   gap:5px;
 }
 .acceptance-board-cell {
@@ -1015,8 +1015,30 @@ button:disabled { filter:saturate(.72); }
 .acceptance-weekly-rate { grid-column:2; grid-row:1; }
 #acceptanceDailyMinimumCard { grid-column:3; grid-row:1; }
 #acceptanceWeeklyMinimumCard { grid-column:4; grid-row:1; }
-.acceptance-accepted-card { grid-column:1; grid-row:2; }
-.acceptance-rejected-card { grid-column:2; grid-row:2; }
+.acceptance-count-group {
+  grid-column:1 / 3;
+  grid-row:2;
+  min-width:0;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:minmax(48px,1fr) auto;
+  gap:3px 5px;
+}
+.acceptance-accepted-card { grid-column:1; grid-row:1; }
+.acceptance-rejected-card { grid-column:2; grid-row:1; }
+.acceptance-count-note {
+  grid-column:1 / -1;
+  grid-row:2;
+  display:block;
+  margin:0;
+  color:var(--text-sub);
+  font-size:clamp(.47rem,1.85vw,.56rem);
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.035em;
+  text-align:center;
+  white-space:nowrap;
+}
 .acceptance-available-card { grid-column:3 / 5; grid-row:2; }
 .acceptance-accept-add { grid-column:1; grid-row:3; }
 .acceptance-reject-add { grid-column:2; grid-row:3; }
@@ -1264,17 +1286,20 @@ button:disabled { filter:saturate(.72); }
 
 @media (max-width:390px) {
   .acceptance-counter { padding:7px; }
-  .acceptance-board { gap:4px; grid-template-rows:minmax(49px,auto) minmax(51px,auto) minmax(50px,auto) minmax(52px,auto); }
+  .acceptance-board { gap:4px; grid-template-rows:minmax(49px,auto) minmax(63px,auto) minmax(50px,auto) minmax(52px,auto); }
   .acceptance-board-cell { border-radius:9px; }
   .acceptance-rate-title,.acceptance-target-card > span,.acceptance-count-card > span,.acceptance-available-card > span { font-size:.57rem; }
   .acceptance-rate-card strong,.acceptance-target-card strong,.acceptance-count-card strong,.acceptance-available-card strong { font-size:.65rem; }
   .acceptance-count-btn { font-size:1.26rem; }
+  .acceptance-count-note { font-size:.49rem; }
 }
 @media (max-width:340px) {
   .acceptance-board { gap:3px; }
   .acceptance-rate-title,.acceptance-target-card > span,.acceptance-count-card > span,.acceptance-available-card > span { font-size:.51rem; }
   .acceptance-rate-card strong,.acceptance-target-card strong,.acceptance-count-card strong,.acceptance-available-card strong { font-size:.58rem; }
   .acceptance-available-card { padding-inline:5px; grid-template-columns:minmax(48px,.72fr) minmax(78px,1.28fr); }
+  .acceptance-count-group { gap:3px; }
+  .acceptance-count-note { font-size:.44rem; }
   .acceptance-available-values > span { font-size:.48rem; gap:3px; }
   .acceptance-available-values b { font-size:.58rem; }
   .acceptance-action-btn,.acceptance-reset-btn { font-size:.55rem; }
