@@ -1,6 +1,6 @@
-const CACHE_VERSION = "v71";
+const CACHE_VERSION = "v72";
 const APP_CACHE = `gimpo-b-app-${CACHE_VERSION}`;
-const IMAGE_CACHE = `gimpo-b-images-v4`;
+const IMAGE_CACHE = `gimpo-b-images-v5`;
 const DATA_CACHE = `gimpo-b-data-v5`;
 const RUNTIME_CACHE = `gimpo-b-runtime-v3`;
 const NAVIGATION_TIMEOUT_MS = 2000;
@@ -8,10 +8,10 @@ const NAVIGATION_TIMEOUT_MS = 2000;
 const APP_SHELL = [
     "./",
     "./index.html",
-    "./style.css?v=20260716-46",
-    "./number-one.css?v=20260716-36",
-    "./script.js?v=20260716-46",
-    "./number-one.js?v=20260716-36",
+    "./style.css?v=20260716-47",
+    "./number-one.css?v=20260716-47",
+    "./script.js?v=20260716-47",
+    "./number-one.js?v=20260716-47",
     "./manifest.json",
     "./icons/icon-180.png",
     "./icons/icon-192.png",
@@ -98,8 +98,13 @@ self.addEventListener("fetch", event => {
         event.respondWith(networkFirst(request, DATA_CACHE));
         return;
     }
-    if (url.pathname.includes("/gate-images/") || url.pathname.includes("/icons/")) {
+    if (url.pathname.includes("/gate-images/")) {
         event.respondWith(cacheFirst(request, IMAGE_CACHE));
+        return;
+    }
+    if (url.pathname.includes("/icons/")) {
+        // 아이콘은 APP_SHELL에 이미 포함되어 있으므로 앱 캐시를 재사용해 중복 저장을 막습니다.
+        event.respondWith(cacheFirst(request, APP_CACHE));
         return;
     }
     if (url.pathname.endsWith("/script.js") || url.pathname.endsWith("/number-one.js") || url.pathname.endsWith("/style.css") || url.pathname.endsWith("/number-one.css") || url.pathname.endsWith("/manifest.json")) {

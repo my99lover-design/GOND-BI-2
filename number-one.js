@@ -1,7 +1,10 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-36 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-47 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
+const NUMBER_ONE_REQUEST_TIMEOUT_MS = 15000;
+const NUMBER_ONE_REQUEST_RETRY_DELAY_MS = 1000;
+const NUMBER_ONE_PENDING_RETRY_DELAYS = Object.freeze([15000, 60000, 5 * 60 * 1000, 15 * 60 * 1000, 30 * 60 * 1000]);
 const NUMBER_ONE_KEYS = Object.freeze({
     TOKEN: "gimpoB_number_one_prod_account_token_v2",
     TOKEN_EXPIRES: "gimpoB_number_one_prod_account_expires_v2",
@@ -23,6 +26,7 @@ const numberOneState = {
     previousDetailsOpen: false,
     previousEditMode: false,
     pendingSync: false,
+    pendingRetryTimer: 0,
     screenOpen: false,
     authMode: "login",
     accessToken: "",
@@ -90,7 +94,7 @@ function initializeNumberOne() {
     ["numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input"].forEach(id => {
         numberOneElements[id]?.addEventListener("input", validateNumberOneInputs);
     });
-    window.addEventListener("online", flushNumberOnePending);
+    window.addEventListener("online", () => scheduleNumberOnePendingFlush(0));
 
     restoreNumberOneSession();
     if (numberOneState.token && numberOneState.userId) {
@@ -212,7 +216,7 @@ function isNumberOneRetryableError(error) {
 
 async function numberOneRequest(action, payload = {}, retryCount = 0) {
     const controller = typeof AbortController === "function" ? new AbortController() : null;
-    const timeoutId = controller ? window.setTimeout(() => controller.abort(), 35000) : 0;
+    const timeoutId = controller ? window.setTimeout(() => controller.abort(), NUMBER_ONE_REQUEST_TIMEOUT_MS) : 0;
     try {
         const response = await fetch(NUMBER_ONE_API_URL, {
             method: "POST",
@@ -234,7 +238,7 @@ async function numberOneRequest(action, payload = {}, retryCount = 0) {
         return result;
     } catch (error) {
         if (retryCount < 1 && isNumberOneRetryableError(error)) {
-            await waitNumberOne(800);
+            await waitNumberOne(NUMBER_ONE_REQUEST_RETRY_DELAY_MS);
             return numberOneRequest(action, payload, retryCount + 1);
         }
         if (error?.name === "AbortError") throw new Error("서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
@@ -915,14 +919,28 @@ function loadNumberOneCache() {
 function loadNumberOnePending() {
     try {
         const values = JSON.parse(localStorage.getItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX)) || "[]");
-        return Array.isArray(values) ? values : [];
+        if (!Array.isArray(values)) return [];
+        return values.filter(item => item && /^\d{4}-\d{2}-\d{2}$/.test(String(item.workDate || ""))).map(item => ({
+            ...item,
+            type: item.type === "delete" ? "delete" : "save",
+            savedAt: Number(item.savedAt) || Date.now(),
+            attempts: Math.max(0, Number(item.attempts) || 0),
+            nextAttemptAt: Math.max(0, Number(item.nextAttemptAt) || 0)
+        }));
     } catch (error) { return []; }
+}
+
+function saveNumberOnePendingList(pending) {
+    const key = getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX);
+    if (!Array.isArray(pending) || pending.length === 0) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(pending));
 }
 
 function queueNumberOnePending(type, workDate, values) {
     const pending = loadNumberOnePending().filter(item => item.workDate !== workDate);
-    pending.push({ type: type === "delete" ? "delete" : "save", workDate, values, savedAt: Date.now() });
-    localStorage.setItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX), JSON.stringify(pending));
+    pending.push({ type: type === "delete" ? "delete" : "save", workDate, values, savedAt: Date.now(), attempts: 0, nextAttemptAt: 0 });
+    saveNumberOnePendingList(pending);
+    scheduleNumberOnePendingFlush(0);
 }
 
 function removeNumberOnePending(workDate, savedAt) {
@@ -931,45 +949,97 @@ function removeNumberOnePending(workDate, savedAt) {
         if (savedAt && Number(item.savedAt) !== Number(savedAt)) return true;
         return false;
     });
-    localStorage.setItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX), JSON.stringify(pending));
+    saveNumberOnePendingList(pending);
+}
+
+function getNumberOnePendingRetryDelay(attempts) {
+    const index = Math.min(Math.max(0, Number(attempts) - 1), NUMBER_ONE_PENDING_RETRY_DELAYS.length - 1);
+    return NUMBER_ONE_PENDING_RETRY_DELAYS[index];
+}
+
+function markNumberOnePendingRetry(workDate, savedAt) {
+    const pending = loadNumberOnePending();
+    const item = pending.find(candidate => candidate.workDate === workDate && Number(candidate.savedAt) === Number(savedAt));
+    if (!item) return null;
+    item.attempts = Math.max(0, Number(item.attempts) || 0) + 1;
+    const delay = getNumberOnePendingRetryDelay(item.attempts);
+    item.nextAttemptAt = Date.now() + delay;
+    saveNumberOnePendingList(pending);
+    return { attempts: item.attempts, delay, nextAttemptAt: item.nextAttemptAt };
+}
+
+function scheduleNumberOnePendingFlush(delay = 0) {
+    window.clearTimeout(numberOneState.pendingRetryTimer);
+    numberOneState.pendingRetryTimer = 0;
+    if (!numberOneState.token || navigator.onLine === false || loadNumberOnePending().length === 0) return;
+    numberOneState.pendingRetryTimer = window.setTimeout(() => {
+        numberOneState.pendingRetryTimer = 0;
+        void flushNumberOnePending();
+    }, Math.max(0, Number(delay) || 0));
 }
 
 async function flushNumberOnePending() {
     if (numberOneState.pendingSync || !numberOneState.token || navigator.onLine === false) return;
+    window.clearTimeout(numberOneState.pendingRetryTimer);
+    numberOneState.pendingRetryTimer = 0;
+    const firstPending = loadNumberOnePending()[0];
+    if (firstPending?.nextAttemptAt > Date.now()) {
+        scheduleNumberOnePendingFlush(firstPending.nextAttemptAt - Date.now());
+        return;
+    }
+
     numberOneState.pendingSync = true;
+    let activeItem = null;
     if (numberOneElements.numberOneSyncNote) {
         numberOneElements.numberOneSyncNote.textContent = "서버에 동기화 중…";
         numberOneElements.numberOneSyncNote.classList.add("syncing");
+        numberOneElements.numberOneSyncNote.classList.remove("warning");
     }
     try {
         while (true) {
             const pending = loadNumberOnePending();
             if (!pending.length) break;
             const item = pending[0];
+            if (item.nextAttemptAt > Date.now()) {
+                scheduleNumberOnePendingFlush(item.nextAttemptAt - Date.now());
+                break;
+            }
+            activeItem = item;
             const action = item.type === "delete" ? "numberOneDeleteDay" : "numberOneSaveDay";
             const payload = item.type === "delete"
                 ? { token: numberOneState.token, workDate: item.workDate }
                 : { token: numberOneState.token, workDate: item.workDate, values: item.values };
             await numberOneRequest(action, payload);
             removeNumberOnePending(item.workDate, item.savedAt);
+            activeItem = null;
         }
         if (numberOneState.data) saveNumberOneCache(numberOneState.data);
         renderNumberOneApp();
     } catch (error) {
         if (/인증|토큰|로그인|계정|만료|사용 중지|사용할 수 없는/.test(error.message)) {
+            window.clearTimeout(numberOneState.pendingRetryTimer);
+            numberOneState.pendingRetryTimer = 0;
             clearNumberOneSession();
             renderNumberOneLocked();
             numberOneToast("로그인 정보가 만료되었습니다.");
-        } else if (numberOneElements.numberOneSyncNote) {
-            numberOneElements.numberOneSyncNote.textContent = "서버 연결 시 자동으로 다시 동기화합니다.";
-            numberOneElements.numberOneSyncNote.classList.add("warning");
+        } else {
+            const retry = activeItem ? markNumberOnePendingRetry(activeItem.workDate, activeItem.savedAt) : null;
+            if (numberOneElements.numberOneSyncNote) {
+                const seconds = retry ? Math.max(1, Math.ceil(retry.delay / 1000)) : 0;
+                numberOneElements.numberOneSyncNote.textContent = seconds
+                    ? `서버 연결 지연 · ${seconds}초 후 자동 재시도`
+                    : "서버 연결 시 자동으로 다시 동기화합니다.";
+                numberOneElements.numberOneSyncNote.classList.add("warning");
+            }
+            if (retry && navigator.onLine !== false && numberOneState.token) scheduleNumberOnePendingFlush(retry.delay);
         }
     } finally {
         numberOneState.pendingSync = false;
         numberOneElements.numberOneSyncNote?.classList.remove("syncing");
         const remaining = loadNumberOnePending();
-        if (remaining.length && navigator.onLine !== false && numberOneState.token) {
-            window.setTimeout(() => void flushNumberOnePending(), 1200);
+        if (remaining.length && navigator.onLine !== false && numberOneState.token && !numberOneState.pendingRetryTimer) {
+            const wait = Math.max(0, Number(remaining[0].nextAttemptAt) - Date.now());
+            scheduleNumberOnePendingFlush(wait);
         }
     }
 }

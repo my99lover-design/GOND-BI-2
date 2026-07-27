@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - B마트/스토어 안내·거절가능 가시성 20260716-46 */
+/* 넘버원 김포B 공비 - 안정성·API·캐시 최적화 20260716-47 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -797,7 +797,11 @@ async function refreshRecordsFromServer(force = false) {
                 }
             } catch (versionError) {
                 recordPerformanceMetric("versionCheck", performance.now() - versionStartedAt);
-                console.warn("데이터 버전 확인 실패, 전체 데이터를 다시 확인합니다:", versionError);
+                console.warn("데이터 버전 확인 실패, 저장된 데이터를 유지합니다:", versionError);
+                if (!force && state.records.length > 0) {
+                    updateDataSyncStatus(navigator.onLine === false ? "offline" : "error", state.lastSuccessfulSyncAt);
+                    return;
+                }
             }
         }
         const syncStartedAt = performance.now();
@@ -1592,6 +1596,8 @@ function refreshPasswordCard(rowId) {
 /* ========================= 게이트 이미지 백그라운드 선로딩 ========================= */
 const gateImagePreloadPool = [];
 function scheduleGateImagePreload() {
+    // 활성 서비스워커는 설치 단계에서 게이트 이미지를 이미 캐시하므로 중복 다운로드를 피합니다.
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) return;
     const schedule = () => {
         const run = () => preloadGateImagesInBackground();
         if ("requestIdleCallback" in window) {
@@ -3656,8 +3662,9 @@ const LONGTERM_CONFIG = Object.freeze({
     ERROR_DEDUPE_MS: 5 * 60 * 1000,
     SAFE_MODE_KEY: "gimpoB_safe_mode_v1",
     BOOT_FAILURE_KEY: "gimpoB_boot_failure_v1",
-    REQUEST_TIMEOUT: 20000,
-    API_READ_RETRY_DELAY: 900,
+    REQUEST_TIMEOUT: 15000,
+    API_READ_TIMEOUTS: Object.freeze({ getDataVersion: 6000, getData: 12000, getDataIntegrity: 10000, getChangeHistory: 12000, getAdminDashboard: 15000, compareBackup: 15000 }),
+    API_READ_RETRY_DELAY: 600,
     API_FAILURE_WARNING_THRESHOLD: 3,
     GPS_JUMP_MAX_SPEED_MPS: 80,
     GPS_JUMP_MIN_DISTANCE: 300,
@@ -3875,15 +3882,24 @@ function waitForApiTransportRetry(milliseconds) {
     return new Promise(resolve => window.setTimeout(resolve, Math.max(0, Number(milliseconds) || 0)));
 }
 
+function getApiRequestTimeout(action, readOnly) {
+    if (readOnly) {
+        const configured = Number(LONGTERM_CONFIG.API_READ_TIMEOUTS?.[action]);
+        if (Number.isFinite(configured) && configured > 0) return configured;
+    }
+    return LONGTERM_CONFIG.REQUEST_TIMEOUT;
+}
+
 async function performTimedApiRequest(action, payload, readOnly) {
     const controller = readOnly && typeof AbortController === "function" ? new AbortController() : null;
+    const requestTimeout = getApiRequestTimeout(action, readOnly);
     let timeoutId = null;
     try {
         const timeoutPromise = new Promise((_, reject) => {
             timeoutId = window.setTimeout(() => {
                 if (controller) controller.abort();
                 reject(new Error("서버 응답 시간이 초과되었습니다."));
-            }, LONGTERM_CONFIG.REQUEST_TIMEOUT);
+            }, requestTimeout);
         });
         return await Promise.race([
             originalRequestApiLongterm(action, payload, { signal: controller?.signal }),
@@ -4275,7 +4291,6 @@ function initializeBackupCompareUi() {
     });
 }
 
-const originalRestoreDataBackupLongterm = restoreDataBackup;
 restoreDataBackup = async function restoreDataBackupWithCompare(backup) {
     if (!backup?.name || state.restoringBackupName || state.backupCreating) return;
     if (state.pendingOperations.length > 0) {
@@ -4617,14 +4632,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v71",
-    images: "gimpo-b-images-v4",
+    app: "gimpo-b-app-v72",
+    images: "gimpo-b-images-v5",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-46", "./number-one.css?v=20260716-36", "./script.js?v=20260716-46", "./number-one.js?v=20260716-36", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-47", "./number-one.css?v=20260716-47", "./script.js?v=20260716-47", "./number-one.js?v=20260716-47", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4807,7 +4822,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-46", serviceWorkerVersion: "v71" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-47", serviceWorkerVersion: "v72" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5188,8 +5203,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-46",
-    serviceWorkerVersion: "v71",
+    fileVersion: "20260716-47",
+    serviceWorkerVersion: "v72",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -5281,43 +5296,7 @@ function standardizedConfirm({ title, target = "", effect = "", reversible = fal
     return cleanText(value) === keyword;
 }
 
-/* 핵심 저장 버튼은 기기 반영과 서버 반영을 구분해 표시합니다. */
-function markQueuedButton(button, busyText) {
-    if (!button) return;
-    const release = setButtonBusy(button, busyText, { minimumMs: 500 });
-    window.setTimeout(() => release(), 550);
-}
-const v25SubmitCommon = submitCommonPwdForm;
-submitCommonPwdForm = function submitCommonPwdFormV25() { markQueuedButton(elements.commonSaveBtn, navigator.onLine === false ? "기기에 저장중…" : "저장 요청중…"); return v25SubmitCommon(); };
-const v25SubmitAdd = submitAddPwd;
-submitAddPwd = function submitAddPwdV25() { markQueuedButton(elements.addPwdSubmitBtn, navigator.onLine === false ? "기기에 저장중…" : "추가 요청중…"); return v25SubmitAdd(); };
-const v25SubmitUpdate = submitUpdatePassword;
-submitUpdatePassword = function submitUpdatePasswordV25() { markQueuedButton(elements.updateSelectedPwdBtn, navigator.onLine === false ? "기기에 저장중…" : "수정 요청중…"); return v25SubmitUpdate(); };
-const v25SubmitDelete = confirmDeleteSelectedPassword;
-confirmDeleteSelectedPassword = function confirmDeleteSelectedPasswordV25() {
-    const password = cleanText(elements.selectedPwdOriginal?.value);
-    if (!password) return v25SubmitDelete();
-    if (!standardizedConfirm({ title: "선택한 비밀번호를 삭제합니다.", target: password, effect: "해당 라인에서 이 비밀번호 1개가 제거됩니다.", reversible: true })) return;
-    markQueuedButton(elements.deleteSelectedPwdBtn, navigator.onLine === false ? "기기에 저장중…" : "삭제 요청중…");
-    // 기존 확인창을 다시 띄우지 않도록 임시 대체
-    const originalConfirm = window.confirm;
-    window.confirm = () => true;
-    try { return v25SubmitDelete(); } finally { window.confirm = originalConfirm; }
-};
-
-/* 비동기 관리자 작업은 실제 완료 후에만 완료 요약을 표시합니다. */
-const v25CreateBackup = createDataBackup;
-createDataBackup = async function createDataBackupV25() {
-    const release = setButtonBusy(elements.createBackupBtn, "백업중…", { minimumMs: 700 });
-    const before = Array.isArray(state.adminDashboard?.backups) ? state.adminDashboard.backups.length : 0;
-    try {
-        const result = await v25CreateBackup();
-        const after = Array.isArray(state.adminDashboard?.backups) ? state.adminDashboard.backups.length : before;
-        showOperationSummary("백업 확인 완료", [`현재 백업 ${after}개`, "최근 5개 유지"]);
-        return result;
-    } finally { await release(); }
-};
-
+/* 저장 버튼 임시 패치 레이어는 v29 최종 처리로 통합되어 제거했습니다. */
 const v25SetupBackup = setupAutomaticBackup;
 setupAutomaticBackup = async function setupAutomaticBackupV25() {
     const release = setButtonBusy(elements.setupAutoBackupBtn, "설정중…", { minimumMs: 700 });
@@ -5386,10 +5365,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= v33 공동비번 수정·삭제 ========================= */
-/* 저장 작업은 로컬 대기열 등록과 화면 반영이 동기식이므로, 검증 실패에도 표시되던 임시 진행 상태를 제거합니다. */
-submitCommonPwdForm = v25SubmitCommon;
-submitAddPwd = v25SubmitAdd;
-submitUpdatePassword = v25SubmitUpdate;
+/* 저장 작업은 로컬 대기열 등록과 화면 반영을 최종 처리합니다. */
 confirmDeleteSelectedPassword = function confirmDeleteSelectedPasswordV29() {
     const rowId = cleanText(elements.deletePwdRowId.value);
     const password = cleanText(elements.selectedPwdOriginal?.value);
