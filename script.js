@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 안정성·API·캐시 최적화 20260716-48 */
+/* 넘버원 김포B 공비 - 안정성·API·캐시 최적화 20260716-49 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -2098,7 +2098,9 @@ async function authenticateAdmin(pin) {
     hideAdminPinError();
     if (elements.adminBtn) {
         elements.adminBtn.disabled = true;
-        elements.adminBtn.textContent = "🔐 확인 중...";
+        const label = elements.adminBtn.querySelector(".admin-btn-label");
+        if (label) label.textContent = "🔐 확인 중...";
+        else elements.adminBtn.textContent = "🔐 확인 중...";
     }
     if (elements.adminPinSubmitBtn) {
         elements.adminPinSubmitBtn.disabled = true;
@@ -4632,14 +4634,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v73",
+    app: "gimpo-b-app-v74",
     images: "gimpo-b-images-v5",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-48", "./number-one.css?v=20260716-48", "./script.js?v=20260716-48", "./number-one.js?v=20260716-48", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-49", "./number-one.css?v=20260716-49", "./script.js?v=20260716-49", "./number-one.js?v=20260716-49", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4822,7 +4824,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-48", serviceWorkerVersion: "v73" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-49", serviceWorkerVersion: "v74" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5203,8 +5205,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-48",
-    serviceWorkerVersion: "v73",
+    fileVersion: "20260716-49",
+    serviceWorkerVersion: "v74",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -5501,3 +5503,367 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const target of targets) observer.observe(target, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:["data-status", "class", "hidden"] });
     updateAdminMenuIssueIndicators();
 }, { once:true });
+
+/* ========================= 관리자·수정기록 지연 로딩 v20260716-49 ========================= */
+const ADMIN_LAZY_CACHE_KEY_V49 = "gimpoB_admin_lazy_cache_v1";
+const ADMIN_LAZY_CACHE_MAX_AGE_V49 = 5 * 60 * 1000;
+const HISTORY_INITIAL_RENDER_COUNT_V49 = 30;
+const HISTORY_RENDER_STEP_V49 = 30;
+const adminLazyStateV49 = {
+    raw: {},
+    fetchedAt: {},
+    promises: {},
+    cacheRestored: false
+};
+let historyVisibleCountV49 = HISTORY_INITIAL_RENDER_COUNT_V49;
+
+function mergeAdminRawV49(base, patch) {
+    const next = { ...(base && typeof base === "object" ? base : {}) };
+    for (const [key, value] of Object.entries(patch && typeof patch === "object" ? patch : {})) {
+        if (value && typeof value === "object" && !Array.isArray(value) && next[key] && typeof next[key] === "object" && !Array.isArray(next[key])) {
+            next[key] = { ...next[key], ...value };
+        } else {
+            next[key] = value;
+        }
+    }
+    return next;
+}
+
+function restoreAdminLazyCacheV49() {
+    if (adminLazyStateV49.cacheRestored) return;
+    adminLazyStateV49.cacheRestored = true;
+    try {
+        const parsed = JSON.parse(localStorage.getItem(ADMIN_LAZY_CACHE_KEY_V49) || "null");
+        if (!parsed || typeof parsed !== "object") return;
+        adminLazyStateV49.raw = parsed.raw && typeof parsed.raw === "object" ? parsed.raw : {};
+        adminLazyStateV49.fetchedAt = parsed.fetchedAt && typeof parsed.fetchedAt === "object" ? parsed.fetchedAt : {};
+        if (Object.keys(adminLazyStateV49.raw).length > 0) {
+            state.adminDashboard = normalizeAdminDashboard(adminLazyStateV49.raw);
+        }
+    } catch (error) {
+        console.warn("관리자 캐시 읽기 실패:", error);
+    }
+}
+
+function saveAdminLazyCacheV49() {
+    try {
+        localStorage.setItem(ADMIN_LAZY_CACHE_KEY_V49, JSON.stringify({
+            raw: adminLazyStateV49.raw,
+            fetchedAt: adminLazyStateV49.fetchedAt
+        }));
+    } catch (error) {
+        console.warn("관리자 캐시 저장 실패:", error);
+    }
+}
+
+function isAdminSectionFreshV49(section) {
+    const fetchedAt = Number(adminLazyStateV49.fetchedAt[section]) || 0;
+    return fetchedAt > 0 && Date.now() - fetchedAt <= ADMIN_LAZY_CACHE_MAX_AGE_V49;
+}
+
+function setAdminInlineLoadingV49(message, visible = true) {
+    if (!elements.adminStatus) return;
+    elements.adminStatus.style.display = visible ? "block" : "none";
+    elements.adminStatus.textContent = visible ? cleanText(message) : "";
+    if (elements.adminContent) elements.adminContent.hidden = false;
+}
+
+function renderAdminCurrentV49(dashboard) {
+    if (!elements.adminMetrics || !dashboard) return;
+    const stats = dashboard.statistics || normalizeAdminStatistics(null);
+    const gpsTotal = state.indexes.gpsPlaces.length;
+    const gpsMissingItems = state.indexes.gpsPlaces
+        .filter(item => !findLocationEntryForPlace(item))
+        .map(item => item.displayName)
+        .filter((value, index, array) => value && array.indexOf(value) === index)
+        .sort(naturalCompare);
+    const gpsMatched = Math.max(0, gpsTotal - gpsMissingItems.length);
+    const gpsRate = gpsTotal ? Math.round((gpsMatched / gpsTotal) * 1000) / 10 : 0;
+    const totalPlaces = dashboard.apartmentCount + dashboard.officeBuildingCount;
+    const commonRate = totalPlaces ? Math.round((stats.commonPasswordPlaceCount / totalPlaces) * 1000) / 10 : 0;
+    const pendingCount = state.pendingOperations.length;
+    const lastSync = state.lastDataCheckAt ? formatLocalDateTime(state.lastDataCheckAt) : "확인 전";
+    const metrics = [
+        ["비밀번호 등록 행", `${dashboard.passwordRowCount.toLocaleString()}건`, "good"],
+        ["비밀번호 빈 행", `${dashboard.blankPasswordRowCount.toLocaleString()}건`, dashboard.blankPasswordRowCount ? "warn" : "good"],
+        ["공동비번 등록", `${stats.commonPasswordPlaceCount.toLocaleString()}곳 · ${commonRate}%`, commonRate >= 90 ? "good" : ""],
+        ["GPS 연결률", `${gpsMatched.toLocaleString()}/${gpsTotal.toLocaleString()} · ${gpsRate}%`, gpsMissingItems.length ? "warn" : "good"],
+        ["저장 대기", `${pendingCount.toLocaleString()}건`, pendingCount ? "danger" : "good"],
+        ["오늘 사용 기기", `${dashboard.usage.todayUsers.toLocaleString()}명`, dashboard.usage.todayUsers ? "good" : ""],
+        ["현재 활동 기기", `${dashboard.usage.activeUsers.toLocaleString()}명 · 최근 ${dashboard.usage.activeMinutes}분`, dashboard.usage.activeUsers ? "good" : ""],
+        ["마지막 동기화", lastSync, ""]
+    ];
+    elements.adminMetrics.replaceChildren();
+    for (const [label, value, tone] of metrics) elements.adminMetrics.appendChild(createAdminMetric(label, value, tone));
+
+    if (gpsMissingItems.length > 0) {
+        const preview = gpsMissingItems.slice(0, 10).join(", ");
+        const extra = gpsMissingItems.length > 10 ? ` 외 ${gpsMissingItems.length - 10}곳` : "";
+        elements.adminGpsWarning.hidden = false;
+        elements.adminGpsWarning.textContent = `⚠ GPS 좌표 미연결 ${gpsMissingItems.length}곳\n${preview}${extra}`;
+    } else {
+        elements.adminGpsWarning.hidden = true;
+        elements.adminGpsWarning.textContent = "";
+    }
+}
+
+function renderAdminLazyDashboardV49() {
+    const dashboard = state.adminDashboard;
+    if (!dashboard) return;
+    if (elements.adminContent) elements.adminContent.hidden = false;
+
+    if (adminLazyStateV49.fetchedAt.current) renderAdminCurrentV49(dashboard);
+    renderAdminPerformanceReport();
+
+    if (adminLazyStateV49.fetchedAt.quality) {
+        const gpsMissingItems = state.indexes.gpsPlaces
+            .filter(item => !findLocationEntryForPlace(item))
+            .map(item => item.displayName)
+            .filter((value, index, array) => value && array.indexOf(value) === index)
+            .sort(naturalCompare);
+        renderDataQualityReport(dashboard.dataQuality, gpsMissingItems);
+        renderPasswordCleanupActions(dashboard.dataQuality.cleanup, state.pendingOperations.length);
+    }
+
+    if (adminLazyStateV49.fetchedAt.backup) {
+        elements.createBackupBtn.disabled = state.backupCreating || Boolean(state.restoringBackupName) || Boolean(state.passwordCleanupMode);
+        elements.createBackupBtn.textContent = state.backupCreating ? "백업중…" : "지금 백업";
+        renderAutoBackupHealth(dashboard.autoBackup);
+        if (elements.setupAutoBackupBtn) {
+            elements.setupAutoBackupBtn.disabled = state.autoBackupUpdating;
+            elements.setupAutoBackupBtn.textContent = state.autoBackupUpdating ? "설정 중..." : "자동백업 재설정";
+        }
+        renderBackupList(dashboard.backups, state.pendingOperations.length);
+    }
+
+    if (adminLazyStateV49.fetchedAt.stats) renderAdminStatistics(dashboard);
+    window.setTimeout(updateAdminMenuIssueIndicators, 0);
+}
+
+renderAdminDashboard = function renderAdminDashboardV49() {
+    renderAdminLazyDashboardV49();
+};
+
+async function loadAdminSectionV49(section, options = {}) {
+    const target = cleanText(section);
+    const force = options.force === true;
+    const showLoading = options.showLoading !== false;
+    if (!["current", "quality", "backup", "stats"].includes(target)) return state.adminDashboard;
+    restoreAdminLazyCacheV49();
+
+    if (!force && isAdminSectionFreshV49(target)) {
+        if (state.adminDashboard) renderAdminLazyDashboardV49();
+        setAdminInlineLoadingV49("", false);
+        return state.adminDashboard;
+    }
+    if (adminLazyStateV49.promises[target]) return adminLazyStateV49.promises[target];
+
+    if (showLoading) {
+        const labels = { current: "현재 상태", quality: "데이터 오류 점검", backup: "백업 상태", stats: "통계" };
+        const cached = Boolean(adminLazyStateV49.fetchedAt[target]);
+        setAdminInlineLoadingV49(cached ? `${labels[target]} 최신값 확인 중...` : `${labels[target]} 불러오는 중...`, true);
+    }
+
+    const task = (async () => {
+        let hadError = false;
+        try {
+            if (target === "current") sendUsageHeartbeat(true).catch(() => {});
+            const response = await requestApi("getAdminDashboardSection", {
+                section: target,
+                adminToken: requireAdminToken()
+            });
+            const wrapper = response?.data && typeof response.data === "object" ? response.data : response;
+            const partial = wrapper?.data && typeof wrapper.data === "object" ? wrapper.data : wrapper;
+            adminLazyStateV49.raw = mergeAdminRawV49(adminLazyStateV49.raw, partial);
+            adminLazyStateV49.fetchedAt[target] = Date.now();
+            state.adminDashboard = normalizeAdminDashboard(adminLazyStateV49.raw);
+            saveAdminLazyCacheV49();
+            renderAdminLazyDashboardV49();
+            return state.adminDashboard;
+        } catch (error) {
+            hadError = true;
+            console.error(`관리자 ${target} 불러오기 실패:`, error);
+            if (handleAdminAuthError(error)) return null;
+            if (adminLazyStateV49.fetchedAt[target] && state.adminDashboard) {
+                renderAdminLazyDashboardV49();
+                setAdminInlineLoadingV49(`최신 확인 실패 · 저장된 관리자 정보 표시 중\n${error.message}`, true);
+            } else {
+                setAdminInlineLoadingV49(`관리자 정보를 불러오지 못했습니다.\n${error.message}`, true);
+            }
+            return state.adminDashboard;
+        } finally {
+            delete adminLazyStateV49.promises[target];
+            if (!hadError) setAdminInlineLoadingV49("", false);
+        }
+    })();
+    adminLazyStateV49.promises[target] = task;
+    return task;
+}
+
+openAdminDashboardModal = function openAdminDashboardModalV49() {
+    restoreAdminLazyCacheV49();
+    setAdminView("menu");
+    if (elements.adminContent) elements.adminContent.hidden = false;
+    setAdminInlineLoadingV49("", false);
+    if (state.adminDashboard) renderAdminLazyDashboardV49();
+    else window.setTimeout(updateAdminMenuIssueIndicators, 0);
+    openModal(elements.adminModal);
+};
+
+const setAdminViewBeforeV49 = setAdminView;
+setAdminView = function setAdminViewV49(view) {
+    const target = cleanText(view) || "menu";
+    const result = setAdminViewBeforeV49(target);
+    if (elements.adminRefreshBtn) elements.adminRefreshBtn.hidden = target === "menu" || target === "performance" || target === "diagnostics";
+
+    if (target === "performance") {
+        renderAdminPerformanceReport();
+        setAdminInlineLoadingV49("", false);
+    } else if (["current", "quality", "backup", "stats"].includes(target)) {
+        loadAdminSectionV49(target, { force: false, showLoading: true }).catch(() => {});
+    } else if (target === "diagnostics") {
+        renderAdminDiagnostics(false);
+        loadAdminSectionV49("backup", { force: false, showLoading: false }).then(() => {
+            if (state.adminView === "diagnostics") renderAdminDiagnostics(false);
+        }).catch(() => {});
+    } else {
+        setAdminInlineLoadingV49("", false);
+        window.setTimeout(updateAdminMenuIssueIndicators, 0);
+    }
+    return result;
+};
+
+loadAdminDashboard = function loadAdminDashboardV49(showLoading = true) {
+    const target = state.adminView === "diagnostics"
+        ? "backup"
+        : ["current", "quality", "backup", "stats"].includes(state.adminView)
+            ? state.adminView
+            : "current";
+    return loadAdminSectionV49(target, { force: true, showLoading });
+};
+
+/* 백업 생성·복구 뒤에는 백업 섹션 캐시만 무효화해 전체 관리자 점검 재실행을 막습니다. */
+function invalidateAdminSectionV49(section) {
+    delete adminLazyStateV49.fetchedAt[section];
+    saveAdminLazyCacheV49();
+}
+
+const createDataBackupBeforeV49 = createDataBackup;
+createDataBackup = async function createDataBackupV49() {
+    invalidateAdminSectionV49("backup");
+    return createDataBackupBeforeV49();
+};
+
+/* 수정기록: 오래된 캐시도 먼저 표시하고 최신값은 뒤에서 갱신합니다. */
+loadCachedChangeHistory = function loadCachedChangeHistoryV49() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(APP_CONFIG.HISTORY_CACHE_KEY) || "[]");
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map(normalizeHistoryItem).filter(item => item.historyId);
+    } catch (error) {
+        clearChangeHistoryCache();
+        return [];
+    }
+};
+
+const renderChangeHistoryBeforeV49 = renderChangeHistory;
+renderChangeHistory = function renderChangeHistoryV49() {
+    const fullHistory = Array.isArray(state.changeHistory) ? state.changeHistory : [];
+    if (fullHistory.length === 0) {
+        renderChangeHistoryBeforeV49();
+        return;
+    }
+    const visibleHistory = fullHistory.slice(0, Math.max(HISTORY_INITIAL_RENDER_COUNT_V49, historyVisibleCountV49));
+    state.changeHistory = visibleHistory;
+    try {
+        renderChangeHistoryBeforeV49();
+    } finally {
+        state.changeHistory = fullHistory;
+    }
+    const remaining = Math.max(0, fullHistory.length - visibleHistory.length);
+    if (remaining > 0) {
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "flex";
+        wrapper.style.justifyContent = "center";
+        wrapper.style.padding = "10px 0 2px";
+        const more = document.createElement("button");
+        more.type = "button";
+        more.className = "history-refresh-btn";
+        more.textContent = `더보기 · ${remaining}건 남음`;
+        more.addEventListener("click", () => {
+            historyVisibleCountV49 += HISTORY_RENDER_STEP_V49;
+            renderChangeHistory();
+        });
+        wrapper.appendChild(more);
+        elements.historyList.appendChild(wrapper);
+    }
+};
+
+openChangeHistoryModal = function openChangeHistoryModalV49() {
+    historyVisibleCountV49 = HISTORY_INITIAL_RENDER_COUNT_V49;
+    openModal(elements.historyModal);
+    const cachedHistory = loadCachedChangeHistory();
+    if (cachedHistory.length > 0) {
+        state.changeHistory = cachedHistory;
+        renderChangeHistory();
+        const savedAt = Number(localStorage.getItem(APP_CONFIG.HISTORY_CACHE_TIME_KEY)) || 0;
+        const isStale = !savedAt || Date.now() - savedAt > APP_CONFIG.HISTORY_CACHE_MAX_AGE;
+        elements.historyStatus.style.display = "block";
+        elements.historyStatus.textContent = isStale ? "저장된 기록 표시 중 · 최신 기록 확인 중..." : "최신 기록 확인 중...";
+        loadChangeHistory(false);
+        return;
+    }
+    loadChangeHistory(true);
+};
+
+const loadChangeHistoryBeforeV49 = loadChangeHistory;
+loadChangeHistory = function loadChangeHistoryV49(showLoading = true) {
+    if (showLoading) historyVisibleCountV49 = HISTORY_INITIAL_RENDER_COUNT_V49;
+    return loadChangeHistoryBeforeV49(showLoading);
+};
+
+
+/* 지연 로딩 전에는 아직 확인하지 않은 서버 항목을 문제로 오판하지 않습니다. */
+updateAdminMenuIssueIndicators = function updateAdminMenuIssueIndicatorsV49() {
+    const dashboard = state.adminDashboard;
+    const gpsMissingCount = Array.isArray(state.indexes?.gpsPlaces)
+        ? state.indexes.gpsPlaces.filter(item => !findLocationEntryForPlace(item)).length
+        : 0;
+    const pendingCount = Array.isArray(state.pendingOperations) ? state.pendingOperations.length : 0;
+
+    const currentDetails = [];
+    if (pendingCount > 0) currentDetails.push(`저장 대기 ${pendingCount}건`);
+    if (state.dataSyncState === "error") currentDetails.push("최근 데이터 동기화 오류");
+    setAdminMenuIssueIndicator("current", currentDetails.length > 0, currentDetails.join(" · "));
+
+    const performanceDetails = [];
+    for (const [key, rule] of Object.entries(PERFORMANCE_RULES)) {
+        const stats = getPerformanceStatistics(key, rule);
+        if (stats.currentTone === "danger") performanceDetails.push(`${rule.label} 느림`);
+        else if (stats.currentTone === "warn") performanceDetails.push(`${rule.label} 주의`);
+    }
+    setAdminMenuIssueIndicator("performance", performanceDetails.length > 0, performanceDetails.join(" · "));
+
+    const qualityLoaded = Boolean(adminLazyStateV49.fetchedAt.quality);
+    const qualityCount = qualityLoaded ? Number(dashboard?.dataQuality?.totalIssues) || 0 : 0;
+    const qualityCleanup = qualityLoaded ? (Number(dashboard?.dataQuality?.cleanup?.sortableCount) || Number(dashboard?.dataQuality?.cleanup?.duplicateCount) || 0) : 0;
+    const qualityHasIssue = qualityCount > 0 || qualityCleanup > 0 || gpsMissingCount > 0;
+    setAdminMenuIssueIndicator("quality", qualityHasIssue,
+        [qualityCount ? `데이터 오류 ${qualityCount}건` : "", qualityCleanup ? "정렬·중복 확인 필요" : "", gpsMissingCount ? `GPS 미연결 ${gpsMissingCount}곳` : ""].filter(Boolean).join(" · "));
+
+    const diagnosticsStatus = document.getElementById("adminDiagnosticsStatus");
+    const diagnosticsTone = cleanText(diagnosticsStatus?.dataset?.status);
+    const diagnosticsText = cleanText(diagnosticsStatus?.textContent);
+    const diagnosticsHasIssue = diagnosticsTone === "warning" || diagnosticsTone === "danger" || /오류|주의|실패|복구 필요/u.test(diagnosticsText);
+    setAdminMenuIssueIndicator("diagnostics", diagnosticsHasIssue, diagnosticsText);
+
+    const backupDetails = [];
+    if (dashboard && adminLazyStateV49.fetchedAt.backup) {
+        if (dashboard.autoBackup?.needsAttention || !dashboard.autoBackup?.enabled) backupDetails.push("자동백업 확인 필요");
+        if (!Array.isArray(dashboard.backups) || dashboard.backups.length === 0) backupDetails.push("보관 백업 없음");
+    }
+    setAdminMenuIssueIndicator("backup", backupDetails.length > 0, backupDetails.join(" · "));
+
+    const statsHasIssue = Boolean(dashboard && adminLazyStateV49.fetchedAt.stats && dashboard.totalRows <= 0);
+    setAdminMenuIssueIndicator("stats", statsHasIssue, statsHasIssue ? "통계 데이터 없음" : "");
+};
