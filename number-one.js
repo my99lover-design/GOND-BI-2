@@ -1,6 +1,6 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-47 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-48 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_REQUEST_TIMEOUT_MS = 15000;
 const NUMBER_ONE_REQUEST_RETRY_DELAY_MS = 1000;
@@ -10,8 +10,8 @@ const NUMBER_ONE_KEYS = Object.freeze({
     TOKEN_EXPIRES: "gimpoB_number_one_prod_account_expires_v2",
     USER_ID: "gimpoB_number_one_prod_user_id_v2",
     CLIENT_ID: "gimpoB_number_one_prod_client_id_v2",
-    CACHE_PREFIX: "gimpoB_number_one_prod_week_cache_v2_",
-    PENDING_PREFIX: "gimpoB_number_one_prod_pending_v2_",
+    CACHE_PREFIX: "gimpoB_number_one_prod_week_cache_v3_",
+    PENDING_PREFIX: "gimpoB_number_one_prod_pending_v3_",
     REGISTER_REQUEST_ID: "gimpoB_number_one_prod_register_request_v1"
 });
 const numberOneState = {
@@ -297,21 +297,23 @@ function renderNumberOneApp() {
     const pendingCount = loadNumberOnePending().length;
     numberOneElements.numberOneSyncNote.textContent = pendingCount
         ? `기기에 임시 저장된 기록 ${pendingCount}건 · 연결 시 자동 전송`
-        : `기타시간 ${formatNumber(summary.otherTimeCount)}건 · 저장한 값은 내 기록에만 반영됩니다.`;
+        : `인정시간 외(00~06) ${formatNumber(summary.otherTimeCount)}건 · 저장한 값은 내 기록에만 반영됩니다.`;
     numberOneElements.numberOneSyncNote.classList.toggle("warning", pendingCount > 0);
 }
 
 function renderNumberOneConditionStatus(summary = {}) {
-    const totalCount = Math.max(0, Number(summary.totalCount) || 0);
+    // tenToTwentyFourCount는 저장 호환 필드명이며 현재 규칙에서는 06:00~23:59 인정건수다.
+    // tenToSeventeenCount는 저장 호환 필드명이며 현재 규칙에서는 09:00~16:59 건수다.
+    const recognizedCount = Math.max(0, Number(summary.tenToTwentyFourCount) || 0);
     const peakCount = Math.max(0, Number(summary.tenToSeventeenCount) || 0);
     const premiumCount = Math.max(0, Number(summary.premiumEligibleCount) || 0);
     const standardCount = Math.max(0, Number(summary.standardEligibleCount) || 0);
 
     if (numberOneElements.numberOneStartCurrent) {
-        numberOneElements.numberOneStartCurrent.textContent = formatNumber(totalCount);
+        numberOneElements.numberOneStartCurrent.textContent = formatNumber(recognizedCount);
     }
     if (numberOneElements.numberOnePremiumConditionCurrent) {
-        numberOneElements.numberOnePremiumConditionCurrent.textContent = formatNumber(totalCount);
+        numberOneElements.numberOnePremiumConditionCurrent.textContent = formatNumber(recognizedCount);
     }
     if (numberOneElements.numberOnePeakCurrent) {
         numberOneElements.numberOnePeakCurrent.textContent = formatNumber(peakCount);
@@ -323,8 +325,8 @@ function renderNumberOneConditionStatus(summary = {}) {
         numberOneElements.numberOnePremiumCurrent.textContent = formatNumber(premiumCount);
     }
 
-    applyNumberOneConditionTone(numberOneElements.numberOneStartPart, totalCount, 151);
-    applyNumberOneConditionTone(numberOneElements.numberOnePremiumConditionPart, totalCount, 250);
+    applyNumberOneConditionTone(numberOneElements.numberOneStartPart, recognizedCount, 131);
+    applyNumberOneConditionTone(numberOneElements.numberOnePremiumConditionPart, recognizedCount, 250);
     applyNumberOneConditionTone(numberOneElements.numberOnePeakPart, peakCount, 100);
 }
 
@@ -350,7 +352,8 @@ function renderNumberOneSelectedDay() {
     numberOneElements.numberOneInputCard?.classList.toggle("previous-editing", isPrevious);
     setNumberInput(numberOneElements.numberOneTotalInput, day.totalCount);
     setNumberInput(numberOneElements.numberOneTen17Input, day.tenToSeventeen);
-    setNumberInput(numberOneElements.numberOneSeventeen24Input, getNumberOneSeventeenToTwentyFour(day));
+    // 기존 DOM id는 호환을 위해 유지하지만 이 입력칸의 의미는 06~24 인정건수다.
+    setNumberInput(numberOneElements.numberOneSeventeen24Input, day.tenToTwentyFour);
 
     const hasAny = hasNumberOneDayValues(day);
     const complete = [day.totalCount, day.tenToSeventeen, day.tenToTwentyFour]
@@ -379,12 +382,12 @@ function hasNumberOneDayValues(day) {
 
 function validateNumberOneInputs() {
     const values = readNumberOneInputs();
-    let message = "기타시간(06~10시 + 00~05시)은 총건수에서 자동 계산됩니다.";
+    let message = "수행 인정시간은 06:00~23:59이며, 00~06 수행은 추가금 계산에서 제외됩니다.";
     let level = "";
     const invalidInput = [
         [numberOneElements.numberOneTotalInput, "총건수"],
-        [numberOneElements.numberOneTen17Input, "10~17시"],
-        [numberOneElements.numberOneSeventeen24Input, "17~24시"]
+        [numberOneElements.numberOneTen17Input, "09~17시"],
+        [numberOneElements.numberOneSeventeen24Input, "06~24시"]
     ].find(([element]) => {
         const text = String(element?.value ?? "").trim();
         if (!text) return false;
@@ -392,22 +395,25 @@ function validateNumberOneInputs() {
         return !Number.isInteger(number) || number < 0 || number > 999;
     });
     const total = values.totalCount;
-    const ten17 = values.tenToSeventeen;
-    const seventeen24 = values.seventeenToTwentyFour;
-    const ten24 = values.tenToTwentyFour;
+    const peak = values.tenToSeventeen;
+    const recognized = values.tenToTwentyFour;
 
-    if (invalidInput || [total, ten17, seventeen24, ten24].some(value => value === null)) {
+    if (invalidInput || [total, peak, recognized].some(value => value === null)) {
         message = `${invalidInput?.[1] || "입력값"}는 0~999 사이의 정수로 입력해주세요.`;
         level = "error";
-    } else if (ten24 > total) {
-        message = "10~17시와 17~24시 합계가 총건수를 초과합니다.";
+    } else if (peak > recognized) {
+        message = "09~17시 건수는 06~24시 인정건수보다 클 수 없습니다.";
+        level = "error";
+    } else if (recognized > total) {
+        message = "06~24시 인정건수는 총건수보다 클 수 없습니다.";
         level = "error";
     } else {
         const workDate = numberOneState.selectedWorkDate || numberOneState.data?.context?.currentWorkDate || "";
         const isPrevious = getNumberOneDataBucketForWorkDate(workDate) === numberOneState.data?.previousWeek;
+        const outside = Math.max(0, total - recognized);
         message = isPrevious
-            ? `직전주 수정 중 · 기타시간 ${formatNumber(total - ten24)}건 자동 반영 · 저장 전 확인`
-            : `기타시간 ${formatNumber(total - ten24)}건 자동 반영 · 공란은 0건`;
+            ? `직전주 수정 중 · 인정시간 외(00~06) ${formatNumber(outside)}건 · 저장 전 확인`
+            : `인정시간 외(00~06) ${formatNumber(outside)}건 자동 반영 · 공란은 0건`;
         if (isPrevious && !numberOneState.previousEditMode) level = "warning";
     }
     numberOneElements.numberOneInputGuide.textContent = message;
@@ -420,13 +426,12 @@ function validateNumberOneInputs() {
 
 function readNumberOneInputs() {
     const totalCount = parseCountOrZero(numberOneElements.numberOneTotalInput?.value);
-    const tenToSeventeen = parseCountOrZero(numberOneElements.numberOneTen17Input?.value);
-    const seventeenToTwentyFour = parseCountOrZero(numberOneElements.numberOneSeventeen24Input?.value);
+    const tenToSeventeen = parseCountOrZero(numberOneElements.numberOneTen17Input?.value); // 실제 09~17
+    const tenToTwentyFour = parseCountOrZero(numberOneElements.numberOneSeventeen24Input?.value); // 실제 06~24
     return {
         totalCount,
         tenToSeventeen,
-        seventeenToTwentyFour,
-        tenToTwentyFour: tenToSeventeen === null || seventeenToTwentyFour === null ? null : tenToSeventeen + seventeenToTwentyFour
+        tenToTwentyFour
     };
 }
 
@@ -447,11 +452,10 @@ function parseCountOrZero(value) {
     return number;
 }
 
-function getNumberOneSeventeenToTwentyFour(day) {
-    const ten17 = day?.tenToSeventeen;
-    const ten24 = day?.tenToTwentyFour;
-    if (ten17 === null || ten17 === undefined || ten24 === null || ten24 === undefined) return null;
-    return Math.max(0, (Number(ten24) || 0) - (Number(ten17) || 0));
+function getNumberOneRecognizedCount(day) {
+    const recognized = day?.tenToTwentyFour;
+    if (recognized === null || recognized === undefined) return null;
+    return Math.max(0, Number(recognized) || 0);
 }
 
 async function refreshNumberOneWeek() {
@@ -746,14 +750,14 @@ function renderNumberOneDetails() {
     const daysMap = new Map((numberOneState.data.days || []).map(day => [day.workDate, day]));
     const dates = makeNumberOneWeekDates(context.weekStart);
     numberOneElements.numberOneDetails.innerHTML = `
-        <div class="number-one-details-head"><span>요일</span><span>10~17</span><span>17~24</span><span>총</span><span></span></div>
+        <div class="number-one-details-head"><span>요일</span><span>09~17</span><span>06~24</span><span>총</span><span></span></div>
         ${dates.map(workDate => {
             const day = daysMap.get(workDate) || {};
             const selected = workDate === numberOneState.selectedWorkDate;
             return `<button class="number-one-day-row${selected ? " selected" : ""}" type="button" data-work-date="${workDate}">
                 <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
                 <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
-                <span class="number-one-day-value">${displayDayValue(getNumberOneSeventeenToTwentyFour(day))}</span>
+                <span class="number-one-day-value">${displayDayValue(getNumberOneRecognizedCount(day))}</span>
                 <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-edit">수정</span>
             </button>`;
@@ -828,13 +832,13 @@ function renderNumberOnePreviousWeek() {
     details.innerHTML = `
         ${numberOneState.previousEditMode ? '<div class="number-one-previous-edit-notice">직전주 수정 중 · 날짜를 눌러 위 입력칸에서 수정하세요.</div>' : ''}
         <div class="number-one-previous-summary">
-            <div><span>총건수</span><b>${formatNumber(summary.totalCount)}건</b></div>
-            <div><span>10~17시</span><b>${formatNumber(summary.tenToSeventeenCount)}건</b></div>
+            <div><span>06~24시</span><b>${formatNumber(summary.tenToTwentyFourCount)}건</b></div>
+            <div><span>09~17시</span><b>${formatNumber(summary.tenToSeventeenCount)}건</b></div>
             <div><span>+1000</span><b>${formatNumber(summary.standardEligibleCount)}건</b></div>
             <div><span>+1500</span><b>${formatNumber(summary.premiumEligibleCount)}건</b></div>
             <div class="bonus"><span>추가금</span><b>${formatMoney(summary.totalBonus)}</b></div>
         </div>
-        <div class="number-one-details-head"><span>요일</span><span>10~17</span><span>17~24</span><span>총</span><span></span></div>
+        <div class="number-one-details-head"><span>요일</span><span>09~17</span><span>06~24</span><span>총</span><span></span></div>
         ${dates.map(workDate => {
             const day = daysMap.get(workDate) || {};
             const selected = workDate === numberOneState.selectedWorkDate;
@@ -842,7 +846,7 @@ function renderNumberOnePreviousWeek() {
                 return `<button class="number-one-day-row number-one-previous-day-row editable${selected ? " selected" : ""}" type="button" data-previous-work-date="${workDate}">
                     <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
                     <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
-                    <span class="number-one-day-value">${displayDayValue(getNumberOneSeventeenToTwentyFour(day))}</span>
+                    <span class="number-one-day-value">${displayDayValue(getNumberOneRecognizedCount(day))}</span>
                     <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                     <span class="number-one-day-edit">수정</span>
                 </button>`;
@@ -850,7 +854,7 @@ function renderNumberOnePreviousWeek() {
             return `<div class="number-one-day-row number-one-previous-day-row">
                 <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
                 <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
-                <span class="number-one-day-value">${displayDayValue(getNumberOneSeventeenToTwentyFour(day))}</span>
+                <span class="number-one-day-value">${displayDayValue(getNumberOneRecognizedCount(day))}</span>
                 <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-edit"></span>
             </div>`;
@@ -1095,23 +1099,29 @@ function applyNumberOneLocalDelete(workDate) {
 }
 
 function calculateNumberOneLocalSummary(days) {
+    // 2026-08 신규 확정 규칙
+    // - 인정시간: 06:00:00~23:59:59
+    // - 06~24 누적 131건째부터 +1,000원/건
+    // - 09:00:00~16:59:59 누적 100건 AND 06~24 누적 250건 이상이면
+    //   131건째부터 전부 +1,500원/건으로 상향 재계산
     const sorted = (days || []).slice().sort((a, b) => String(a.workDate).localeCompare(String(b.workDate)));
     let totalCount = 0;
-    let tenToSeventeenCount = 0;
-    let tenToTwentyFourCount = 0;
+    let tenToSeventeenCount = 0;   // 호환 필드명, 실제 의미 09~17
+    let tenToTwentyFourCount = 0;  // 호환 필드명, 실제 의미 06~24
     for (const day of sorted) {
         totalCount += Math.max(0, Number(day.totalCount) || 0);
         tenToSeventeenCount += Math.max(0, Number(day.tenToSeventeen) || 0);
         tenToTwentyFourCount += Math.max(0, Number(day.tenToTwentyFour) || 0);
     }
     tenToTwentyFourCount = Math.min(totalCount, tenToTwentyFourCount);
+    tenToSeventeenCount = Math.min(tenToTwentyFourCount, tenToSeventeenCount);
     const otherTimeCount = Math.max(0, totalCount - tenToTwentyFourCount);
-    const additionalCount = Math.max(0, totalCount - 150);
-    const premiumQualified = totalCount >= 250 && tenToSeventeenCount >= 100;
-    const standardEligibleCount = premiumQualified ? Math.min(additionalCount, otherTimeCount) : additionalCount;
-    const premiumEligibleCount = premiumQualified ? Math.max(0, additionalCount - standardEligibleCount) : 0;
-    const baseBonus = additionalCount * 1000;
-    const premiumBonus = premiumEligibleCount * 500;
+    const additionalCount = Math.max(0, tenToTwentyFourCount - 130);
+    const premiumQualified = tenToTwentyFourCount >= 250 && tenToSeventeenCount >= 100;
+    const standardEligibleCount = premiumQualified ? 0 : additionalCount;
+    const premiumEligibleCount = premiumQualified ? additionalCount : 0;
+    const baseBonus = standardEligibleCount * 1000;
+    const premiumBonus = premiumEligibleCount * 1500;
     return {
         totalCount,
         tenToSeventeenCount,
