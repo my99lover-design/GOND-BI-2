@@ -11,8 +11,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <link rel="stylesheet" href="style.css?v=20260716-50">
-    <link rel="stylesheet" href="number-one.css?v=20260716-50">
+    <link rel="stylesheet" href="style.css?v=20260716-51">
+    <link rel="stylesheet" href="number-one.css?v=20260716-51">
 </head>
 <body>
 <div class="container">
@@ -91,8 +91,9 @@
                         <div class="number-one-field"><label for="numberOneSix09Input">06~09시</label><input id="numberOneSix09Input" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
                         <div class="number-one-field"><label for="numberOneTen17Input">09~17시</label><input id="numberOneTen17Input" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
                         <div class="number-one-field"><label for="numberOneSeventeen24Input">17~24시</label><input id="numberOneSeventeen24Input" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
+                        <div class="number-one-field"><label for="numberOneTotalInput">총 건수</label><input id="numberOneTotalInput" type="number" inputmode="numeric" min="0" max="999" placeholder="입력"></div>
                     </div>
-                    <div id="numberOneInputGuide" class="number-one-input-guide compact-order-guide">운행 기록 있을 때만 작성 · 공란은 0건 · 06~24시 자동합산</div>
+                    <div id="numberOneInputGuide" class="number-one-input-guide compact-order-guide">운행 기록 있을 때만 작성 · 시간대 공란은 0건 · 총 건수 입력</div>
                     <div class="number-one-action-row">
                         <button id="numberOneSaveBtn" class="number-one-save-btn" type="button">저장</button>
                         <button id="numberOneDeleteBtn" class="number-one-delete-btn" type="button" disabled>입력기록 삭제</button>
@@ -507,7 +508,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"><span id="toastMessage"></span><button id="toastActionBtn" class="toast-action-btn" type="button" hidden></button></div>
-<script src="script.js?v=20260716-50"></script>
-<script src="number-one.js?v=20260716-50"></script>
+<script src="script.js?v=20260716-51"></script>
+<script src="number-one.js?v=20260716-51"></script>
 </body>
 </html>

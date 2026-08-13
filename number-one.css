@@ -46,7 +46,7 @@
 .number-one-day-status.partial { background:rgba(245,158,11,.12); color:#b45309; }
 [data-theme="dark"] .number-one-day-status.complete { color:#86efac; }
 [data-theme="dark"] .number-one-day-status.partial { color:#fbbf24; }
-.number-one-input-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.number-one-input-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
 .number-one-field { min-width:0; }
 .number-one-field label { display:flex; align-items:center; justify-content:space-between; gap:4px; margin:0 0 4px; color:var(--text-sub); font-size:.65rem; font-weight:850; }
 .number-one-field label small { color:var(--primary); font-size:.55rem; font-weight:900; }
@@ -62,12 +62,12 @@
 .number-one-save-btn:not(:disabled):active { transform:scale(.98); }
 .number-one-details-toggle { width:100%; min-height:38px; margin-top:8px; border:1px solid var(--border); border-radius:10px; background:var(--card-bg); color:var(--text-sub); font-size:.73rem; font-weight:900; cursor:pointer; }
 .number-one-details { display:grid; gap:5px; margin-top:7px; }
-.number-one-day-row { display:grid; grid-template-columns:60px repeat(3,minmax(0,1fr)) 43px; align-items:center; gap:4px; width:100%; min-height:38px; padding:5px 6px; border:1px solid var(--border); border-radius:9px; background:var(--card-bg); color:var(--text-main); cursor:pointer; }
+.number-one-day-row { display:grid; grid-template-columns:58px repeat(4,minmax(0,1fr)) 40px; align-items:center; gap:4px; width:100%; min-height:38px; padding:5px 6px; border:1px solid var(--border); border-radius:9px; background:var(--card-bg); color:var(--text-main); cursor:pointer; }
 .number-one-day-row.selected { border-color:var(--primary); background:rgba(59,130,246,.07); }
 .number-one-day-name { font-size:.68rem; font-weight:950; text-align:left; }
 .number-one-day-value { overflow:hidden; color:var(--text-sub); font-size:.64rem; font-weight:800; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
 .number-one-day-edit { color:var(--primary); font-size:.61rem; font-weight:900; text-align:right; }
-.number-one-details-head { display:grid; grid-template-columns:60px repeat(3,minmax(0,1fr)) 43px; gap:4px; padding:0 6px; color:var(--text-sub); font-size:.56rem; font-weight:850; text-align:center; }
+.number-one-details-head { display:grid; grid-template-columns:58px repeat(4,minmax(0,1fr)) 40px; gap:4px; padding:0 6px; color:var(--text-sub); font-size:.56rem; font-weight:850; text-align:center; }
 .number-one-details-head span:first-child { text-align:left; }
 .number-one-sync-note { margin-top:6px; color:var(--text-sub); font-size:.59rem; font-weight:750; text-align:center; }
 .number-one-sync-note.warning { color:#b45309; }
@@ -80,7 +80,7 @@
     .number-one-app { padding:11px; }
     .number-one-summary-value { font-size:.92rem; }
     .number-one-summary-value.bonus { font-size:.82rem; }
-    .number-one-day-row,.number-one-details-head { grid-template-columns:54px repeat(3,minmax(0,1fr)) 38px; }
+    .number-one-day-row,.number-one-details-head { grid-template-columns:52px repeat(4,minmax(0,1fr)) 34px; }
 }
 
 /* v19 별도 화면·빠른 저장·삭제 */
