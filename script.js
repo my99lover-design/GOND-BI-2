@@ -1,5 +1,5 @@
 "use strict";
-/* 넘버원 김포B 공비 - 안정성·API·캐시 최적화 20260716-49 */
+/* 넘버원 김포B 공비 - 안정성·API·캐시 최적화 20260716-50 */
 const APP_BOOT_STARTED_AT = performance.now();
 const API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const LOCATIONS_URL = "./locations.json";
@@ -4634,14 +4634,14 @@ async function recoverFromSafeMode() {
 }
 
 const DIAGNOSTIC_CACHE_NAMES = Object.freeze({
-    app: "gimpo-b-app-v74",
+    app: "gimpo-b-app-v75",
     images: "gimpo-b-images-v5",
     data: "gimpo-b-data-v5",
     runtime: "gimpo-b-runtime-v3"
 });
 
 const DIAGNOSTIC_APP_SHELL = Object.freeze([
-    "./", "./index.html", "./style.css?v=20260716-49", "./number-one.css?v=20260716-49", "./script.js?v=20260716-49", "./number-one.js?v=20260716-49", "./manifest.json",
+    "./", "./index.html", "./style.css?v=20260716-50", "./number-one.css?v=20260716-50", "./script.js?v=20260716-50", "./number-one.js?v=20260716-50", "./manifest.json",
     "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ]);
 const DIAGNOSTIC_GATE_IMAGES = Object.freeze([
@@ -4824,7 +4824,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ========================= 성능 판정 현실화 v24 ========================= */
-const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-49", serviceWorkerVersion: "v74" });
+const FINAL_BUILD_INFO = Object.freeze({ fileVersion: "20260716-50", serviceWorkerVersion: "v75" });
 const SAFE_MODE_BUILD_KEY = "gimpoB_safe_mode_build_v1";
 (function clearStaleSafeModeAfterBuildUpdate() {
     try {
@@ -5205,8 +5205,8 @@ collectDiagnostics = async function collectDiagnosticsV23() {
 
 /* ========================= v25 전체 UI 정합성 최적화 ========================= */
 const V25_UI_CONFIG = Object.freeze({
-    fileVersion: "20260716-49",
-    serviceWorkerVersion: "v74",
+    fileVersion: "20260716-50",
+    serviceWorkerVersion: "v75",
     statusTimestampMaxAge: 10 * 60 * 1000,
     minimumBusyMs: 450
 });
@@ -5504,7 +5504,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateAdminMenuIssueIndicators();
 }, { once:true });
 
-/* ========================= 관리자·수정기록 지연 로딩 v20260716-49 ========================= */
+/* ========================= 관리자·수정기록 지연 로딩 v20260716-50 ========================= */
 const ADMIN_LAZY_CACHE_KEY_V49 = "gimpoB_admin_lazy_cache_v1";
 const ADMIN_LAZY_CACHE_MAX_AGE_V49 = 5 * 60 * 1000;
 const HISTORY_INITIAL_RENDER_COUNT_V49 = 30;

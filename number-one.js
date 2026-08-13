@@ -1,6 +1,6 @@
 "use strict";
 
-/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-49 */
+/* 넘버원 전용 계정·주간 수행·추가금 계산기 20260716-50 */
 const NUMBER_ONE_API_URL = "https://script.google.com/macros/s/AKfycbyFbQUILKYrMZEfGl8tXPHThYEK1ncyU0JV36Dbfiqi5cdFRKY06PQUS4IwHDDLW8boIA/exec";
 const NUMBER_ONE_REQUEST_TIMEOUT_MS = 15000;
 const NUMBER_ONE_REQUEST_RETRY_DELAY_MS = 1000;
@@ -45,7 +45,7 @@ function initializeNumberOne() {
         "numberOneWeekRange", "numberOneUserCode", "numberOneLogoutBtn", "numberOneBonus",
         "numberOneCondition150", "numberOneConditionPeak", "numberOneStartPart", "numberOneStartCurrent", "numberOnePremiumConditionPart", "numberOnePremiumConditionCurrent",
         "numberOnePeakPart", "numberOnePeakCurrent", "numberOneStandardCurrent", "numberOnePremiumCurrent", "numberOneInputTitle",
-        "numberOneDayStatus", "numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input",
+        "numberOneDayStatus", "numberOneSix09Input", "numberOneTen17Input", "numberOneSeventeen24Input",
         "numberOneInputCard", "numberOneInputGuide", "numberOneSaveBtn", "numberOneDeleteBtn",
         "numberOneDetailsToggle", "numberOneDetails", "numberOneSyncNote", "numberOnePreviousWeek", "numberOnePreviousToggle", "numberOnePreviousEditBtn", "numberOnePreviousDetails",
         "numberOneAuthModal", "numberOneAccessGatePanel", "numberOneAccessPin", "numberOneAccessSubmitBtn", "numberOneAuthTabs", "numberOneAuthLoginTab", "numberOneAuthRegisterTab", "numberOneLoginPanel", "numberOneRegisterPanel",
@@ -91,7 +91,7 @@ function initializeNumberOne() {
     numberOneElements.numberOnePreviousToggle?.addEventListener("click", toggleNumberOnePreviousDetails);
     numberOneElements.numberOnePreviousEditBtn?.addEventListener("click", toggleNumberOnePreviousEditMode);
     numberOneElements.numberOneUserCode?.addEventListener("click", copyNumberOneUserCode);
-    ["numberOneTotalInput", "numberOneTen17Input", "numberOneSeventeen24Input"].forEach(id => {
+    ["numberOneSix09Input", "numberOneTen17Input", "numberOneSeventeen24Input"].forEach(id => {
         numberOneElements[id]?.addEventListener("input", validateNumberOneInputs);
     });
     window.addEventListener("online", () => scheduleNumberOnePendingFlush(0));
@@ -297,7 +297,7 @@ function renderNumberOneApp() {
     const pendingCount = loadNumberOnePending().length;
     numberOneElements.numberOneSyncNote.textContent = pendingCount
         ? `기기에 임시 저장된 기록 ${pendingCount}건 · 연결 시 자동 전송`
-        : `인정시간 외(00~06) ${formatNumber(summary.otherTimeCount)}건 · 저장한 값은 내 기록에만 반영됩니다.`;
+        : `06~24시 누적 ${formatNumber(summary.tenToTwentyFourCount)}건 · 저장한 값은 내 기록에만 반영됩니다.`;
     numberOneElements.numberOneSyncNote.classList.toggle("warning", pendingCount > 0);
 }
 
@@ -350,13 +350,13 @@ function renderNumberOneSelectedDay() {
     const dateLabel = isToday ? "오늘" : getNumberOneWeekday(workDate);
     numberOneElements.numberOneInputTitle.textContent = `${isPrevious ? "직전주 · " : ""}${dateLabel} · ${formatNumberOneDate(workDate)} 수행`;
     numberOneElements.numberOneInputCard?.classList.toggle("previous-editing", isPrevious);
-    setNumberInput(numberOneElements.numberOneTotalInput, day.totalCount);
+    setNumberInput(numberOneElements.numberOneSix09Input, day.sixToTen);
     setNumberInput(numberOneElements.numberOneTen17Input, day.tenToSeventeen);
-    // 기존 DOM id는 호환을 위해 유지하지만 이 입력칸의 의미는 06~24 인정건수다.
-    setNumberInput(numberOneElements.numberOneSeventeen24Input, day.tenToTwentyFour);
+    // 저장 호환 필드 totalCount는 SEGMENTS_V2부터 17~24시 구간을 의미한다.
+    setNumberInput(numberOneElements.numberOneSeventeen24Input, day.totalCount);
 
     const hasAny = hasNumberOneDayValues(day);
-    const complete = [day.totalCount, day.tenToSeventeen, day.tenToTwentyFour]
+    const complete = [day.sixToTen, day.tenToSeventeen, day.totalCount]
         .every(value => value !== null && value !== undefined);
     numberOneElements.numberOneDayStatus.textContent = complete ? "입력 완료" : (hasAny ? "입력 중" : "미입력");
     numberOneElements.numberOneDayStatus.className = `number-one-day-status ${complete ? "complete" : (hasAny ? "partial" : "")}`;
@@ -382,56 +382,59 @@ function hasNumberOneDayValues(day) {
 
 function validateNumberOneInputs() {
     const values = readNumberOneInputs();
-    let message = "수행 인정시간은 06:00~23:59이며, 00~06 수행은 추가금 계산에서 제외됩니다.";
-    let level = "";
-    const invalidInput = [
-        [numberOneElements.numberOneTotalInput, "총건수"],
+    const rawInputs = [
+        [numberOneElements.numberOneSix09Input, "06~09시"],
         [numberOneElements.numberOneTen17Input, "09~17시"],
-        [numberOneElements.numberOneSeventeen24Input, "06~24시"]
-    ].find(([element]) => {
+        [numberOneElements.numberOneSeventeen24Input, "17~24시"]
+    ];
+    const hasTypedValue = rawInputs.some(([element]) => String(element?.value ?? "").trim() !== "");
+    let message = "운행 기록 있을 때만 작성 · 공란은 0건 · 06~24시 자동합산";
+    let level = "";
+    const invalidInput = rawInputs.find(([element]) => {
         const text = String(element?.value ?? "").trim();
         if (!text) return false;
         const number = Number(text);
         return !Number.isInteger(number) || number < 0 || number > 999;
     });
-    const total = values.totalCount;
+    const sixToNine = values.sixToTen;
     const peak = values.tenToSeventeen;
+    const seventeenToTwentyFour = values.totalCount;
     const recognized = values.tenToTwentyFour;
 
-    if (invalidInput || [total, peak, recognized].some(value => value === null)) {
+    if (invalidInput || [sixToNine, peak, seventeenToTwentyFour, recognized].some(value => value === null)) {
         message = `${invalidInput?.[1] || "입력값"}는 0~999 사이의 정수로 입력해주세요.`;
         level = "error";
-    } else if (peak > recognized) {
-        message = "09~17시 건수는 06~24시 인정건수보다 클 수 없습니다.";
+    } else if (recognized > 999) {
+        message = "06~24시 합계는 999건을 넘을 수 없습니다.";
         level = "error";
-    } else if (recognized > total) {
-        message = "06~24시 인정건수는 총건수보다 클 수 없습니다.";
-        level = "error";
-    } else {
+    } else if (hasTypedValue) {
         const workDate = numberOneState.selectedWorkDate || numberOneState.data?.context?.currentWorkDate || "";
         const isPrevious = getNumberOneDataBucketForWorkDate(workDate) === numberOneState.data?.previousWeek;
-        const outside = Math.max(0, total - recognized);
         message = isPrevious
-            ? `직전주 수정 중 · 인정시간 외(00~06) ${formatNumber(outside)}건 · 저장 전 확인`
-            : `인정시간 외(00~06) ${formatNumber(outside)}건 자동 반영 · 공란은 0건`;
+            ? `직전주 수정 중 · 06~24시 ${formatNumber(recognized)}건 자동합산 · 공란은 0건`
+            : `운행 기록 있을 때만 작성 · 06~24시 ${formatNumber(recognized)}건 자동합산 · 공란은 0건`;
         if (isPrevious && !numberOneState.previousEditMode) level = "warning";
     }
     numberOneElements.numberOneInputGuide.textContent = message;
     numberOneElements.numberOneInputGuide.className = `number-one-input-guide ${level}`;
     const selectedDate = numberOneState.selectedWorkDate || numberOneState.data?.context?.currentWorkDate || "";
     const selectedPrevious = getNumberOneDataBucketForWorkDate(selectedDate) === numberOneState.data?.previousWeek;
-    numberOneElements.numberOneSaveBtn.disabled = numberOneState.saving || level === "error" || (selectedPrevious && !numberOneState.previousEditMode);
-    return level !== "error";
+    numberOneElements.numberOneSaveBtn.disabled = numberOneState.saving || level === "error" || !hasTypedValue || (selectedPrevious && !numberOneState.previousEditMode);
+    return level !== "error" && hasTypedValue;
 }
 
 function readNumberOneInputs() {
-    const totalCount = parseCountOrZero(numberOneElements.numberOneTotalInput?.value);
+    const sixToTen = parseCountOrZero(numberOneElements.numberOneSix09Input?.value); // 호환 필드명, 실제 06~09
     const tenToSeventeen = parseCountOrZero(numberOneElements.numberOneTen17Input?.value); // 실제 09~17
-    const tenToTwentyFour = parseCountOrZero(numberOneElements.numberOneSeventeen24Input?.value); // 실제 06~24
+    const totalCount = parseCountOrZero(numberOneElements.numberOneSeventeen24Input?.value); // 호환 필드명, 실제 17~24
+    const tenToTwentyFour = [sixToTen, tenToSeventeen, totalCount].some(value => value === null)
+        ? null
+        : sixToTen + tenToSeventeen + totalCount;
     return {
         totalCount,
         tenToSeventeen,
-        tenToTwentyFour
+        tenToTwentyFour,
+        sixToTen
     };
 }
 
@@ -440,7 +443,8 @@ function getNumberOneStoredValues(values) {
         totalCount: values.totalCount,
         tenToSeventeen: values.tenToSeventeen,
         tenToTwentyFour: values.tenToTwentyFour,
-        sixToTen: 0
+        sixToTen: values.sixToTen,
+        entryFormat: "SEGMENTS_V2"
     };
 }
 
@@ -750,14 +754,14 @@ function renderNumberOneDetails() {
     const daysMap = new Map((numberOneState.data.days || []).map(day => [day.workDate, day]));
     const dates = makeNumberOneWeekDates(context.weekStart);
     numberOneElements.numberOneDetails.innerHTML = `
-        <div class="number-one-details-head"><span>요일</span><span>09~17</span><span>06~24</span><span>총</span><span></span></div>
+        <div class="number-one-details-head"><span>요일</span><span>06~09</span><span>09~17</span><span>17~24</span><span></span></div>
         ${dates.map(workDate => {
             const day = daysMap.get(workDate) || {};
             const selected = workDate === numberOneState.selectedWorkDate;
             return `<button class="number-one-day-row${selected ? " selected" : ""}" type="button" data-work-date="${workDate}">
                 <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
+                <span class="number-one-day-value">${displayDayValue(day.sixToTen)}</span>
                 <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
-                <span class="number-one-day-value">${displayDayValue(getNumberOneRecognizedCount(day))}</span>
                 <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-edit">수정</span>
             </button>`;
@@ -838,23 +842,23 @@ function renderNumberOnePreviousWeek() {
             <div><span>+1500</span><b>${formatNumber(summary.premiumEligibleCount)}건</b></div>
             <div class="bonus"><span>추가금</span><b>${formatMoney(summary.totalBonus)}</b></div>
         </div>
-        <div class="number-one-details-head"><span>요일</span><span>09~17</span><span>06~24</span><span>총</span><span></span></div>
+        <div class="number-one-details-head"><span>요일</span><span>06~09</span><span>09~17</span><span>17~24</span><span></span></div>
         ${dates.map(workDate => {
             const day = daysMap.get(workDate) || {};
             const selected = workDate === numberOneState.selectedWorkDate;
             if (numberOneState.previousEditMode) {
                 return `<button class="number-one-day-row number-one-previous-day-row editable${selected ? " selected" : ""}" type="button" data-previous-work-date="${workDate}">
                     <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
+                    <span class="number-one-day-value">${displayDayValue(day.sixToTen)}</span>
                     <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
-                    <span class="number-one-day-value">${displayDayValue(getNumberOneRecognizedCount(day))}</span>
                     <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                     <span class="number-one-day-edit">수정</span>
                 </button>`;
             }
             return `<div class="number-one-day-row number-one-previous-day-row">
                 <span class="number-one-day-name">${getNumberOneWeekday(workDate)} ${formatNumberOneDate(workDate, true)}</span>
+                <span class="number-one-day-value">${displayDayValue(day.sixToTen)}</span>
                 <span class="number-one-day-value">${displayDayValue(day.tenToSeventeen)}</span>
-                <span class="number-one-day-value">${displayDayValue(getNumberOneRecognizedCount(day))}</span>
                 <span class="number-one-day-value">${displayDayValue(day.totalCount)}</span>
                 <span class="number-one-day-edit"></span>
             </div>`;
@@ -924,13 +928,27 @@ function loadNumberOnePending() {
     try {
         const values = JSON.parse(localStorage.getItem(getNumberOneScopedStorageKey(NUMBER_ONE_KEYS.PENDING_PREFIX)) || "[]");
         if (!Array.isArray(values)) return [];
-        return values.filter(item => item && /^\d{4}-\d{2}-\d{2}$/.test(String(item.workDate || ""))).map(item => ({
-            ...item,
-            type: item.type === "delete" ? "delete" : "save",
-            savedAt: Number(item.savedAt) || Date.now(),
-            attempts: Math.max(0, Number(item.attempts) || 0),
-            nextAttemptAt: Math.max(0, Number(item.nextAttemptAt) || 0)
-        }));
+        return values.filter(item => item && /^\d{4}-\d{2}-\d{2}$/.test(String(item.workDate || ""))).map(item => {
+            const mapped = {
+                ...item,
+                type: item.type === "delete" ? "delete" : "save",
+                savedAt: Number(item.savedAt) || Date.now(),
+                attempts: Math.max(0, Number(item.attempts) || 0),
+                nextAttemptAt: Math.max(0, Number(item.nextAttemptAt) || 0)
+            };
+            if (mapped.type === "save" && mapped.values && String(mapped.values.entryFormat || "") !== "SEGMENTS_V2") {
+                const recognized = Math.max(0, Number(mapped.values.tenToTwentyFour) || 0);
+                const peak = Math.min(recognized, Math.max(0, Number(mapped.values.tenToSeventeen) || 0));
+                mapped.values = {
+                    totalCount: Math.max(0, recognized - peak),
+                    tenToSeventeen: peak,
+                    tenToTwentyFour: recognized,
+                    sixToTen: 0,
+                    entryFormat: "SEGMENTS_V2"
+                };
+            }
+            return mapped;
+        });
     } catch (error) { return []; }
 }
 
@@ -1105,17 +1123,15 @@ function calculateNumberOneLocalSummary(days) {
     // - 09:00:00~16:59:59 누적 100건 AND 06~24 누적 250건 이상이면
     //   131건째부터 전부 +1,500원/건으로 상향 재계산
     const sorted = (days || []).slice().sort((a, b) => String(a.workDate).localeCompare(String(b.workDate)));
-    let totalCount = 0;
     let tenToSeventeenCount = 0;   // 호환 필드명, 실제 의미 09~17
-    let tenToTwentyFourCount = 0;  // 호환 필드명, 실제 의미 06~24
+    let tenToTwentyFourCount = 0;  // 호환 필드명, 실제 의미 06~24 자동합산
     for (const day of sorted) {
-        totalCount += Math.max(0, Number(day.totalCount) || 0);
         tenToSeventeenCount += Math.max(0, Number(day.tenToSeventeen) || 0);
         tenToTwentyFourCount += Math.max(0, Number(day.tenToTwentyFour) || 0);
     }
-    tenToTwentyFourCount = Math.min(totalCount, tenToTwentyFourCount);
     tenToSeventeenCount = Math.min(tenToTwentyFourCount, tenToSeventeenCount);
-    const otherTimeCount = Math.max(0, totalCount - tenToTwentyFourCount);
+    const totalCount = tenToTwentyFourCount;
+    const otherTimeCount = 0;
     const additionalCount = Math.max(0, tenToTwentyFourCount - 130);
     const premiumQualified = tenToTwentyFourCount >= 250 && tenToSeventeenCount >= 100;
     const standardEligibleCount = premiumQualified ? 0 : additionalCount;
@@ -1143,11 +1159,28 @@ function calculateNumberOneLocalSummary(days) {
 
 function normalizeNumberOneSummary(data) {
     if (!data || typeof data !== "object") return data;
-    data.summary = calculateNumberOneLocalSummary(Array.isArray(data.days) ? data.days : []);
+    data.days = (Array.isArray(data.days) ? data.days : []).map(normalizeNumberOneDayForSegments);
+    data.summary = calculateNumberOneLocalSummary(data.days);
     if (data.previousWeek && typeof data.previousWeek === "object") {
-        data.previousWeek.summary = calculateNumberOneLocalSummary(Array.isArray(data.previousWeek.days) ? data.previousWeek.days : []);
+        data.previousWeek.days = (Array.isArray(data.previousWeek.days) ? data.previousWeek.days : []).map(normalizeNumberOneDayForSegments);
+        data.previousWeek.summary = calculateNumberOneLocalSummary(data.previousWeek.days);
     }
     return data;
+}
+
+function normalizeNumberOneDayForSegments(day) {
+    if (!day || typeof day !== "object") return day;
+    if (String(day.entryFormat || "") === "SEGMENTS_V2") return day;
+    const recognized = Math.max(0, Number(day.tenToTwentyFour) || 0);
+    const peak = Math.min(recognized, Math.max(0, Number(day.tenToSeventeen) || 0));
+    return {
+        ...day,
+        sixToTen: 0,
+        tenToSeventeen: peak,
+        totalCount: Math.max(0, recognized - peak),
+        tenToTwentyFour: recognized,
+        entryFormat: "LEGACY_DERIVED"
+    };
 }
 
 function numberOneToast(message) {
